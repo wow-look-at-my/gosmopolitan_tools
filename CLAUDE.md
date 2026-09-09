@@ -27,6 +27,10 @@ Depth, including the toolchain-side half: `docs/GOPLS.md` and `docs/OPTIONAL-PAR
 - **`internal/refactor/inline`.** The inliner supplies an argument for each omitted parameter. Its arity assert fired otherwise.
 - **`gopls/internal/golang/types_format.go`.** A signature prints `= <default>` on an optional parameter. A cloned `ast.Field` keeps its `Default`.
 
+## Known gap
+
+staticcheck (`honnef.co/go/tools`) builds its own IR, not `go/ssa`. That builder still indexes one argument per parameter. A call that omits a defaulted argument panics it. gopls recovers the panic and drops staticcheck's diagnostics for that package. The module is third-party and is not forked here. Depth: `docs/GOPLS.md` in the gosmopolitan repository.
+
 ## CI
 
 `.github/workflows/cosmo-ci.yml` installs the published toolchain on every push, builds gopls with it, and runs the tests for each package above. Building gopls is itself an assertion: its go.mod requires `go 1.27.0`, which a toolchain whose version string no parser accepts cannot satisfy.
