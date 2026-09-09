@@ -22,9 +22,13 @@ jobs:
         with:
           script: |
             const dir = `${process.env.RUNNER_TEMP}/gosmopolitan`;
+            const tgz = `${dir}/go.tar.gz`;
+            const url = 'https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64';
             await io.mkdirP(dir);
-            await $`curl -fL --compressed -o ${dir}/go.tar.gz https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64`;
-            await $`tar -xzf ${dir}/go.tar.gz -C ${dir}`;
+            // Each interpolation is one argument, so a path has to be one
+            // value: `${dir}/go.tar.gz` would arrive as two.
+            await $`curl -fL --compressed -o ${tgz} ${url}`;
+            await $`tar -xzf ${tgz} -C ${dir}`;
             core.addPath(`${dir}/go/bin`);
 
       - name: Report the toolchain version
