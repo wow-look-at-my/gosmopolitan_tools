@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  # The fork-owned behavior in this tree only exists against the gosmopolitan
+  # toolchain: parameter defaults reach go/types, and a call that omits one
+  # keeps the arguments the source wrote. A stock Go cannot compile the tests
+  # that assert it, so the job installs the published toolchain.
+  gopls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the gosmopolitan toolchain
+        uses: wow-look-at-my/actions@typescript#latest
+        with:
+          script: |
+            const dir = `${process.env.RUNNER_TEMP}/gosmopolitan`;
+            await io.mkdirP(dir);
+            await $`curl -fL --compressed -o ${dir}/go.tar.gz https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64`;
+            await $`tar -xzf ${dir}/go.tar.gz -C ${dir}`;
+            core.addPath(`${dir}/go/bin`);
+
+      - name: Report the toolchain version
+        run: go version
+
+      # gopls declares "go 1.27.0" in its go.mod, so this step fails outright
+      # on a toolchain whose version string no version parser accepts.
+      - name: Build gopls
+        run: go build -o "$RUNNER_TEMP/gopls" .
+        working-directory: gopls
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          GOFLAGS: -mod=mod
+
+      - name: Test the packages that carry parameter defaults
+        run: go test -count=1 ./internal/gcimporter/... ./internal/pkgbits/... ./internal/refactor/inline/... ./go/ssa/...
+        env:
+          GOOS: linux
+          GOARCH: amd64

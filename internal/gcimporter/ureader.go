@@ -476,7 +476,11 @@ func (r *reader) param() *types.Var {
 	pkg, name := r.localIdent()
 	typ := r.typ()
 
-	return types.NewParam(pos, pkg, name, typ)
+	param := types.NewParam(pos, pkg, name, typ)
+	if r.Version().Has(pkgbits.ParamDefaults) && r.Bool() {
+		param.SetDefault(r.Value())
+	}
+	return param
 }
 
 // @@@ Objects
@@ -630,22 +634,18 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 			}
 
 			if r.Version().Has(pkgbits.GenericMethods) {
-				// V4 (go1.27.0) emitted all non-generic methods
-				// before all generic ones, discarding source
-				// order: a bug (go.dev/issue/81188).
-				// V5 (go1.27.x) fixes it by emitting an explicit
-				// index along with each method.
-				type indexedMethod struct {
-					index int // (or -1 in V4)
-					fn    *types.Func
-				}
-
-				var methods []indexedMethod
+				// A stream emits all non-generic methods before all
+				// generic ones, so a type that has both loses its
+				// source order (go.dev/issue/81188). Upstream spends
+				// V5 on a per-method index that repairs it; the
+				// gosmopolitan compiler spends V5 on parameter
+				// defaults and writes no index, so this reader must
+				// not look for one.
+				var methods []*types.Func
 
 				// ordinary methods
 				for range r.Len() {
-					idx, m := r.method()
-					methods = append(methods, indexedMethod{idx, m})
+					methods = append(methods, r.method())
 				}
 
 				// generic methods
@@ -663,31 +663,20 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 					pkg, name := r.selector()
 					rtparams := r.typeParamNames(true)
 					recv := r.param()
-					methodIdx := -1
-					if r.Version().Has(pkgbits.PreserveMethodOrder) {
-						methodIdx = r.Len()
-					}
 					tparams := r.typeParamNames(false)
 					sig := r.signature(recv, rtparams, tparams)
 
 					pr.retireReader(r)
-					methods = append(methods, indexedMethod{methodIdx, types.NewFunc(pos, pkg, name, sig)})
-				}
-
-				if r.Version().Has(pkgbits.PreserveMethodOrder) {
-					sort.Slice(methods, func(i, j int) bool {
-						return methods[i].index < methods[j].index
-					})
+					methods = append(methods, types.NewFunc(pos, pkg, name, sig))
 				}
 
 				for _, m := range methods {
-					named.AddMethod(m.fn)
+					named.AddMethod(m)
 				}
 
 			} else {
 				for range r.Len() {
-					_, m := r.method()
-					named.AddMethod(m)
+					named.AddMethod(r.method())
 				}
 			}
 
@@ -801,12 +790,8 @@ func (r *reader) typeParamNames(isGenMeth bool) []*types.TypeParam {
 	return tparams
 }
 
-func (r *reader) method() (int, *types.Func) {
+func (r *reader) method() *types.Func {
 	r.Sync(pkgbits.SyncMethod)
-	idx := -1
-	if r.Version().Has(pkgbits.PreserveMethodOrder) {
-		idx = r.Len()
-	}
 	pos := r.pos()
 	pkg, name := r.selector()
 
@@ -814,7 +799,7 @@ func (r *reader) method() (int, *types.Func) {
 	sig := r.signature(r.param(), rparams, nil)
 
 	_ = r.pos() // TODO(mdempsky): Remove; this is a hacker for linker.go.
-	return idx, types.NewFunc(pos, pkg, name, sig)
+	return types.NewFunc(pos, pkg, name, sig)
 }
 
 func (r *reader) qualifiedIdent() (*types.Package, string) { return r.ident(pkgbits.SyncSym) }

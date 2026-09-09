@@ -45,9 +45,12 @@ const (
 	iexportVersionGo1_18         = 2
 	iexportVersionGenerics       = 2
 	iexportVersionGenericMethods = 3
-	iexportVersion               = iexportVersionGenericMethods
+	// A parameter carries the constant a call passes when it omits the
+	// argument. See docs/OPTIONAL-PARAMS.md in the gosmopolitan toolchain.
+	iexportVersionParamDefaults = 4
+	iexportVersion              = iexportVersionParamDefaults
 
-	iexportVersionCurrent = 3
+	iexportVersionCurrent = 4
 )
 
 type ident struct {
@@ -172,9 +175,9 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 
 	version = int64(r.uint64())
 	switch version {
-	case iexportVersionGenericMethods, iexportVersionGo1_18, iexportVersionPosCol, iexportVersionGo1_11:
+	case iexportVersionParamDefaults, iexportVersionGenericMethods, iexportVersionGo1_18, iexportVersionPosCol, iexportVersionGo1_11:
 	default:
-		if version > iexportVersionGenericMethods {
+		if version > iexportVersionParamDefaults {
 			errorf("unstable iexport format version %d, just rebuild compiler and std library", version)
 		} else {
 			errorf("unknown iexport format version %d", version)
@@ -1076,7 +1079,12 @@ func (r *importReader) param(pkg *types.Package) *types.Var {
 	pos := r.pos()
 	name := r.ident()
 	typ := r.typ()
-	return types.NewParam(pos, pkg, name, typ)
+	param := types.NewParam(pos, pkg, name, typ)
+	if r.p.version >= iexportVersionParamDefaults && r.bool() {
+		_, val := r.value()
+		param.SetDefault(val)
+	}
+	return param
 }
 
 func (r *importReader) bool() bool {

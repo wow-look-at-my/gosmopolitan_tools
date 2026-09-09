@@ -37,8 +37,12 @@ const (
 	// V4: encodes generic methods as standalone function objects
 	V4
 
-	// V5: encodes the index of methods to preserve relative order
-	// of nongeneric and generic methods (go.dev/issue/81188).
+	// V5: adds a parameter's default value.
+	//
+	// This is the gosmopolitan toolchain's V5, not upstream's, which spends
+	// this version on a method index instead (go.dev/issue/81188). A reader
+	// that takes the wrong one for a stream desynchronizes rather than
+	// failing, so the two must never both be called V5 in one tree.
 	V5
 
 	numVersions = iota
@@ -80,9 +84,8 @@ const (
 	// Generic methods may appear as standalone function objects.
 	GenericMethods
 
-	// Method index is encoded to preserve relative order of
-	// nongeneric and generic methods.
-	PreserveMethodOrder
+	// A parameter carries the value a call passes when it omits the argument.
+	ParamDefaults
 
 	numFields = iota
 )
@@ -93,7 +96,7 @@ var introduced = [numFields]Version{
 	AliasTypeParamNames: V2,
 	CompactCompLiterals: V3,
 	GenericMethods:      V4,
-	PreserveMethodOrder: V5,
+	ParamDefaults:       V5,
 }
 
 // removed is the version a field was removed in or 0 for fields

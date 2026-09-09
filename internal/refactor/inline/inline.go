@@ -17,6 +17,7 @@ import (
 	pathpkg "path"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
@@ -1482,6 +1483,31 @@ func (st *state) arguments(caller *Caller, calleeDecl *ast.FuncDecl, assign1 fun
 			duplicable: duplicable(caller.Info, expr),
 			freevars:   freeVars(caller.Info, expr),
 		})
+	}
+
+	// A call omits a suffix of the parameter list when every parameter in
+	// that suffix carries a default, so the inlined body needs an argument
+	// for each one. The value is a constant, which is the simplest kind of
+	// argument there is: pure, duplicable and free of effects. Depth:
+	// docs/OPTIONAL-PARAMS.md in the gosmopolitan toolchain.
+	if sig, ok := caller.Info.TypeOf(caller.Call.Fun).Underlying().(*types.Signature); ok && len(args) < sig.Params().Len() {
+		if len(args) > 0 && last(args).spread {
+			return nil, fmt.Errorf("cannot inline: call spreads a tuple over parameters that carry defaults")
+		}
+		for i := len(args); i < sig.Params().Len(); i++ {
+			param := sig.Params().At(i)
+			expr := defaultLiteral(param.Default(), caller.Call.Pos())
+			if expr == nil {
+				return nil, fmt.Errorf("cannot inline: parameter %s has no default to supply", param.Name())
+			}
+			args = append(args, &argument{
+				expr:       expr,
+				typ:        param.Type(),
+				constant:   param.Default(),
+				pure:       true,
+				duplicable: true,
+			})
+		}
 	}
 
 	// Re-typecheck each constant argument expression in a neutral context.
@@ -3572,3 +3598,24 @@ func hasNonTrivialReturn(returnInfo [][]returnOperandFlags) bool {
 }
 
 type unit struct{} // for representing sets as maps
+
+// defaultLiteral spells a parameter's default as the source a caller would
+// have written. It answers nil for a value with no such spelling, which the
+// type checker has already refused at the declaration.
+func defaultLiteral(v constant.Value, pos token.Pos) ast.Expr {
+	if v == nil {
+		return nil
+	}
+	switch v.Kind() {
+	case constant.Bool:
+		if constant.BoolVal(v) {
+			return &ast.Ident{NamePos: pos, Name: "true"}
+		}
+		return &ast.Ident{NamePos: pos, Name: "false"}
+	case constant.String:
+		return &ast.BasicLit{ValuePos: pos, Kind: token.STRING, Value: strconv.Quote(constant.StringVal(v))}
+	case constant.Int:
+		return &ast.BasicLit{ValuePos: pos, Kind: token.INT, Value: v.ExactString()}
+	}
+	return nil
+}
