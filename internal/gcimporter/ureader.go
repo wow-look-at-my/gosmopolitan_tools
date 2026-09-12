@@ -478,23 +478,23 @@ func (r *reader) param() *types.Var {
 
 	param := types.NewParam(pos, pkg, name, typ)
 	if r.Version().Has(pkgbits.ParamDefaults) && r.Bool() {
-		param.SetDefault(r.paramDefault())
+		setParamDefault(param, r.paramDefault())
 	}
 	return param
 }
 
 // paramDefault reads one default in the form the writer's paramDefault wrote
 // it: a constant, or a struct literal as name and default pairs.
-func (r *reader) paramDefault() *types.ParamDefault {
+func (r *reader) paramDefault() *paramDefault {
 	if r.Version().Has(pkgbits.StructParamDefaults) && r.Bool() {
-		d := &types.ParamDefault{}
+		d := &paramDefault{}
 		for range r.Len() {
 			name := r.String()
-			d.Fields = append(d.Fields, types.FieldDefault{Name: name, Value: r.paramDefault()})
+			d.Fields = append(d.Fields, fieldDefault{Name: name, Value: r.paramDefault()})
 		}
 		return d
 	}
-	return &types.ParamDefault{Const: r.Value()}
+	return &paramDefault{Const: r.Value()}
 }
 
 // @@@ Objects
@@ -715,7 +715,7 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 			v := types.NewVar(pos, objPkg, objName, typ)
 			typesinternal.SetVarKind(v, typesinternal.PackageVar)
 			if r.Version().Has(pkgbits.ReadonlyVars) {
-				v.SetReadonly(r.Bool())
+				setReadonly(v, r.Bool())
 			}
 			declare(v)
 		}
