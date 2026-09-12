@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # The fork refuses a CI build when GO_BUILDCACHE_CONFIG is unset, and this vends it.
+      - uses: wow-look-at-my/actions@secret-server#latest
+
+      # branch master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
+      - uses: wow-look-at-my/buildhost/.github/actions/buildhost-download@master
+        id: cosmo
+        with:
+          project: gosmopolitan
+          branch: master
+          executable: false
+
+      - name: Unpack the gosmopolitan toolchain
+        run: |
+          mkdir -p "$RUNNER_TEMP/cosmo"
+          tar -xzf "${{ steps.cosmo.outputs.path }}" -C "$RUNNER_TEMP/cosmo"
+          echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
+
+      # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
+      - name: Register the APE magic
+        run: |
+          sudo mountpoint -q /proc/sys/fs/binfmt_misc \
+            || sudo mount -t binfmt_misc none /proc/sys/fs/binfmt_misc
+          [ -e /proc/sys/fs/binfmt_misc/APE ] \
+            || printf ':APE:M::MZqFpD=\047::/bin/sh:' | sudo tee /proc/sys/fs/binfmt_misc/register > /dev/null
+
+      # No GOOS pin: the fork defaults to cosmo, so this compiles the APE target every consumer ships.
+      - name: Build and test
+        env:
+          GOROOT: ${{ runner.temp }}/cosmo/go
+          GOTOOLCHAIN: local
+        run: |
+          go version
+          go build ./...
+          go test ./internal/gcimporter/... ./internal/pkgbits/...

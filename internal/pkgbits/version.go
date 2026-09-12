@@ -37,9 +37,12 @@ const (
 	// V4: encodes generic methods as standalone function objects
 	V4
 
-	// V5: encodes the index of methods to preserve relative order
-	// of nongeneric and generic methods (go.dev/issue/81188).
+	// V5: adds a parameter's default value
 	V5
+
+	// V6: a parameter default may be a struct literal of constants, and a
+	// variable carries its readonly bit
+	V6
 
 	numVersions = iota
 )
@@ -80,8 +83,21 @@ const (
 	// Generic methods may appear as standalone function objects.
 	GenericMethods
 
+	// A parameter carries the value a call passes when it omits the argument.
+	ParamDefaults
+
+	// A parameter default is a constant or a keyed struct literal of them,
+	// tagged by a bool, rather than a bare constant.
+	StructParamDefaults
+
+	// A variable carries a bool that says whether it was declared
+	// "readonly var".
+	ReadonlyVars
+
 	// Method index is encoded to preserve relative order of
-	// nongeneric and generic methods.
+	// nongeneric and generic methods. Upstream reads this at its own V5.
+	// The fork took V5 for ParamDefaults and writes no method index, so
+	// the reader below must never look for one.
 	PreserveMethodOrder
 
 	numFields = iota
@@ -93,7 +109,13 @@ var introduced = [numFields]Version{
 	AliasTypeParamNames: V2,
 	CompactCompLiterals: V3,
 	GenericMethods:      V4,
-	PreserveMethodOrder: V5,
+	ParamDefaults:       V5,
+	StructParamDefaults: V6,
+	ReadonlyVars:        V6,
+
+	// numVersions is above every version a stream can declare, so Has is
+	// false for all of them: this fork never writes a method index.
+	PreserveMethodOrder: numVersions,
 }
 
 // removed is the version a field was removed in or 0 for fields

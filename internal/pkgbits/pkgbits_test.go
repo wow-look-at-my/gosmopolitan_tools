@@ -64,7 +64,7 @@ func TestVersions(t *testing.T) {
 		{pkgbits.V2, pkgbits.AliasTypeParamNames},
 		{pkgbits.V3, pkgbits.CompactCompLiterals},
 		{pkgbits.V4, pkgbits.GenericMethods},
-		{pkgbits.V5, pkgbits.PreserveMethodOrder},
+		{pkgbits.V5, pkgbits.ParamDefaults},
 	} {
 		if !c.v.Has(c.f) {
 			t.Errorf("Expected version %v to have field %v", c.v, c.f)
@@ -86,11 +86,11 @@ func TestVersions(t *testing.T) {
 		{pkgbits.V1, pkgbits.GenericMethods},
 		{pkgbits.V2, pkgbits.GenericMethods},
 		{pkgbits.V3, pkgbits.GenericMethods},
-		{pkgbits.V0, pkgbits.PreserveMethodOrder},
-		{pkgbits.V1, pkgbits.PreserveMethodOrder},
-		{pkgbits.V2, pkgbits.PreserveMethodOrder},
-		{pkgbits.V3, pkgbits.PreserveMethodOrder},
-		{pkgbits.V4, pkgbits.PreserveMethodOrder},
+		{pkgbits.V0, pkgbits.ParamDefaults},
+		{pkgbits.V1, pkgbits.ParamDefaults},
+		{pkgbits.V2, pkgbits.ParamDefaults},
+		{pkgbits.V3, pkgbits.ParamDefaults},
+		{pkgbits.V4, pkgbits.ParamDefaults},
 	} {
 		if c.v.Has(c.f) {
 			t.Errorf("Expected version %v to not have field %v", c.v, c.f)

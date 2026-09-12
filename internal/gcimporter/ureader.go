@@ -476,7 +476,25 @@ func (r *reader) param() *types.Var {
 	pkg, name := r.localIdent()
 	typ := r.typ()
 
-	return types.NewParam(pos, pkg, name, typ)
+	param := types.NewParam(pos, pkg, name, typ)
+	if r.Version().Has(pkgbits.ParamDefaults) && r.Bool() {
+		param.SetDefault(r.paramDefault())
+	}
+	return param
+}
+
+// paramDefault reads one default in the form the writer's paramDefault wrote
+// it: a constant, or a struct literal as name and default pairs.
+func (r *reader) paramDefault() *types.ParamDefault {
+	if r.Version().Has(pkgbits.StructParamDefaults) && r.Bool() {
+		d := &types.ParamDefault{}
+		for range r.Len() {
+			name := r.String()
+			d.Fields = append(d.Fields, types.FieldDefault{Name: name, Value: r.paramDefault()})
+		}
+		return d
+	}
+	return &types.ParamDefault{Const: r.Value()}
 }
 
 // @@@ Objects
@@ -696,6 +714,9 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 			typ := r.typ()
 			v := types.NewVar(pos, objPkg, objName, typ)
 			typesinternal.SetVarKind(v, typesinternal.PackageVar)
+			if r.Version().Has(pkgbits.ReadonlyVars) {
+				v.SetReadonly(r.Bool())
+			}
 			declare(v)
 		}
 	}
