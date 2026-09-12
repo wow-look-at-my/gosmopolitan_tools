@@ -24,7 +24,7 @@ jobs:
         with:
           project: gosmopolitan
           branch: master
-          executable: 'false'
+          executable: false
 
       - name: Unpack the gosmopolitan toolchain
         run: |
