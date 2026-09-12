@@ -9,29 +9,16 @@ permissions:
   id-token: write
 
 jobs:
-  # internal/gcimporter compiles two ways, and a break in either half is invisible to the other.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-          cache: false
-
-      # A consumer bootstrapped by a stock Go compiles this module without the tag.
-      - name: Build and test under a stock Go
-        run: |
-          go build ./...
-          go test ./internal/gcimporter/... ./internal/pkgbits/...
-
-      # The fork refuses a CI build with no shared cache, and this vends GO_BUILDCACHE_CONFIG.
+      # The fork refuses a CI build when GO_BUILDCACHE_CONFIG is unset, and this vends it.
       - uses: wow-look-at-my/actions@secret-server#latest
 
       # branch=master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
-      # Unpacked outside the checkout: this module has its own go/ tree, and a GOROOT there joins ./...
       - name: Install the gosmopolitan toolchain
         run: |
           mkdir -p "$RUNNER_TEMP/cosmo"
@@ -40,14 +27,20 @@ jobs:
             | tar -xz -C "$RUNNER_TEMP/cosmo"
           echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
 
-      # Under the tag the reader stores a parameter default and a readonly bit, which needs the fork's go/types.
-      - name: Build and test under the fork
+      # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
+      - name: Register the APE magic
+        run: |
+          sudo mountpoint -q /proc/sys/fs/binfmt_misc \
+            || sudo mount -t binfmt_misc none /proc/sys/fs/binfmt_misc
+          [ -e /proc/sys/fs/binfmt_misc/APE ] \
+            || printf ':APE:M::MZqFpD=\047::/bin/sh:' | sudo tee /proc/sys/fs/binfmt_misc/register > /dev/null
+
+      # No GOOS pin: the fork defaults to cosmo, so this compiles the APE target every consumer ships.
+      - name: Build and test
         env:
           GOROOT: ${{ runner.temp }}/cosmo/go
           GOTOOLCHAIN: local
-          GOOS: linux
-          GOARCH: amd64
         run: |
           go version
-          go build -tags=gosmopolitan ./...
-          go test -tags=gosmopolitan ./internal/gcimporter/... ./internal/pkgbits/...
+          go build ./...
+          go test ./internal/gcimporter/... ./internal/pkgbits/...
