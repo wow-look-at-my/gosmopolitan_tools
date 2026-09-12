@@ -18,13 +18,18 @@ jobs:
       # The fork refuses a CI build when GO_BUILDCACHE_CONFIG is unset, and this vends it.
       - uses: wow-look-at-my/actions@secret-server#latest
 
-      # branch=master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
-      - name: Install the gosmopolitan toolchain
+      # branch master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
+      - uses: wow-look-at-my/buildhost/.github/actions/buildhost-download@master
+        id: cosmo
+        with:
+          project: gosmopolitan
+          branch: master
+          executable: 'false'
+
+      - name: Unpack the gosmopolitan toolchain
         run: |
           mkdir -p "$RUNNER_TEMP/cosmo"
-          curl -fL --compressed \
-            "https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64" \
-            | tar -xz -C "$RUNNER_TEMP/cosmo"
+          tar -xzf "${{ steps.cosmo.outputs.path }}" -C "$RUNNER_TEMP/cosmo"
           echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
 
       # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
