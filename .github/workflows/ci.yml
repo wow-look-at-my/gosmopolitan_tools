@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  # internal/gcimporter compiles two ways, and a break in either half is invisible to the other.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      # A consumer bootstrapped by a stock Go compiles this module without the tag.
+      - name: Build and test under a stock Go
+        run: |
+          go build ./...
+          go test ./internal/gcimporter/... ./internal/pkgbits/...
+
+      # branch=master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
+      - name: Install the gosmopolitan toolchain
+        run: |
+          curl -fL --compressed \
+            "https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64" | tar -xz
+          echo "$PWD/go/bin" >> "$GITHUB_PATH"
+
+      # Under the tag the reader stores a parameter default and a readonly bit, which needs the fork's go/types.
+      - name: Build and test under the fork
+        env:
+          GOROOT: ${{ github.workspace }}/go
+          GOTOOLCHAIN: local
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          go version
+          go build -tags=gosmopolitan ./...
+          go test -tags=gosmopolitan ./internal/gcimporter/... ./internal/pkgbits/...
