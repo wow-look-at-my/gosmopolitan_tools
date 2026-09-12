@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   # internal/gcimporter compiles two ways, and a break in either half is invisible to the other.
@@ -25,6 +26,9 @@ jobs:
         run: |
           go build ./...
           go test ./internal/gcimporter/... ./internal/pkgbits/...
+
+      # The fork refuses a CI build with no shared cache, and this vends GO_BUILDCACHE_CONFIG.
+      - uses: wow-look-at-my/actions@secret-server#latest
 
       # branch=master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
       - name: Install the gosmopolitan toolchain
