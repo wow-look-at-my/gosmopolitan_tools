@@ -31,16 +31,19 @@ jobs:
       - uses: wow-look-at-my/actions@secret-server#latest
 
       # branch=master resolves the fork's head: a pin here would freeze this against a compiler that moved on.
+      # Unpacked outside the checkout: this module has its own go/ tree, and a GOROOT there joins ./...
       - name: Install the gosmopolitan toolchain
         run: |
+          mkdir -p "$RUNNER_TEMP/cosmo"
           curl -fL --compressed \
-            "https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64" | tar -xz
-          echo "$PWD/go/bin" >> "$GITHUB_PATH"
+            "https://dl.pazer.build/gosmopolitan?branch=master&os=linux&arch=amd64" \
+            | tar -xz -C "$RUNNER_TEMP/cosmo"
+          echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
 
       # Under the tag the reader stores a parameter default and a readonly bit, which needs the fork's go/types.
       - name: Build and test under the fork
         env:
-          GOROOT: ${{ github.workspace }}/go
+          GOROOT: ${{ runner.temp }}/cosmo/go
           GOTOOLCHAIN: local
           GOOS: linux
           GOARCH: amd64
