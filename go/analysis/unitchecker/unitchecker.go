@@ -25,6 +25,7 @@ package unitchecker
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
@@ -37,6 +38,7 @@ import (
 	"go/scanner"
 	"go/token"
 	"go/types"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -70,7 +72,7 @@ type Config struct {
 	ModuleVersion             string            // Deprecated: redundant w.r.t. Module.Version in go1.27; remove after go1.28.
 	Module                    *analysis.Module  // module information, if any
 	ImportMap                 map[string]string // maps import path to package path
-	PackageFile               map[string]string // (unused)
+	PackageFile               map[string]string // maps package path to its archive, read where the package has no vetx
 	Standard                  map[string]bool   // package belongs to standard library
 	PackageVetx               map[string]string // maps package path to file of fact information
 	VetxOnly                  bool              // run analysis only for facts, not diagnostics
@@ -312,11 +314,18 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		if pkg, ok := imports[path]; ok && pkg.Complete() {
 			return pkg, nil
 		}
-		entry, ok := vetxEntries[path]
+		if entry, ok := vetxEntries[path]; ok {
+			return gcimporter.IImportData(fset, imports, entry.types, path)
+		}
+		// A package this run did not vet has no vetx, and a package with no
+		// source cannot be vetted: a go command carrying its standard library
+		// holds compiled archives and nothing else. The compiler wrote that
+		// package's types into its archive, which is where they come from here.
+		archive, ok := cfg.PackageFile[path]
 		if !ok {
 			return nil, fmt.Errorf("no package vetx file for %q", path)
 		}
-		return gcimporter.IImportData(fset, imports, entry.types, path)
+		return importArchive(fset, imports, archive, path)
 	})
 
 	tc := &types.Config{
@@ -537,6 +546,28 @@ type result struct {
 type importerFunc func(path string) (*types.Package, error)
 
 func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
+
+// importArchive answers the types of the package at path, read from the export
+// data the compiler wrote into its archive. It is how a package with no vetx
+// file reaches the type checker, and it carries no facts: a package nothing
+// vetted produced none.
+func importArchive(fset *token.FileSet, imports map[string]*types.Package, archive, path string) (*types.Package, error) {
+	open, err := os.Open(archive)
+	if err != nil {
+		return nil, err
+	}
+	defer open.Close()
+	read := bufio.NewReader(open)
+	size, err := gcimporter.FindExportData(read)
+	if err != nil {
+		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
+	}
+	data := make([]byte, size)
+	if _, err := io.ReadFull(read, data); err != nil {
+		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
+	}
+	return gcimporter.IImportData(fset, imports, data, path)
+}
 
 // -- vetx file --
 
