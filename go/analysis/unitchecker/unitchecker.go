@@ -400,6 +400,12 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 			if pkgPath == "unsafe" {
 				return nil, nil
 			}
+			// A package whose types came from its archive was never vetted, so
+			// it produced no facts. That is the answer here, not an error: the
+			// error is for a package the build system should have vetted first.
+			if _, ok := cfg.PackageFile[pkgPath]; ok {
+				return nil, nil
+			}
 			return nil, fmt.Errorf("missing facts for %q", pkgPath)
 		}
 		return entry.facts, nil
