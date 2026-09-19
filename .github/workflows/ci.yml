@@ -34,7 +34,7 @@ jobs:
 
       # The toolchain runs a fetched module's own generate directives, confined, before it compiles the module.
       - name: Install the sandbox those directives run in
-        run: sudo apt-get install -y bubblewrap
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
 
       # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
       - name: Register the APE magic
