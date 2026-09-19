@@ -38,7 +38,6 @@ import (
 	"go/scanner"
 	"go/token"
 	"go/types"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -557,16 +556,15 @@ func importArchive(fset *token.FileSet, imports map[string]*types.Package, archi
 		return nil, err
 	}
 	defer open.Close()
-	read := bufio.NewReader(open)
-	size, err := gcimporter.FindExportData(read)
+	// The compiler has written unified export data since go1.20. The indexed
+	// format the vetx files carry is a different one, so this reader is not the
+	// one that reads them.
+	data, err := gcimporter.ReadUnified(bufio.NewReader(open))
 	if err != nil {
 		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
 	}
-	data := make([]byte, size)
-	if _, err := io.ReadFull(read, data); err != nil {
-		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
-	}
-	return gcimporter.IImportData(fset, imports, data, path)
+	_, pkg, err := gcimporter.UImportData(fset, imports, data, path)
+	return pkg, err
 }
 
 // -- vetx file --
