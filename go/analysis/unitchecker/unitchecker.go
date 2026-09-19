@@ -313,18 +313,21 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		if pkg, ok := imports[path]; ok && pkg.Complete() {
 			return pkg, nil
 		}
+		// The compiler's archive is what the package compiles to, so it is the
+		// whole package. A vetx file holds what the vet of that package type
+		// checked, which for a test build is the package without its in-package
+		// test files: an external test package reading a symbol from one finds
+		// it in the archive and not in the vetx.
+		if archive, ok := cfg.PackageFile[path]; ok {
+			return importArchive(fset, imports, archive, path)
+		}
+		// A go command carrying its standard library compiles nothing for a
+		// package it already holds, so that package has no archive. Its vetx
+		// carries the types instead.
 		if entry, ok := vetxEntries[path]; ok {
 			return gcimporter.IImportData(fset, imports, entry.types, path)
 		}
-		// A package this run did not vet has no vetx, and a package with no
-		// source cannot be vetted: a go command carrying its standard library
-		// holds compiled archives and nothing else. The compiler wrote that
-		// package's types into its archive, which is where they come from here.
-		archive, ok := cfg.PackageFile[path]
-		if !ok {
-			return nil, fmt.Errorf("no package vetx file for %q", path)
-		}
-		return importArchive(fset, imports, archive, path)
+		return nil, fmt.Errorf("no package file or vetx file for %q", path)
 	})
 
 	tc := &types.Config{
