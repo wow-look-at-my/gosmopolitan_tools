@@ -330,6 +330,20 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		return nil, fmt.Errorf("no package file or vetx file for %q", path)
 	})
 
+	// An external test package augments the package it tests, and that package's
+	// archive is the only place its in-package test files reach. Reading it
+	// first is what makes it the package every later archive resolves to. A
+	// package a reader materializes as another archive's dependency is a stub,
+	// and reading its own archive afterwards keeps the stub rather than filling
+	// it in, so the symbols an export_test.go declares never appear.
+	if under := strings.TrimSuffix(cfg.ImportPath, "_test"); under != cfg.ImportPath {
+		if archive, ok := cfg.PackageFile[under]; ok {
+			if _, err := importArchive(fset, imports, archive, under); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	tc := &types.Config{
 		Importer:  importer,
 		Sizes:     types.SizesFor("gc", build.Default.GOARCH),
