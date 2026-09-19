@@ -33,8 +33,7 @@ jobs:
           echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
 
       # The toolchain runs a fetched module's own generate directives, confined, before it compiles the module.
-      - name: Install the sandbox those directives run in
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - uses: wow-look-at-my/actions@bubblewrap#latest
 
       # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
       - name: Register the APE magic
