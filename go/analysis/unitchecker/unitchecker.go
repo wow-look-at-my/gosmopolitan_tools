@@ -38,7 +38,6 @@ import (
 	"go/scanner"
 	"go/token"
 	"go/types"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -314,19 +313,36 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		if pkg, ok := imports[path]; ok && pkg.Complete() {
 			return pkg, nil
 		}
+		// The compiler's archive is what the package compiles to, so it is the
+		// whole package. A vetx file holds what the vet of that package type
+		// checked, which for a test build is the package without its in-package
+		// test files: an external test package reading a symbol from one finds
+		// it in the archive and not in the vetx.
+		if archive, ok := cfg.PackageFile[path]; ok {
+			return importArchive(fset, imports, archive, path)
+		}
+		// A go command carrying its standard library compiles nothing for a
+		// package it already holds, so that package has no archive. Its vetx
+		// carries the types instead.
 		if entry, ok := vetxEntries[path]; ok {
 			return gcimporter.IImportData(fset, imports, entry.types, path)
 		}
-		// A package this run did not vet has no vetx, and a package with no
-		// source cannot be vetted: a go command carrying its standard library
-		// holds compiled archives and nothing else. The compiler wrote that
-		// package's types into its archive, which is where they come from here.
-		archive, ok := cfg.PackageFile[path]
-		if !ok {
-			return nil, fmt.Errorf("no package vetx file for %q", path)
-		}
-		return importArchive(fset, imports, archive, path)
+		return nil, fmt.Errorf("no package file or vetx file for %q", path)
 	})
+
+	// An external test package augments the package it tests, and that package's
+	// archive is the only place its in-package test files reach. Reading it
+	// first is what makes it the package every later archive resolves to. A
+	// package a reader materializes as another archive's dependency is a stub,
+	// and reading its own archive afterwards keeps the stub rather than filling
+	// it in, so the symbols an export_test.go declares never appear.
+	if under := strings.TrimSuffix(cfg.ImportPath, "_test"); under != cfg.ImportPath {
+		if archive, ok := cfg.PackageFile[under]; ok {
+			if _, err := importArchive(fset, imports, archive, under); err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	tc := &types.Config{
 		Importer:  importer,
@@ -399,6 +415,12 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		if !ok {
 			// no .vetx file, no facts
 			if pkgPath == "unsafe" {
+				return nil, nil
+			}
+			// A package whose types came from its archive was never vetted, so
+			// it produced no facts. That is the answer here, not an error: the
+			// error is for a package the build system should have vetted first.
+			if _, ok := cfg.PackageFile[pkgPath]; ok {
 				return nil, nil
 			}
 			return nil, fmt.Errorf("missing facts for %q", pkgPath)
@@ -557,16 +579,15 @@ func importArchive(fset *token.FileSet, imports map[string]*types.Package, archi
 		return nil, err
 	}
 	defer open.Close()
-	read := bufio.NewReader(open)
-	size, err := gcimporter.FindExportData(read)
+	// The compiler has written unified export data since go1.20. The indexed
+	// format the vetx files carry is a different one, so this reader is not the
+	// one that reads them.
+	data, err := gcimporter.ReadUnified(bufio.NewReader(open))
 	if err != nil {
 		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
 	}
-	data := make([]byte, size)
-	if _, err := io.ReadFull(read, data); err != nil {
-		return nil, fmt.Errorf("reading export data of %q: %w", path, err)
-	}
-	return gcimporter.IImportData(fset, imports, data, path)
+	_, pkg, err := gcimporter.UImportData(fset, imports, data, path)
+	return pkg, err
 }
 
 // -- vetx file --
