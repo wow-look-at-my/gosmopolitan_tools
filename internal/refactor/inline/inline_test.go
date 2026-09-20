@@ -2143,3 +2143,26 @@ func applyEdits(pkg *types.Package, fileStart token.Pos, content []byte, edits [
 	}
 	return []byte(got), nil
 }
+
+func TestParamDefaults(t *testing.T) {
+	runTests(t, []testcase{
+		{
+			"Call omitting every defaulted argument.",
+			`func f(s string = "hi", n int = 2, b bool = true) { print(s, n, b) }`,
+			`func _() { f() }`,
+			`func _() { print("hi", 2, true) }`,
+		},
+		{
+			"Call omitting a suffix of the defaulted arguments.",
+			`func f(s string = "hi", n int = 2) { print(s, n) }`,
+			`func _() { f("bye") }`,
+			`func _() { print("bye", 2) }`,
+		},
+		{
+			"A call that passes everything is unaffected.",
+			`func f(s string = "hi", n int = 2) { print(s, n) }`,
+			`func _() { f("bye", 3) }`,
+			`func _() { print("bye", 3) }`,
+		},
+	})
+}
