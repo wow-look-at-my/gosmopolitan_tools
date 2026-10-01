@@ -29,6 +29,7 @@ jobs:
           tar -xzf "${{ steps.cosmo.outputs.path }}" -C "$RUNNER_TEMP/cosmo"
           echo "$RUNNER_TEMP/cosmo/go/bin" >> "$GITHUB_PATH"
 
+      # The toolchain runs a fetched module's own generate directives, confined, before it compiles the module.
       - uses: wow-look-at-my/actions@bubblewrap#latest
 
       # One binfmt_misc entry hands the APE header to /bin/sh, so a test binary execs directly.
