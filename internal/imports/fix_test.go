@@ -1630,9 +1630,8 @@ import "bytes"
 var _ = bytes.Buffer
 `
 	// Force a scan of the stdlib.
-	savedStdlib := stdlib.PackageSymbols
-	defer func() { stdlib.PackageSymbols = savedStdlib }()
-	stdlib.PackageSymbols = nil
+	savedStdlib := stdlib.SetPackageSymbols(nil)
+	defer stdlib.SetPackageSymbols(savedStdlib)
 
 	testConfig{
 		module: packagestest.Module{

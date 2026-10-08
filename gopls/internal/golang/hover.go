@@ -1555,7 +1555,7 @@ func StdSymbolOf(obj types.Object) *stdlib.Symbol {
 
 	// Symbols that not defined in standard library should return early.
 	// TODO(hxjiang): The returned slices is binary searchable.
-	symbols := stdlib.PackageSymbols[obj.Pkg().Path()]
+	symbols := stdlib.PackageSymbols()[obj.Pkg().Path()]
 	if symbols == nil {
 		return nil
 	}

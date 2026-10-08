@@ -6,7 +6,8 @@
 
 package stdlib
 
-var PackageSymbols = map[string][]Symbol{
+func packageSymbols() map[string][]Symbol {
+	return map[string][]Symbol{
 	"archive/tar": {
 		{"(*Header).FileInfo", Method, 1, ""},
 		{"(*Reader).Next", Method, 0, ""},
@@ -18612,4 +18613,5 @@ var PackageSymbols = map[string][]Symbol{
 		{"Make", Func, 24, "func[T any](ptr *T) Pointer[T]"},
 		{"Pointer", Type, 24, ""},
 	},
+}
 }

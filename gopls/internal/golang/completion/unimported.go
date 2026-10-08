@@ -175,7 +175,7 @@ func (c *completer) findPackageIDs(pkgname metadata.PackageName) (wsIDs, thisPkg
 // find all the stdlib packages that have the desired name
 func (c *completer) stdlibPkgs(pkgname metadata.PackageName) []metadata.PackagePath {
 	var pkgs []metadata.PackagePath // stlib packages that match pkg
-	for pkgpath := range stdlib.PackageSymbols {
+	for pkgpath := range stdlib.PackageSymbols() {
 		v := metadata.PackageName(path.Base(pkgpath))
 		if v == pkgname {
 			pkgs = append(pkgs, metadata.PackagePath(pkgpath))
@@ -261,7 +261,7 @@ func (c *completer) stdlibMatches(pkgs []metadata.PackagePath, pkg metadata.Pack
 	// avoid non-determinacy, especially for marker tests
 	slices.Sort(pkgs)
 	for _, candpkg := range pkgs {
-		if std, ok := stdlib.PackageSymbols[string(candpkg)]; ok {
+		if std, ok := stdlib.PackageSymbols()[string(candpkg)]; ok {
 			for _, sym := range std {
 				if !usefulCompletion(sym.Name, pattern) {
 					continue
