@@ -5,10 +5,58 @@
 package analyzerutil_test
 
 import (
+	"go/parser"
+	"go/token"
+	"strings"
 	"testing"
 
 	"golang.org/x/tools/internal/analysis/analyzerutil"
 )
+
+// ExtractDoc reads a line-comment doc without the parser. Its answer is the
+// parser's, whatever the comment holds: a directive, runs of blank lines,
+// or trailing space. This also covers a tab after the package keyword, or a
+// block comment.
+func TestExtractDocMatchesTheParser(t *testing.T) {
+	for _, content := range []string{
+		"// Package p\n//\n// # Analyzer foo\n//\n// foo: a summary  \n//\n//\n//\n// more\n//go:generate nothing\n// last\npackage p\n",
+		"// Copyright\n\n//go:build tag\n\n//Package p\n//\n//# Analyzer foo\n//\n//foo: a summary\n//  indented\n//\tline\npackage\tp\n",
+		"/*\nPackage p\n\n# Analyzer foo\n\nfoo: a summary\n*/\npackage p\n",
+		"// Package p\n//\n// # Analyzer foo\n//\n// foo: a summary\n//\n// # Analyzer bar\n//\n// bar: another\npackage p\n",
+	} {
+		for _, name := range []string{"foo", "bar", "nope"} {
+			got, err := analyzerutil.ExtractDoc(content, name)
+			if err != nil {
+				got = "error: " + err.Error()
+			}
+			want := parserExtractDoc(content, name)
+			if got != want {
+				t.Errorf("ExtractDoc(%q) on <<%s>> returned <<%s>>, the parser gives <<%s>>", name, content, got, want)
+			}
+		}
+	}
+}
+
+// parserExtractDoc is ExtractDoc as the parser answers it.
+func parserExtractDoc(content, name string) string {
+	f, err := parser.ParseFile(token.NewFileSet(), "", content, parser.ParseComments|parser.PackageClauseOnly)
+	if err != nil {
+		return "error: not a Go source file"
+	}
+	for section := range strings.SplitSeq(f.Doc.Text(), "\n# ") {
+		if body := strings.TrimPrefix(section, "Analyzer "+name); body != section &&
+			body != "" &&
+			body[0] == '\r' || body[0] == '\n' {
+			body = strings.TrimSpace(body)
+			rest := strings.TrimPrefix(body, name+":")
+			if rest == body {
+				return "error: 'Analyzer " + name + "' heading not followed by '" + name + ": summary...' line"
+			}
+			return strings.TrimSpace(rest)
+		}
+	}
+	return "error: package doc comment contains no 'Analyzer " + name + "' heading"
+}
 
 func TestExtractDoc(t *testing.T) {
 	const multi = `// Copyright
