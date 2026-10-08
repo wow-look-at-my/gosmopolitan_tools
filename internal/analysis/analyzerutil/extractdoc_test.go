@@ -22,6 +22,10 @@ func TestExtractDocMatchesTheParser(t *testing.T) {
 		"// Package p\n//\n// # Analyzer foo\n//\n// foo: a summary  \n//\n//\n//\n// more\n//go:generate nothing\n// last\npackage p\n",
 		"// Copyright\n\n//go:build tag\n\n//Package p\n//\n//# Analyzer foo\n//\n//foo: a summary\n//  indented\n//\tline\npackage\tp\n",
 		"/*\nPackage p\n\n# Analyzer foo\n\nfoo: a summary\n*/\npackage p\n",
+		"// Copyright\n\n/*\nPackage p\n\n\n# Analyzer foo\n\nfoo: a summary  \n\twg.Go(func(){ ... })\n*/\npackage p\n",
+		"/* Package p */\n/*\n# Analyzer foo\n\nfoo: a summary\n*/\npackage p\n",
+		"/*\nPackage p\n\n# Analyzer foo\n\nfoo: a summary\n*/\n\npackage p\n",
+		"/*\nPackage p\n\n# Analyzer foo\n\nfoo: a summary\n*/ var x = 1\npackage p\n",
 		"// Package p\n//\n// # Analyzer foo\n//\n// foo: a summary\n//\n// # Analyzer bar\n//\n// bar: another\npackage p\n",
 	} {
 		for _, name := range []string{"foo", "bar", "nope"} {
@@ -42,6 +46,9 @@ func parserExtractDoc(content, name string) string {
 	f, err := parser.ParseFile(token.NewFileSet(), "", content, parser.ParseComments|parser.PackageClauseOnly)
 	if err != nil {
 		return "error: not a Go source file"
+	}
+	if f.Doc == nil {
+		return "error: Go source file has no package doc comment"
 	}
 	for section := range strings.SplitSeq(f.Doc.Text(), "\n# ") {
 		if body := strings.TrimPrefix(section, "Analyzer "+name); body != section &&

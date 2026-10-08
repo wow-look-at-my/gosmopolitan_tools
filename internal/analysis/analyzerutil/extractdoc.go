@@ -9,7 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"strings"
-	"unicode"
+	"sync"
 )
 
 // MustExtractDoc is like [ExtractDoc] but it panics on error.
@@ -90,7 +90,7 @@ func ExtractDoc(content, name string) (string, error) {
 	if content == "" {
 		return "", fmt.Errorf("empty Go source file")
 	}
-	text, found := lineCommentDoc(content)
+	text, found := docText(content)
 	if !found {
 		// A doc comment in another shape, such as a block comment, which the parser reads.
 		fset := token.NewFileSet()
@@ -118,12 +118,28 @@ func ExtractDoc(content, name string) (string, error) {
 	return "", fmt.Errorf("package doc comment contains no 'Analyzer %s' heading", name)
 }
 
+// docTexts holds the doc text of each file content read so far.
+var docTexts sync.Map
+
+// docText is lineCommentDoc, answered once per file content.
+func docText(content string) (text string, found bool) {
+	if cached, ok := docTexts.Load(content); ok {
+		return cached.(string), true
+	}
+	text, found = lineCommentDoc(content)
+	if found {
+		docTexts.Store(content, text)
+	}
+	return text, found
+}
+
 // lineCommentDoc reads the package doc comment of a file whose doc is a run
-// of line comments right before the package clause. It answers its text the
-// way [ast.CommentGroup.Text] does. It reads no further than the package
-// clause, and parses nothing: every analyzer calls ExtractDoc at init. A
-// parse of each doc.go is most of what a tool pays to start. found is false
-// for a file this reader does not recognize, which the parser then reads.
+// of comments, each starting a line, right before the package clause. It
+// answers its text the way [ast.CommentGroup.Text] does. It reads no
+// further than the package clause, and parses nothing: every analyzer calls
+// ExtractDoc at init. A parse of each doc.go is most of what a tool pays to
+// start. found is false for a file this reader does not recognize, which
+// the parser then reads.
 func lineCommentDoc(content string) (text string, found bool) {
 	var lines []string
 	for rest := content; ; {
@@ -131,12 +147,37 @@ func lineCommentDoc(content string) (text string, found bool) {
 		rest = after
 		switch {
 		case strings.HasPrefix(line, "//"):
-			if !isDirective(line[2:]) {
-				lines = append(lines, strings.TrimRightFunc(strings.TrimPrefix(line[2:], " "), unicode.IsSpace))
+			body := line[2:]
+			if body == "" || body[0] == ' ' {
+				lines = append(lines, stripTrailingWhitespace(strings.TrimPrefix(body, " ")))
+			} else if !isDirective(body) {
+				lines = append(lines, stripTrailingWhitespace(body))
+			}
+		case strings.HasPrefix(line, "/*"):
+			body, tail, closed := strings.Cut(line[2:], "*/")
+			if !closed {
+				if !more {
+					return "", false
+				}
+				inner, afterClose, closed := strings.Cut(rest, "*/")
+				if !closed {
+					return "", false
+				}
+				body += "\n" + inner
+				tail, rest, more = strings.Cut(afterClose, "\n")
+			}
+			if strings.TrimSpace(tail) != "" {
+				return "", false
+			}
+			for bodyLine := range strings.SplitSeq(body, "\n") {
+				lines = append(lines, stripTrailingWhitespace(bodyLine))
 			}
 		case strings.TrimSpace(line) == "":
 			lines = nil
 		case strings.HasPrefix(line, "package ") || strings.HasPrefix(line, "package\t"):
+			if len(lines) == 0 {
+				return "", false
+			}
 			return commentText(lines), true
 		default:
 			return "", false
@@ -145,6 +186,11 @@ func lineCommentDoc(content string) (text string, found bool) {
 			return "", false
 		}
 	}
+}
+
+// stripTrailingWhitespace is what [ast.CommentGroup.Text] trims from a line.
+func stripTrailingWhitespace(s string) string {
+	return strings.TrimRight(s, " \t")
 }
 
 // commentText joins the lines of a comment the way [ast.CommentGroup.Text]
