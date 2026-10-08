@@ -377,7 +377,7 @@ func methodGoVersion(pkgpath, recvtype, method string) (stdlib.Version, error) {
 	// TODO(adonovan): opt: this might be inefficient for large packages
 	// like go/types. If so, memoize using a map (and kill two birds with
 	// one stone by also memoizing the 'within' check above).
-	for _, sym := range stdlib.PackageSymbols[pkgpath] {
+	for _, sym := range stdlib.PackageSymbols()[pkgpath] {
 		if sym.Kind == stdlib.Method {
 			_, recv, name := sym.SplitMethod()
 			if recv == recvtype && name == method {

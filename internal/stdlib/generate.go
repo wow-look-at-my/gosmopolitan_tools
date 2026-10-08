@@ -241,7 +241,8 @@ func manifest(apidir string) {
 
 package stdlib
 
-var PackageSymbols = map[string][]Symbol{
+func packageSymbols() map[string][]Symbol {
+	return map[string][]Symbol{
 `)
 
 	for _, path := range sortedKeys(pkgs) {
@@ -254,7 +255,7 @@ var PackageSymbols = map[string][]Symbol{
 		}
 		fmt.Fprintln(&buf, "},")
 	}
-	fmt.Fprintln(&buf, "}")
+	fmt.Fprintln(&buf, "}\n}")
 	fmtbuf, err := format.Source(buf.Bytes())
 	if err != nil {
 		log.Fatal(err)

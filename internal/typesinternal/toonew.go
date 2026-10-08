@@ -31,7 +31,7 @@ func TooNewStdSymbols(pkg *types.Package, version string) map[types.Object]stdli
 	}
 
 	// Pass 1: package-level symbols.
-	symbols := stdlib.PackageSymbols[pkg.Path()]
+	symbols := stdlib.PackageSymbols()[pkg.Path()]
 	for _, sym := range symbols {
 		if versions.Before(version, sym.Version.String()) {
 			switch sym.Kind {
