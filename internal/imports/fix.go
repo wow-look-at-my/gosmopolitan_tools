@@ -525,7 +525,7 @@ func (p *pass) assumeSiblingImportsValid() {
 		}
 		for left, rights := range refs {
 			if imp, ok := importsByName[left]; ok {
-				if m, ok := stdlib.PackageSymbols[imp.ImportPath]; ok {
+				if m, ok := stdlib.PackageSymbols()[imp.ImportPath]; ok {
 					// We have the stdlib in memory; no need to guess.
 					rights = symbolNameSet(m)
 				}
@@ -714,7 +714,7 @@ func getCandidatePkgs(ctx context.Context, wrappedCallback *scanCallback, filena
 	dupCheck := map[string]struct{}{}
 
 	// Start off with the standard library.
-	for importPath, symbols := range stdlib.PackageSymbols {
+	for importPath, symbols := range stdlib.PackageSymbols() {
 		p := &pkg{
 			dir:             filepath.Join(goenv["GOROOT"], "src", importPath),
 			importPathShort: importPath,
@@ -1150,7 +1150,7 @@ func addStdlibCandidates(pass *pass, refs References) error {
 		if path.Base(pkg) == pass.f.Name.Name && filepath.Join(pass.goroot, "src", pkg) == pass.srcDir {
 			return
 		}
-		exports := symbolNameSet(stdlib.PackageSymbols[pkg])
+		exports := symbolNameSet(stdlib.PackageSymbols()[pkg])
 		pass.addCandidate(
 			&ImportInfo{ImportPath: pkg},
 			&PackageInfo{Name: localbase(pkg), Exports: exports})
@@ -1169,7 +1169,7 @@ func addStdlibCandidates(pass *pass, refs References) error {
 			add("math/rand")
 			continue
 		}
-		for importPath := range stdlib.PackageSymbols {
+		for importPath := range stdlib.PackageSymbols() {
 			if path.Base(importPath) == left {
 				add(importPath)
 			}

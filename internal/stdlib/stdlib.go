@@ -12,6 +12,7 @@ package stdlib
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type Symbol struct {
@@ -68,10 +69,30 @@ func init() {
 	}
 }
 
+var (
+	packageSymbolsOnce sync.Once
+	packageSymbolsMap  map[string][]Symbol
+)
+
+// PackageSymbols answers the symbols of every standard library package, by
+// import path.
+func PackageSymbols() map[string][]Symbol {
+	packageSymbolsOnce.Do(func() { packageSymbolsMap = packageSymbols() })
+	return packageSymbolsMap
+}
+
+// SetPackageSymbols replaces the map PackageSymbols answers, and returns the
+// one. A test sets nil to make a reader scan GOROOT instead.
+func SetPackageSymbols(symbols map[string][]Symbol) (previous map[string][]Symbol) {
+	packageSymbolsOnce.Do(func() {})
+	previous, packageSymbolsMap = packageSymbolsMap, symbols
+	return previous
+}
+
 // HasPackage reports whether the specified package path is part of
 // the standard library's public API.
 func HasPackage(path string) bool {
-	_, ok := PackageSymbols[path]
+	_, ok := PackageSymbols()[path]
 	return ok
 }
 
