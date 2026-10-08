@@ -1081,3 +1081,55 @@ func TestGenericMethods(t *testing.T) {
 	compilePkg(t, srcdir, "a.go", testoutdir, nil, apkg(testoutdir))
 	compile(t, testoutdir, bpath, testoutdir, map[string]string{apkg(testoutdir): filepath.Join(testoutdir, "a.o")})
 }
+
+// TestParamDefaultsShallow checks that a parameter's default survives the
+// shallow export data gopls caches packages in. Without it a caller in
+// another package sees a parameter it must pass, and the call the user
+// wrote is reported as missing an argument.
+func TestParamDefaultsShallow(t *testing.T) {
+	const src = `package p
+
+type Level int
+
+func Greet(name string = "world", n int = 3, loud bool = true, lvl Level = 2) string { return name }
+
+func Plain(name string) string { return name }
+`
+	fset := token.NewFileSet()
+	f, err := goparser.ParseFile(fset, "p.go", src, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg1, err := (&types.Config{}).Check("p", fset, []*ast.File{f}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := gcimporter.IExportShallow(fset, pkg1, nil)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	imports := make(map[string]*types.Package)
+	pkg2, err := gcimporter.IImportShallow(fset, gcimporter.GetPackagesFromMap(imports), data, "p", nil)
+	if err != nil {
+		t.Fatalf("import: %v", err)
+	}
+
+	params := pkg2.Scope().Lookup("Greet").Type().(*types.Signature).Params()
+	want := []string{`"world"`, "3", "true", "2"}
+	for i, want := range want {
+		deflt := params.At(i).Default()
+		if deflt == nil {
+			t.Errorf("parameter %s lost its default", params.At(i).Name())
+			continue
+		}
+		if got := deflt.ExactString(); got != want {
+			t.Errorf("parameter %s default = %s, want %s", params.At(i).Name(), got, want)
+		}
+	}
+
+	plain := pkg2.Scope().Lookup("Plain").Type().(*types.Signature).Params()
+	if deflt := plain.At(0).Default(); deflt != nil {
+		t.Errorf("parameter without a default came back with %s", deflt.ExactString())
+	}
+}
