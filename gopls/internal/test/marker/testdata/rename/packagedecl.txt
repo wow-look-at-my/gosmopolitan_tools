@@ -15,10 +15,6 @@ It tests the following:
 -- flags --
 -ignore_extra_diags
 
--- go.work --
-use .
-use ./othermoddir
-
 -- go.mod --
 module golang.org/lsptests/rename
 

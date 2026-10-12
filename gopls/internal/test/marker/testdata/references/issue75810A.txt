@@ -1,11 +1,6 @@
 Find references to example.com/b, but not to example.com/b/x
--- go.work --
-go 1.22
-
-use ./a
-use ./b
-use ./b/x
-use ./c
+-- settings.json --
+{"includeReplaceInWorkspace": true}
 
 -- a/go.mod --
 module example.com/a
@@ -13,6 +8,12 @@ module example.com/a
 go 1.22
 
 require example.com/b v0.0.1 //@ refs("/b", bmod, a_b, a2_b, a3_b)
+
+require example.com/b/x v0.0.1
+
+replace example.com/b => ../b
+
+replace example.com/b/x => ../b/x
 -- a/a.go --
 package a
 
@@ -65,6 +66,12 @@ go 1.22
 
 require example.com/a v0.0.1
 require example.com/b v0.0.1 //@ refs("/b", bmod, c_b)
+
+replace example.com/a => ../a
+
+replace example.com/b => ../b
+
+replace example.com/b/x => ../b/x
 -- c/c.go --
 package c
 

@@ -16,11 +16,9 @@ import (
 	. "golang.org/x/tools/gopls/internal/test/integration"
 )
 
-func TestAddAndRemoveGoWork(t *testing.T) {
-	// Use a workspace with a module in the root directory to exercise the case
-	// where a go.work is added to the existing root directory. This verifies
-	// that we're detecting changes to the module source, not just the root
-	// directory.
+func TestGoWorkIgnored(t *testing.T) {
+	// A go.work file added to or removed from the root directory does not
+	// change the views: each module stays its own view.
 	const nomod = `
 -- go.mod --
 module a.com
@@ -73,13 +71,10 @@ use (
 	b
 )
 `)
-		env.AfterChange(NoDiagnostics())
-		checkViews(summary(cache.GoWorkView, ".", "."))
+		env.AfterChange()
+		checkViews(summary(cache.GoModView, ".", "."), summary(cache.GoModView, "b", "."))
 
-		// Removing the go.work file should put us back where we started.
 		env.RemoveWorkspaceFile("go.work")
-
-		// Again, zero-config gopls makes this work.
 		env.AfterChange(
 			NoDiagnostics(ForFile("main.go")),
 			NoDiagnostics(env.AtRegexp("b/main.go", "package (main)")),

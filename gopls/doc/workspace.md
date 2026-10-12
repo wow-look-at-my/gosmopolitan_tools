@@ -13,40 +13,25 @@ gopls needs to infer from the LSP workspace which  `go build` invocations you
 would use to build your workspace, including the working directory,
 environment, and build flags.
 
-In the past, it could be tricky to set up your workspace so that gopls would
-infer the correct build information. It required opening the correct directory
-or using a `go.work` file to tell gopls about the modules you're working on,
-and configuring the correct operating system and architecture in advance.
-When this didn't work as expected, gopls would often fail in mysterious
-ways--the dreaded "No packages found" error.
-
-Starting with gopls v0.15.0, workspace configuration is much simpler, and gopls
-will typically work when you open a Go file anywhere in your workspace. If it
-isn't working for you, or if you want to better understand how gopls models
-your workspace, please read on.
+Gopls typically works when you open a Go file anywhere in your workspace. If it does not work for you, or if you want to better understand how gopls models your workspace, please read on.
 
 ## Workspace builds
 
-Starting with gopls v0.15.0, gopls will guess the builds you are working on
-based on the set of open files. When you open a file in a workspace folder,
-gopls checks whether the file is contained in a module, `go.work` workspace, or
-GOPATH directory, and configures the build accordingly. Additionally, if you
+Gopls guesses the builds you are working on based on the set of open files.
+When you open a file in a workspace folder, gopls checks whether the file is
+contained in a module or GOPATH directory, and configures the build
+accordingly. Each module is its own build. Gopls ignores `go.work` files.
+Additionally, if you
 open a file that is constrained to a different operating system or
 architecture, for example opening `foo_windows.go` when working on Linux, gopls
 will create a scope with `GOOS` and `GOARCH` set to a value that matches the
 file.
 
-For example, suppose we had a repository with three modules: `moda`, `modb`,
-and `modc`, and a `go.work` file using modules `moda` and `modb`. If we open
-the files `moda/a.go`, `modb/b.go`, `moda/a_windows.go`, and `modc/c.go`, gopls
-will automatically create three builds:
+For example, suppose we had a repository with multiple modules: `moda`, `modb`, and `modc`. If we open the files `moda/a.go`, `modb/b.go`, `moda/a_windows.go`, and `modc/c.go`, gopls automatically creates a build for each module, and a separate Windows build for `moda`.
 
-![Zero Config gopls](assets/zeroconfig.png)
+This allows gopls to _just work_ when you open a Go file. However, it does come with several caveats:
 
-This allows gopls to _just work_ when you open a Go file, but it does come with
-several caveats:
-
-- It causes gopls to do more work, since it is now tracking three builds
+- It causes gopls to do more work, since it tracks several builds
   instead of one. However, the recent
   [scalability redesign](https://go.dev/blog/gopls-scalability)
   allows much of this work to be avoided through efficient caching.
@@ -79,40 +64,9 @@ Please provide feedback on this behavior by upvoting or commenting the issues
 mentioned above, or opening a [new issue](https://go.dev/issue/new) for other
 improvements you'd like to see.
 
-## When to use a `go.work` file for development
+## Working on several modules together
 
-Starting with Go 1.18, the `go` command has built-in support for multi-module
-workspaces specified by [`go.work`](https://go.dev/ref/mod#workspaces) files.
-Gopls will recognize these files if they are present in your workspace.
-
-Use a `go.work` file when:
-
-- you want to work on multiple modules simultaneously in a single logical
-  build, for example if you want changes to one module to be reflected in
-  another.
-- you want to improve gopls' memory usage or performance by reducing the number
-  of builds it must track.
-- you want gopls to know which modules you are working on in a multi-module
-  workspace, without opening any files. For example, it may be convenient to use
-  `workspace/symbol` queries before any files are open.
-- you are using gopls v0.14.2 or earlier, and want to work on multiple
-  modules.
-
-For example, suppose this repo is checked out into the `$WORK/tools` directory,
-and [`x/mod`](https://pkg.go.dev/golang.org/x/mod) is checked out into
-`$WORK/mod`, and you are working on a new `x/mod` API for editing `go.mod`
-files that you want to simultaneously integrate into gopls.
-
-You can work on both `golang.org/x/tools/gopls` and `golang.org/x/mod`
-simultaneously by creating a `go.work` file:
-
-```sh
-cd $WORK
-go work init
-go work use tools/gopls mod
-```
-
-then opening the `$WORK` directory in your editor.
+Gopls does not read `go.work` files. The `go` command does not support them. Add a `replace` directive with a local path to the go.mod file of the module that uses it. Do this to make changes in one module visible in another. With the [`"build.includeReplaceInWorkspace"`](https://github.com/golang/tools/blob/master/gopls/doc/settings.md#includereplaceinworkspace) setting, gopls treats locally replaced modules as workspace modules.
 
 ## When to manually configure `GOOS`, `GOARCH`, or `-tags`
 

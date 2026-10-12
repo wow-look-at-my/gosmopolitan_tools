@@ -688,7 +688,7 @@ func isWorkspacePackageLocked(ctx context.Context, s *Snapshot, meta *metadata.G
 	// expandWorkspaceToModule is unset, workspace packages must be contained in
 	// the workspace folder.
 	//
-	// For module views (of type GoMod or GoWork), packages must in any case be
+	// For module views (of type GoMod), packages must in any case be
 	// in a workspace module (enforced below).
 	if !s.view.typ.usesModules() || !s.Options().ExpandWorkspaceToModule {
 		folder := s.view.folder.Dir.Path()

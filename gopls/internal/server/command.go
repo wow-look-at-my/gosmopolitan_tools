@@ -118,7 +118,6 @@ func (h *commandHandler) Modules(ctx context.Context, args command.ModulesArgs) 
 	}
 
 	// Views may include:
-	//   - go.work views containing one or more modules each;
 	//   - go.mod views containing a single module each;
 	//   - GOPATH and/or ad hoc views containing no modules.
 	//
@@ -890,7 +889,6 @@ func (c *commandHandler) GoGetPackage(ctx context.Context, args command.GoGetPac
 
 		inv, cleanupInvocation, err := snapshot.GoCommandInvocation(cache.NetworkOK, modURI.DirPath(), "list",
 			[]string{"-f", "{{.Module.Path}}@{{.Module.Version}}", "-mod=mod", "-modfile=" + filepath.Join(tempDir, "go.mod"), args.Pkg},
-			"GOWORK=off",
 		)
 		if err != nil {
 			return err
@@ -1472,87 +1470,6 @@ func collectPackageStats(mps []*metadata.Package) command.PackageStats {
 	stats.Modules = len(modules)
 
 	return stats
-}
-
-// RunGoWorkCommand invokes `go work <args>` with the provided arguments.
-//
-// args.InitFirst controls whether to first run `go work init`. This allows a
-// single command to both create and recursively populate a go.work file -- as
-// of writing there is no `go work init -r`.
-//
-// Some thought went into implementing this command. Unlike the go.mod commands
-// above, this command simply invokes the go command and relies on the client
-// to notify gopls of file changes via didChangeWatchedFile notifications.
-// We could instead run these commands with GOWORK set to a temp file, but that
-// poses the following problems:
-//   - directory locations in the resulting temp go.work file will be computed
-//     relative to the directory containing that go.work. If the go.work is in a
-//     tempdir, the directories will need to be translated to/from that dir.
-//   - it would be simpler to use a temp go.work file in the workspace
-//     directory, or whichever directory contains the real go.work file, but
-//     that sets a bad precedent of writing to a user-owned directory. We
-//     shouldn't start doing that.
-//   - Sending workspace edits to create a go.work file would require using
-//     the CreateFile resource operation, which would need to be tested in every
-//     client as we haven't used it before. We don't have time for that right
-//     now.
-//
-// Therefore, we simply require that the current go.work file is saved (if it
-// exists), and delegate to the go command.
-func (c *commandHandler) RunGoWorkCommand(ctx context.Context, args command.RunGoWorkArgs) error {
-	return c.run(ctx, commandConfig{
-		progress: "Running go work command",
-		forView:  args.ViewID,
-	}, func(ctx context.Context, deps commandDeps) (runErr error) {
-		snapshot := deps.snapshot
-		view := snapshot.View()
-		viewDir := snapshot.Folder().Path()
-
-		if view.Type() != cache.GoWorkView && view.GoWork() != "" {
-			// If we are not using an existing go.work file, GOWORK must be explicitly off.
-			// TODO(rfindley): what about GO111MODULE=off?
-			return fmt.Errorf("cannot modify go.work files when GOWORK=off")
-		}
-
-		var gowork string
-		// If the user has explicitly set GOWORK=off, we should warn them
-		// explicitly and avoid potentially misleading errors below.
-		if view.GoWork() != "" {
-			gowork = view.GoWork().Path()
-			fh, err := snapshot.ReadFile(ctx, view.GoWork())
-			if err != nil {
-				return err // e.g. canceled
-			}
-			if !fh.SameContentsOnDisk() {
-				return fmt.Errorf("must save workspace file %s before running go work commands", view.GoWork())
-			}
-		} else {
-			if !args.InitFirst {
-				// If go.work does not exist, we should have detected that and asked
-				// for InitFirst.
-				return bug.Errorf("internal error: cannot run go work command: required go.work file not found")
-			}
-			gowork = filepath.Join(viewDir, "go.work")
-			if err := c.invokeGoWork(ctx, viewDir, gowork, []string{"init"}); err != nil {
-				return fmt.Errorf("running `go work init`: %v", err)
-			}
-		}
-
-		return c.invokeGoWork(ctx, viewDir, gowork, args.Args)
-	})
-}
-
-func (c *commandHandler) invokeGoWork(ctx context.Context, viewDir, gowork string, args []string) error {
-	inv := gocommand.Invocation{
-		Verb:       "work",
-		Args:       args,
-		WorkingDir: viewDir,
-		Env:        append(os.Environ(), fmt.Sprintf("GOWORK=%s", gowork)),
-	}
-	if _, err := c.s.session.GoCommandRunner().Run(ctx, inv); err != nil {
-		return fmt.Errorf("running go work command: %v", err)
-	}
-	return nil
 }
 
 // showMessage causes the client to show a progress or error message.

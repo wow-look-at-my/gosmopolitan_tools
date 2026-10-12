@@ -1,9 +1,5 @@
--- go.work --
-go 1.22
-
-use ./a
-use ./b
-use ./c
+-- settings.json --
+{"includeReplaceInWorkspace": true}
 
 -- a/go.mod --
 module example.com/a
@@ -11,6 +7,8 @@ module example.com/a
 go 1.22
 
 require example.com/b v0.0.1 //@ refs("/b", bmod, a_b, a2_b, a3_b)
+
+replace example.com/b => ../b
 
 -- a/a.go --
 package a
@@ -50,6 +48,10 @@ go 1.22
 
 require example.com/a v0.0.1
 require example.com/b v0.0.1 //@ refs("/b",bmod, c_b)
+
+replace example.com/a => ../a
+
+replace example.com/b => ../b
 -- c/c.go --
 package c
 

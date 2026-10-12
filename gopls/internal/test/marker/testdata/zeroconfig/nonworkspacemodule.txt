@@ -1,13 +1,5 @@
-This test checks that gopls works with modules that aren't included in the
-workspace file.
-
--- go.work --
-go 1.20
-
-use (
-	./a
-	./b
-)
+This test checks that gopls works with several modules in one workspace
+folder.
 
 -- a/go.mod --
 module golang.org/lsptests/a

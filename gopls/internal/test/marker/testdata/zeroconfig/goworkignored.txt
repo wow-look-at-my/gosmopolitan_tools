@@ -1,0 +1,44 @@
+This test checks that gopls ignores a go.work file. The go.work file uses
+module b, but the view for module a holds only a's go.mod file.
+
+-- flags --
+-mcp
+-min_go_command=go1.23
+
+-- go.work --
+go 1.23.0
+
+use (
+	./a
+	./b
+)
+
+-- a/go.mod --
+module example.com/a
+
+go 1.23.0
+
+//@mcptool("go_workspace", `{}`, output=workspace)
+
+-- a/a.go --
+package a
+
+-- b/go.mod --
+module example.com/b
+
+go 1.23.0
+
+-- b/b.go --
+package b
+
+var B int
+
+-- @workspace --
+The `$WORKDIR` directory is an ad-hoc Go package, not in a Go module.
+
+The `$WORKDIR/a` directory uses Go modules, with the following main modules:
+	$WORKDIR/a/go.mod (module example.com/a)
+
+The `$WORKDIR/b` directory uses Go modules, with the following main modules:
+	$WORKDIR/b/go.mod (module example.com/b)
+

@@ -102,10 +102,9 @@ The cache also defines gopls's [go/analysis] driver, which runs
 modular analysis (similar to `go vet`) across the workspace.
 Gopls also includes a number of analysis passes that are not part of vet.
 
-The next layer defines four packages, each for handling files in a
+The next layer defines packages, each for handling files in a
 particular language:
 [mod] for go.mod files;
-[work] for go.work files;
 [template] for files in `text/template` syntax; and
 [golang], for files in Go itself.
 This package, by far the largest, provides the main features of gopls:
@@ -114,7 +113,7 @@ As most users imagine it, this package _is_ gopls.
 
 The [server] package defines the LSP service implementation, with one
 handler method per LSP request type. Each handler switches on the type
-of the file and dispatches to one of the four language-specific
+of the file and dispatches to one of the language-specific
 packages.
 
 The [lsprpc] package connects the service interface to our [jsonrpc2](https://www.jsonrpc.org/specification) server.
@@ -167,6 +166,5 @@ provided as a debugging aid; but see https://go.dev/issue/63693.
 [golang]: https://pkg.go.dev/golang.org/x/tools/gopls@master/internal/golang
 [template]: https://pkg.go.dev/golang.org/x/tools/gopls@master/internal/template
 [typerefs]: https://pkg.go.dev/golang.org/x/tools/gopls@master/internal/cache/typerefs
-[work]: https://pkg.go.dev/golang.org/x/tools/gopls@master/internal/work
 [x/tools]: https://github.com/golang/tools@master
 [xrefs]: https://pkg.go.dev/golang.org/x/tools/gopls@master/internal/cache/xrefs

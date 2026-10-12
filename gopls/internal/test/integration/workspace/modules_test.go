@@ -36,26 +36,6 @@ package baz
 func Baz()
 `
 
-	const goWorkView = `
--- go.work --
-use ./foo
-use ./bar
-
--- foo/go.mod --
-module foo
-
--- foo/foo.go --
-package foo
-func Foo()
-
--- bar/go.mod --
-module bar
-
--- bar/bar.go --
-package bar
-func Bar()
-`
-
 	t.Run("go.mod view", func(t *testing.T) {
 		// If baz isn't loaded, it will not be included
 		t.Run("unloaded", func(t *testing.T) {
@@ -112,29 +92,6 @@ func Bar()
 			})
 		})
 	})
-
-	t.Run("go.work view", func(t *testing.T) {
-		t.Run("base", func(t *testing.T) {
-			Run(t, goWorkView, func(t *testing.T, env *Env) {
-				checkModules(t, env, env.Editor.DocumentURI(""), 0, nil)
-			})
-		})
-
-		t.Run("recursive", func(t *testing.T) {
-			Run(t, goWorkView, func(t *testing.T, env *Env) {
-				checkModules(t, env, env.Editor.DocumentURI(""), -1, []command.Module{
-					{
-						Path:  "bar",
-						GoMod: env.Editor.DocumentURI("bar/go.mod"),
-					},
-					{
-						Path:  "foo",
-						GoMod: env.Editor.DocumentURI("foo/go.mod"),
-					},
-				})
-			})
-		})
-	})
 }
 
 func checkModules(t testing.TB, env *Env, dir protocol.DocumentURI, maxDepth int, want []command.Module) {
@@ -147,8 +104,8 @@ func checkModules(t testing.TB, env *Env, dir protocol.DocumentURI, maxDepth int
 		Arguments: cmd.Arguments,
 	}, &result)
 
-	// The ordering of results is undefined and modules from a go.work view are
-	// retrieved from a map, so sort the results to ensure consistency
+	// The ordering of results is undefined, so sort the results to ensure
+	// consistency.
 	sort.Slice(result.Modules, func(i, j int) bool {
 		a, b := result.Modules[i], result.Modules[j]
 		return strings.Compare(a.Path, b.Path) < 0

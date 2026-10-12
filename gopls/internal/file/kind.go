@@ -26,8 +26,6 @@ const (
 	Sum
 	// Tmpl is a template file.
 	Tmpl
-	// Work is a go.work file.
-	Work
 	// Asm is a Go assembly (.s) file.
 	Asm
 )
@@ -42,8 +40,6 @@ func (k Kind) String() string {
 		return "go.sum"
 	case Tmpl:
 		return "tmpl"
-	case Work:
-		return "go.work"
 	case Asm:
 		return "Go assembly"
 	default:
@@ -64,8 +60,6 @@ func KindForLang(langID protocol.LanguageKind) Kind {
 		return Sum
 	case "tmpl", "gotmpl":
 		return Tmpl
-	case "go.work":
-		return Work
 	case "go.s":
 		return Asm
 	default:

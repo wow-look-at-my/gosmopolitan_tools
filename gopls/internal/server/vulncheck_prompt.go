@@ -74,24 +74,6 @@ func computeGoModHash(file *modfile.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// computeGoWorkHash computes the SHA256 hash of the go.work file's dependencies.
-// It only considers the Use and Replace directives and ignores other parts of
-// the file.
-func computeGoWorkHash(file *modfile.WorkFile) (string, error) {
-	h := sha256.New()
-	for _, use := range file.Use {
-		if _, err := h.Write([]byte(use.Path + "\x00")); err != nil {
-			return "", err
-		}
-	}
-	for _, rep := range file.Replace {
-		if _, err := h.Write([]byte(rep.Old.Path + "\x00" + rep.Old.Version + "\x00" + rep.New.Path + "\x00" + rep.New.Version)); err != nil {
-			return "", err
-		}
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
 func getDependencyHashes(uri protocol.DocumentURI) (contentHash string, pathHash [32]byte, err error) {
 	content, err := os.ReadFile(uri.Path())
 	if err != nil {
@@ -105,15 +87,6 @@ func getDependencyHashes(uri protocol.DocumentURI) (contentHash string, pathHash
 			return "", [32]byte{}, err
 		}
 		contentHash, err = computeGoModHash(modFile)
-		if err != nil {
-			return "", [32]byte{}, err
-		}
-	case "go.work":
-		workFile, err := modfile.ParseWork(filename, content, nil)
-		if err != nil {
-			return "", [32]byte{}, err
-		}
-		contentHash, err = computeGoWorkHash(workFile)
 		if err != nil {
 			return "", [32]byte{}, err
 		}

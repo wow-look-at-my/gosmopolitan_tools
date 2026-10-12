@@ -226,8 +226,6 @@ func Test(t *testing.T) {
 			allDiags := make(map[string][]protocol.Diagnostic)
 			if run.env.Editor.ServerCapabilities().DiagnosticProvider != nil {
 				for name := range test.files {
-					// golang/go#53275: support pull diagnostics for go.mod and go.work
-					// files.
 					if strings.HasSuffix(name, ".go") {
 						allDiags[name] = run.env.Diagnostics(name)
 					}
@@ -1018,7 +1016,7 @@ func newEnv(t *testing.T, cache *cache.Cache, files, proxyFiles map[string][]byt
 	}
 
 	for _, dir := range writeGoSum {
-		if _, err := sandbox.RunGoCommand(context.Background(), dir, "list", []string{"-mod=mod", "./..."}, []string{"GOWORK=off"}, true); err != nil {
+		if _, err := sandbox.RunGoCommand(context.Background(), dir, "list", []string{"-mod=mod", "./..."}, nil, true); err != nil {
 			t.Fatal(err)
 		}
 	}

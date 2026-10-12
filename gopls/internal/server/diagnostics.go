@@ -26,7 +26,6 @@ import (
 	"golang.org/x/tools/gopls/internal/protocol"
 	"golang.org/x/tools/gopls/internal/settings"
 	"golang.org/x/tools/gopls/internal/template"
-	"golang.org/x/tools/gopls/internal/work"
 	"golang.org/x/tools/internal/event"
 	"golang.org/x/tools/internal/event/keys"
 	"golang.org/x/tools/internal/jsonrpc2"
@@ -42,7 +41,7 @@ import (
 //   - support resultID (=snapshot ID)
 //   - support multiple views
 //   - add orphaned file diagnostics
-//   - support go.mod, go.work files
+//   - support go.mod files
 func (s *server) Diagnostic(ctx context.Context, params *protocol.DocumentDiagnosticParams) (*protocol.DocumentDiagnosticReport, error) {
 	ctx, done := event.Start(ctx, "server.Diagnostic")
 	defer done()
@@ -347,14 +346,7 @@ func (s *server) diagnose(ctx context.Context, snapshot *cache.Snapshot) (diagMa
 	}
 
 	// Diagnostics below are organized by increasing specificity:
-	//  go.work > mod > mod upgrade > mod vuln > package, etc.
-
-	// Diagnose go.work file.
-	workReports, workErr := work.Diagnostics(ctx, snapshot)
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-	store("diagnosing go.work file", workReports, workErr)
+	//  mod > mod upgrade > mod vuln > package, etc.
 
 	// Diagnose go.mod file.
 	modReports, modErr := mod.ParseDiagnostics(ctx, snapshot)
