@@ -175,8 +175,7 @@ type viewDefinition struct {
 	// locally replaced modules (if "includeReplaceInWorkspace" is set).
 	//
 	// TODO(rfindley): should we just run `go list -m` to compute this set?
-	workspaceModFiles    map[protocol.DocumentURI]struct{}
-	workspaceModFilesErr error // error encountered computing workspaceModFiles
+	workspaceModFiles map[protocol.DocumentURI]struct{}
 
 	// envOverlay holds additional environment to apply to this viewDefinition.
 	envOverlay map[string]string
@@ -242,14 +241,7 @@ func (d viewDefinition) ModFiles() []protocol.DocumentURI {
 
 // viewDefinitionsEqual reports whether x and y are equivalent.
 func viewDefinitionsEqual(x, y *viewDefinition) bool {
-	if (x.workspaceModFilesErr == nil) != (y.workspaceModFilesErr == nil) {
-		return false
-	}
-	if x.workspaceModFilesErr != nil {
-		if x.workspaceModFilesErr.Error() != y.workspaceModFilesErr.Error() {
-			return false
-		}
-	} else if !moremaps.SameKeys(x.workspaceModFiles, y.workspaceModFiles) {
+	if !moremaps.SameKeys(x.workspaceModFiles, y.workspaceModFiles) {
 		return false
 	}
 	if len(x.envOverlay) != len(y.envOverlay) {
@@ -707,10 +699,6 @@ func (s *Snapshot) initialize(ctx context.Context, firstAttempt bool) {
 		initialErr = &InitializationError{
 			MainError:   loadErr,
 			Diagnostics: moremaps.Group(extractedDiags, byURI),
-		}
-	case s.view.workspaceModFilesErr != nil:
-		initialErr = &InitializationError{
-			MainError: s.view.workspaceModFilesErr,
 		}
 	case len(modDiagnostics) > 0:
 		initialErr = &InitializationError{
