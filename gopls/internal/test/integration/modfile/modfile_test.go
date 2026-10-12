@@ -238,14 +238,8 @@ require random.org v1.2.3
 }
 
 // Tests that multiple missing dependencies gives good single fixes.
-func TestMissingDependencyFixesWithGoWork(t *testing.T) {
+func TestMissingDependencyFixesNested(t *testing.T) {
 	const mod = `
--- go.work --
-go 1.18
-
-use (
-	./a
-)
 -- a/go.mod --
 module mod.com
 
@@ -700,13 +694,6 @@ func main() {
 
 func TestMultiModuleModDiagnostics(t *testing.T) {
 	const mod = `
--- go.work --
-go 1.18
-
-use (
-	a
-	b
-)
 -- a/go.mod --
 module moda.com
 
@@ -740,6 +727,8 @@ func main() {
 	WithOptions(
 		ProxyFiles(workspaceProxy),
 	).Run(t, mod, func(t *testing.T, env *Env) {
+		env.OpenFile("a/main.go")
+		env.OpenFile("b/main.go")
 		env.AfterChange(
 			Diagnostics(
 				env.AtRegexp("a/go.mod", "example.com v1.2.3"),
@@ -1119,13 +1108,13 @@ package main
 // of the "apply diffs" operation used by the fake editor.
 func TestIssue57627(t *testing.T) {
 	const files = `
--- go.work --
+-- a.txt --
 package main
 `
 	Run(t, files, func(t *testing.T, env *Env) {
-		env.OpenFile("go.work")
-		env.SetBufferContent("go.work", "go 1.18\nuse moda/a")
-		env.SaveBuffer("go.work") // doesn't fail
+		env.OpenFile("a.txt")
+		env.SetBufferContent("a.txt", "go 1.18\nuse moda/a")
+		env.SaveBuffer("a.txt") // doesn't fail
 	})
 }
 
@@ -1145,13 +1134,6 @@ package mod
 func AutoQuote(string) string { return ""}
 `
 	const files = `
--- go.work --
-go 1.20
-use (
-	./a
-	./b
-)
-
 -- a/go.mod --
 module a.mod.com
 go 1.20

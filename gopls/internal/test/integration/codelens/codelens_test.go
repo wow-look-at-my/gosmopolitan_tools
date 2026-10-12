@@ -94,20 +94,13 @@ var Goodbye error
 `
 
 // This test confirms the full functionality of the code lenses for updating
-// dependencies in a go.mod file, when using a go.work file. It checks for the
-// code lens that suggests an update and then executes the command associated
-// with that code lens. A regression test for golang/go#39446. It also checks
-// that these code lenses only affect the diagnostics and contents of the
-// containing go.mod file.
-func TestUpgradeCodelens_Workspace(t *testing.T) {
+// dependencies in a go.mod file, with several modules in the workspace. It
+// checks for the code lens that suggests an update and then executes the
+// command associated with that code lens. It also checks that these code
+// lenses only affect the diagnostics and contents of the containing go.mod
+// file.
+func TestUpgradeCodelens_MultiModule(t *testing.T) {
 	const shouldUpdateDep = `
--- go.work --
-go 1.18
-
-use (
-	./a
-	./b
-)
 -- a/go.mod --
 module mod.com/a
 
@@ -204,7 +197,7 @@ require golang.org/x/hello v1.2.3
 				ProxyFiles(proxyWithLatest),
 			).Run(t, shouldUpdateDep, func(t *testing.T, env *Env) {
 				if vendoring {
-					env.RunGoCommandInDirWithEnv("a", []string{"GOWORK=off"}, "mod", "vendor")
+					env.RunGoCommandInDirWithEnv("a", nil, "mod", "vendor")
 				}
 				env.AfterChange()
 				env.OpenFile("a/go.mod")
@@ -250,8 +243,7 @@ require golang.org/x/hello v1.2.3
 
 func TestUpgradeCodelens_ModVendor(t *testing.T) {
 	// This test checks the regression of golang/go#66055. The upgrade codelens
-	// should work in a mod vendor context (the test above using a go.work file
-	// was not broken).
+	// should work in a mod vendor context.
 	testenv.NeedsGoCommand1Point(t, 22)
 
 	const shouldUpdateDep = `
