@@ -923,7 +923,6 @@ var requiredGoEnvVars = []string{
 	"GOPROXY",
 	"GOROOT",
 	"GOSUMDB",
-	"GOWORK",
 }
 
 // ProcessEnv contains environment variables and settings that affect the use of
@@ -1062,7 +1061,7 @@ func (e *ProcessEnv) GetResolver() (Resolver, error) {
 		//
 		// For gopls, we can optionally explicitly choose a resolver type, since we
 		// already know the view type.
-		if e.Env["GOMOD"] == "" && (e.Env["GOWORK"] == "" || e.Env["GOWORK"] == "off") {
+		if e.Env["GOMOD"] == "" {
 			e.resolver = newGopathResolver(e)
 			e.logf("created gopath resolver")
 		} else if r, err := newModuleResolver(e, e.ModCache); err != nil {

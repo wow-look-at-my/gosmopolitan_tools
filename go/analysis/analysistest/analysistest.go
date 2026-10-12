@@ -484,16 +484,11 @@ type Result struct {
 // loadPackages returns an error if any package had an error, or the pattern
 // matched no packages.
 func loadPackages(dir string, patterns ...string) ([]*packages.Package, error) {
-	env := []string{"GOPATH=" + dir, "GO111MODULE=off", "GOWORK=off"} // GOPATH mode
+	env := []string{"GOPATH=" + dir, "GO111MODULE=off"} // GOPATH mode
 
 	// Undocumented module mode. Will be replaced by something better.
 	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-		gowork := filepath.Join(dir, "go.work")
-		if _, err := os.Stat(gowork); err != nil {
-			gowork = "off"
-		}
-
-		env = []string{"GO111MODULE=on", "GOPROXY=off", "GOWORK=" + gowork} // module mode
+		env = []string{"GO111MODULE=on", "GOPROXY=off"} // module mode
 	}
 
 	// packages.Load loads the real standard library, not a minimal
