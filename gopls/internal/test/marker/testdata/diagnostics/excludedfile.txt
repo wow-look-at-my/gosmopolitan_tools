@@ -5,12 +5,6 @@ an inactive module, or mismatching GOOS/GOARCH, comment, but with zero-config
 gopls (golang/go#57979) and improved build tag support (golang/go#29202), we no
 longer get these errors.
 
--- go.work --
-go 1.21
-
-use (
-	./a
-)
 -- a/go.mod --
 module mod.com/a
 

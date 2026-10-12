@@ -92,17 +92,12 @@ func main() {}
 
 func TestReinitializeRepeatedly(t *testing.T) {
 	const multiModule = `
--- go.work --
-go 1.18
-
-use (
-	moda/a
-	modb
-)
 -- moda/a/go.mod --
 module a.com
 
 require b.com v1.2.3
+
+replace b.com => ../../modb
 -- moda/a/go.sum --
 b.com v1.2.3 h1:tXrlXP0rnjRpKNmkbLYoWBdq0ikb3C3bKK9//moAWBI=
 b.com v1.2.3/go.mod h1:D+J7pfFBZK5vdIdZEFquR586vKKIkqG7Qjw9AxG5BQ8=
@@ -143,9 +138,9 @@ func Hello() int {
 		// (which allows GOPROXY), even when the reinitialized snapshot is
 		// invalidated by subsequent changes.
 		//
-		// First, update go.work to remove modb. This will cause reinitialization
-		// to fetch b.com from the proxy.
-		env.WriteWorkspaceFile("go.work", "go 1.18\nuse moda/a")
+		// First, update go.mod to remove the replace of b.com. This will cause
+		// reinitialization to fetch b.com from the proxy.
+		env.WriteWorkspaceFile("moda/a/go.mod", "module a.com\n\nrequire b.com v1.2.3\n")
 		// Next, wait for gopls to start processing the change. Because we've set
 		// diagnosticsDelay to zero, this will start diagnosing the workspace (and
 		// try to reinitialize on the snapshot context).

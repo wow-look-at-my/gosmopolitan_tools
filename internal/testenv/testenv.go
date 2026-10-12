@@ -491,8 +491,6 @@ func NeedsLocalXTools(t testing.TB) {
 	dir := string(bytes.TrimSpace(out))
 	if dir == "" {
 		// No replacement directory, and (since we didn't set -e) no error either.
-		// Maybe x/tools isn't replaced at all (as in a gopls release, or when
-		// using a go.work file that includes the x/tools module).
 		return
 	}
 

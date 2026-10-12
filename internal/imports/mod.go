@@ -13,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -112,48 +111,21 @@ func newModuleResolver(e *ProcessEnv, moduleCacheCache *DirInfoCache) (*ModuleRe
 		WorkingDir: r.env.WorkingDir,
 	}
 
-	vendorEnabled := false
-	var mainModVendor *gocommand.ModuleJSON    // for module vendoring
-	var mainModsVendor []*gocommand.ModuleJSON // for workspace vendoring
-
-	goWork := r.env.Env["GOWORK"]
-	if len(goWork) == 0 {
-		// TODO(rfindley): VendorEnabled runs the go command to get GOFLAGS, but
-		// they should be available from the ProcessEnv. Can we avoid the redundant
-		// invocation?
-		vendorEnabled, mainModVendor, err = gocommand.VendorEnabled(context.TODO(), inv, r.env.GocmdRunner)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		vendorEnabled, mainModsVendor, err = gocommand.WorkspaceVendorEnabled(context.Background(), inv, r.env.GocmdRunner)
-		if err != nil {
-			return nil, err
-		}
+	// TODO(rfindley): VendorEnabled runs the go command to get GOFLAGS, but they should be available from the ProcessEnv.
+	vendorEnabled, mainModVendor, err := gocommand.VendorEnabled(context.TODO(), inv, r.env.GocmdRunner)
+	if err != nil {
+		return nil, err
 	}
 
 	if vendorEnabled {
-		if mainModVendor != nil {
-			// Module vendor mode is on, so all the non-Main modules are irrelevant,
-			// and we need to search /vendor for everything.
-			r.mains = []*gocommand.ModuleJSON{mainModVendor}
-			r.dummyVendorMod = &gocommand.ModuleJSON{
-				Path: "",
-				Dir:  filepath.Join(mainModVendor.Dir, "vendor"),
-			}
-			r.modsByModPath = []*gocommand.ModuleJSON{mainModVendor, r.dummyVendorMod}
-			r.modsByDir = []*gocommand.ModuleJSON{mainModVendor, r.dummyVendorMod}
-		} else {
-			// Workspace vendor mode is on, so all the non-Main modules are irrelevant,
-			// and we need to search /vendor for everything.
-			r.mains = mainModsVendor
-			r.dummyVendorMod = &gocommand.ModuleJSON{
-				Path: "",
-				Dir:  filepath.Join(filepath.Dir(goWork), "vendor"),
-			}
-			r.modsByModPath = append(slices.Clone(mainModsVendor), r.dummyVendorMod)
-			r.modsByDir = append(slices.Clone(mainModsVendor), r.dummyVendorMod)
+		// Module vendor mode is on, so all the non-Main modules are irrelevant, and we need to search /vendor for everything.
+		r.mains = []*gocommand.ModuleJSON{mainModVendor}
+		r.dummyVendorMod = &gocommand.ModuleJSON{
+			Path: "",
+			Dir:  filepath.Join(mainModVendor.Dir, "vendor"),
 		}
+		r.modsByModPath = []*gocommand.ModuleJSON{mainModVendor, r.dummyVendorMod}
+		r.modsByDir = []*gocommand.ModuleJSON{mainModVendor, r.dummyVendorMod}
 	} else {
 		// Vendor mode is off, so run go list -m ... to find everything.
 		err := r.initAllMods()

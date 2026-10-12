@@ -16,7 +16,6 @@ import (
 	"golang.org/x/tools/gopls/internal/settings"
 	"golang.org/x/tools/gopls/internal/telemetry"
 	"golang.org/x/tools/gopls/internal/template"
-	"golang.org/x/tools/gopls/internal/work"
 	"golang.org/x/tools/internal/event"
 )
 
@@ -55,8 +54,6 @@ func (s *server) Hover(ctx context.Context, params *protocol.HoverParams) (_ *pr
 		return golang.Hover(ctx, snapshot, fh, params.Range, pkgURL)
 	case file.Tmpl:
 		return template.Hover(ctx, snapshot, fh, params.Range)
-	case file.Work:
-		return work.Hover(ctx, snapshot, fh, params.Range)
 	}
 	return nil, nil // empty result
 }

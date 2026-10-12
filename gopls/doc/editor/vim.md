@@ -115,7 +115,7 @@ Use [coc.nvim], with the following `coc-settings.json` configuration:
   "languageserver": {
     "go": {
       "command": "gopls",
-      "rootPatterns": ["go.work", "go.mod", ".vim/", ".git/", ".hg/"],
+      "rootPatterns": ["go.mod", ".vim/", ".git/", ".hg/"],
       "filetypes": ["go"],
       "initializationOptions": {
         "usePlaceholders": true
@@ -123,13 +123,6 @@ Use [coc.nvim], with the following `coc-settings.json` configuration:
     }
   }
 ```
-
-If you use `go.work` files, you may want to set the
-`workspace.workspaceFolderCheckCwd` option. This will force coc.nvim to search
-parent directories for `go.work` files, even if the current open directory has
-a `go.mod` file. See the
-[coc.nvim documentation](https://github.com/neoclide/coc.nvim/wiki/Using-workspaceFolders)
-for more details.
 
 Other [settings](../settings) can be added in `initializationOptions` too.
 

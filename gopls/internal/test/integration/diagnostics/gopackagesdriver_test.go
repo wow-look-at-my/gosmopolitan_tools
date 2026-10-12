@@ -46,9 +46,6 @@ import "mod.com/hello"
 
 func TestValidImportCheck_GoPackagesDriver(t *testing.T) {
 	const files = `
--- go.work --
-use .
-
 -- go.mod --
 module example.com
 go 1.0

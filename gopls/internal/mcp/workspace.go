@@ -20,7 +20,7 @@ import (
 )
 
 func (h *handler) workspaceHandler(ctx context.Context, req *mcp.CallToolRequest, _ any) (*mcp.CallToolResult, any, error) {
-	countGoWorkspaceMCP.Inc()
+	countWorkspaceMCP.Inc()
 	var summary bytes.Buffer
 	views := h.session.Views()
 	for _, v := range views {
@@ -53,10 +53,6 @@ func (h *handler) workspaceHandler(ctx context.Context, req *mcp.CallToolRequest
 
 		case cache.GoModView:
 			fmt.Fprintf(&summary, "The `%s` directory uses Go modules, with the following main modules:\n", dir)
-			summarizeModFiles(ctx, &summary, snapshot)
-
-		case cache.GoWorkView:
-			fmt.Fprintf(&summary, "The `%s` directory is in the go workspace defined by `%s`, with the following main modules:\n", dir, v.GoWork().Path())
 			summarizeModFiles(ctx, &summary, snapshot)
 
 		case cache.AdHocView:

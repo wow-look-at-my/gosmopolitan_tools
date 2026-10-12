@@ -5,7 +5,6 @@
 package workspace
 
 import (
-	"strings"
 	"testing"
 
 	"golang.org/x/tools/gopls/internal/server"
@@ -17,103 +16,7 @@ import (
 // TODO: consolidate other tests here.
 //
 // TODO: write more tests:
-//  - an explicit GOWORK value that doesn't exist
-//  - using modules and/or GOWORK inside of GOPATH?
-
-// Test for golang/go#53933
-func TestBrokenWorkspace_DuplicateModules(t *testing.T) {
-	// This proxy module content is replaced by the workspace, but is still
-	// required for module resolution to function in the Go command.
-	const proxy = `
--- example.com/foo@v0.0.1/go.mod --
-module example.com/foo
-
-go 1.12
-`
-
-	const src = `
--- go.work --
-go 1.18
-
-use (
-	./package1
-	./package1/vendor/example.com/foo
-	./package2
-	./package2/vendor/example.com/foo
-)
-
--- package1/go.mod --
-module mod.test
-
-go 1.18
-
-require example.com/foo v0.0.1
--- package1/main.go --
-package main
-
-import "example.com/foo"
-
-func main() {
-	_ = foo.CompleteMe
-}
--- package1/vendor/example.com/foo/go.mod --
-module example.com/foo
-
-go 1.18
--- package1/vendor/example.com/foo/foo.go --
-package foo
-
-const CompleteMe = 111
--- package2/go.mod --
-module mod2.test
-
-go 1.18
-
-require example.com/foo v0.0.1
--- package2/main.go --
-package main
-
-import "example.com/foo"
-
-func main() {
-	_ = foo.CompleteMe
-}
--- package2/vendor/example.com/foo/go.mod --
-module example.com/foo
-
-go 1.18
--- package2/vendor/example.com/foo/foo.go --
-package foo
-
-const CompleteMe = 222
-`
-
-	WithOptions(
-		ProxyFiles(proxy),
-	).Run(t, src, func(t *testing.T, env *Env) {
-		env.OpenFile("package1/main.go")
-		env.AfterChange(
-			OutstandingWork(server.WorkspaceLoadFailure, `module example.com/foo appears multiple times in workspace`),
-		)
-
-		// Remove the redundant vendored copy of example.com.
-		env.WriteWorkspaceFile("go.work", `go 1.18
-		use (
-			./package1
-			./package2
-			./package2/vendor/example.com/foo
-		)
-		`)
-		env.AfterChange(NoOutstandingWork(IgnoreTelemetryPromptWork))
-
-		// Check that definitions in package1 go to the copy vendored in package2.
-		location := string(env.FirstDefinition(env.RegexpSearch("package1/main.go", "CompleteMe")).URI)
-		const wantLocation = "package2/vendor/example.com/foo/foo.go"
-		if !strings.HasSuffix(location, wantLocation) {
-			t.Errorf("got definition of CompleteMe at %q, want %q", location, wantLocation)
-		}
-	})
-}
+//  - using modules inside of GOPATH?
 
 // Test for golang/go#43186: correcting the module path should fix errors
 // without restarting gopls.

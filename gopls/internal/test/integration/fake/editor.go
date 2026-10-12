@@ -628,12 +628,11 @@ func (e *Editor) sendDidOpen(ctx context.Context, item protocol.TextDocumentItem
 }
 
 var defaultFileAssociations = map[protocol.LanguageKind]*regexp.Regexp{
-	"go":      regexp.MustCompile(`^.*\.go$`), // '$' is important: don't match .gotmpl!
-	"go.mod":  regexp.MustCompile(`^go\.mod$`),
-	"go.sum":  regexp.MustCompile(`^go(\.work)?\.sum$`),
-	"go.work": regexp.MustCompile(`^go\.work$`),
-	"gotmpl":  regexp.MustCompile(`^.*tmpl$`),
-	"go.s":    regexp.MustCompile(`\.s$`),
+	"go":     regexp.MustCompile(`^.*\.go$`), // '$' is important: don't match .gotmpl!
+	"go.mod": regexp.MustCompile(`^go\.mod$`),
+	"go.sum": regexp.MustCompile(`^go\.sum$`),
+	"gotmpl": regexp.MustCompile(`^.*tmpl$`),
+	"go.s":   regexp.MustCompile(`\.s$`),
 }
 
 // languageID returns the language identifier for the path p given the user

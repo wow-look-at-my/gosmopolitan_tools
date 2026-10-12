@@ -283,7 +283,7 @@ func skipDir(dirName string) bool {
 // skipFile reports whether the file should be skipped.
 func skipFile(fileName string) bool {
 	switch strings.TrimPrefix(filepath.Ext(fileName), ".") {
-	case "go", "mod", "sum", "work", "s":
+	case "go", "mod", "sum", "s":
 		return false
 	default:
 		return true

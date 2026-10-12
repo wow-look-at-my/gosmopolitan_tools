@@ -154,13 +154,6 @@ func Hello() {}
 // applied relative to the workspace folder, not the module root.
 func TestDirectoryFilters_MultiRootImportScanning(t *testing.T) {
 	const files = `
--- go.work --
-go 1.18
-
-use (
-	a
-	b
-)
 -- a/go.mod --
 module mod1.test
 

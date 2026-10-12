@@ -89,29 +89,11 @@ func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error
 		}
 		f := fset.AddFile(filename, -1, len(content))
 		f.SetLinesForContent(content)
-		notes, err := extractModWork(fset, file.Syntax.Stmt)
+		notes, err := extractMod(fset, file.Syntax.Stmt)
 		if err != nil {
 			return nil, err
 		}
-		// Since modfile.Parse does not return an *ast, we need to add the offset
-		// within the file's contents to the file's base relative to the fileset.
-		for _, note := range notes {
-			note.Pos += token.Pos(f.Base())
-		}
-		return notes, nil
-
-	case ".work":
-		file, err := modfile.ParseWork(filename, content, nil)
-		if err != nil {
-			return nil, err
-		}
-		f := fset.AddFile(filename, -1, len(content))
-		f.SetLinesForContent(content)
-		notes, err := extractModWork(fset, file.Syntax.Stmt)
-		if err != nil {
-			return nil, err
-		}
-		// As with go.mod files, we need to compute a synthetic token.Pos.
+		// Since modfile.Parse does not return an *ast, we need to add the offset.
 		for _, note := range notes {
 			note.Pos += token.Pos(f.Base())
 		}
@@ -120,15 +102,15 @@ func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error
 	return nil, nil
 }
 
-// extractModWork collects all the notes present in a go.mod file or go.work
-// file, by way of the shared modfile.Expr statement node.
+// extractMod collects all the notes present in a go.mod file, by way of
+// the modfile.Expr statement node.
 //
 // Each comment whose text starts with @ is parsed as a comma-separated
 // sequence of notes.
 // See the package documentation for details about the syntax of those
 // notes.
 // Only allow notes to appear with the following format: "//@mark()" or // @mark()
-func extractModWork(fset *token.FileSet, exprs []modfile.Expr) ([]*Note, error) {
+func extractMod(fset *token.FileSet, exprs []modfile.Expr) ([]*Note, error) {
 	var notes []*Note
 	for _, stmt := range exprs {
 		comment := stmt.Comment()

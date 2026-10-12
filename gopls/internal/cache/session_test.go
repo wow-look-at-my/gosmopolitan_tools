@@ -55,7 +55,8 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 		// TODO(rfindley): add a test for degenerate cases, such as missing
 		// workspace folders (once we decide on the correct behavior).
 		{
-			"basic go.work workspace",
+			// gopls ignores a go.work file: it does not make a workspace view.
+			"go.work is ignored",
 			map[string]string{
 				"go.work":  "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
 				"a/go.mod": "module golang.org/a\ngo 1.18\n",
@@ -63,7 +64,7 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 			},
 			[]folderSummary{{dir: "."}},
 			nil,
-			[]viewSummary{{GoWorkView, ".", nil}},
+			[]viewSummary{{AdHocView, ".", nil}},
 		},
 		{
 			"basic go.mod workspace",
@@ -155,7 +156,8 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 			},
 		},
 		{
-			"unified workspace",
+			// gopls ignores a go.work file: each open module is its own view.
+			"go.work is ignored, open modules",
 			map[string]string{
 				"go.work":  "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
 				"a/go.mod": "module golang.org/a\ngo 1.18\n",
@@ -165,75 +167,11 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 			},
 			[]folderSummary{{dir: "."}},
 			[]string{"a/a.go", "b/b.go"},
-			[]viewSummary{{GoWorkView, ".", nil}},
-		},
-		{
-			"go.work from env",
-			map[string]string{
-				"nested/go.work": "go 1.18\nuse (\n\t../a\n\t../b\n)\n",
-				"a/go.mod":       "module golang.org/a\ngo 1.18\n",
-				"a/a.go":         "package a",
-				"b/go.mod":       "module golang.org/b\ngo 1.18\n",
-				"b/b.go":         "package b",
-			},
-			[]folderSummary{{
-				dir: ".",
-				options: func(dir string) map[string]any {
-					return map[string]any{
-						"env": map[string]any{
-							"GOWORK": filepath.Join(dir, "nested", "go.work"),
-						},
-					}
-				},
-			}},
-			[]string{"a/a.go", "b/b.go"},
-			[]viewSummary{{GoWorkView, ".", nil}},
-		},
-		{
-			"independent module view",
-			map[string]string{
-				"go.work":  "go 1.18\nuse (\n\t./a\n)\n", // not using b
-				"a/go.mod": "module golang.org/a\ngo 1.18\n",
-				"a/a.go":   "package a",
-				"b/go.mod": "module golang.org/a\ngo 1.18\n",
-				"b/b.go":   "package b",
-			},
-			[]folderSummary{{dir: "."}},
-			[]string{"a/a.go", "b/b.go"},
 			[]viewSummary{
-				{GoWorkView, ".", nil},
-				{GoModView, "b", []string{"GOWORK=off"}},
+				{AdHocView, ".", nil},
+				{GoModView, "a", nil},
+				{GoModView, "b", nil},
 			},
-		},
-		{
-			"multiple go.work",
-			map[string]string{
-				"go.work":    "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
-				"a/go.mod":   "module golang.org/a\ngo 1.18\n",
-				"a/a.go":     "package a",
-				"b/go.work":  "go 1.18\nuse (\n\t.\n\t./c\n)\n",
-				"b/go.mod":   "module golang.org/b\ngo 1.18\n",
-				"b/b.go":     "package b",
-				"b/c/go.mod": "module golang.org/c\ngo 1.18\n",
-			},
-			[]folderSummary{{dir: "."}},
-			[]string{"a/a.go", "b/b.go", "b/c/c.go"},
-			[]viewSummary{{GoWorkView, ".", nil}, {GoWorkView, "b", nil}},
-		},
-		{
-			"multiple go.work, c unused",
-			map[string]string{
-				"go.work":    "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
-				"a/go.mod":   "module golang.org/a\ngo 1.18\n",
-				"a/a.go":     "package a",
-				"b/go.work":  "go 1.18\nuse (\n\t.\n)\n",
-				"b/go.mod":   "module golang.org/b\ngo 1.18\n",
-				"b/b.go":     "package b",
-				"b/c/go.mod": "module golang.org/c\ngo 1.18\n",
-			},
-			[]folderSummary{{dir: "."}},
-			[]string{"a/a.go", "b/b.go", "b/c/c.go"},
-			[]viewSummary{{GoWorkView, ".", nil}, {GoModView, "b/c", []string{"GOWORK=off"}}},
 		},
 		{
 			"go.mod with nested replace",

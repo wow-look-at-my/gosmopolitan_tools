@@ -870,8 +870,6 @@ type InternalOptions struct {
 
 	// IncludeReplaceInWorkspace controls whether locally replaced modules in a
 	// go.mod file are treated like workspace modules.
-	// Or in other words, if a go.mod file with local replaces behaves like a
-	// go.work file.
 	IncludeReplaceInWorkspace bool
 
 	// ZeroConfig enables the zero-config algorithm for workspace layout,

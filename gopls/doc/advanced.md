@@ -44,16 +44,6 @@ You can achieve this by adding the right version of `go` to your `PATH`
 (`export PATH=$HOME/go-tip/bin:$PATH` on Unix systems) or by configuring your
 editor.
 
-To work on both `std` and `cmd` simultaneously, add a `go.work` file to
-`GOROOT/src`:
-
-```
-cd $(go env GOROOT)/src
-go work init . cmd
-```
-
-Note that you must work inside the `GOROOT/src` subdirectory, as the `go`
-command does not recognize `go.work` files in a parent of `GOROOT/src`
-(https://go.dev/issue/59429).
+The `std` and `cmd` modules are separate modules. Open `GOROOT/src` and `GOROOT/src/cmd` as separate workspace folders to work on both.
 
 [Go project]: https://go.googlesource.com/go

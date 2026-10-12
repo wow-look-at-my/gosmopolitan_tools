@@ -19,6 +19,6 @@ var (
 	countGoRenameSymbolMCP     = counter.New("gopls/mcp-tool:go_rename_symbol")
 	countGoSearchMCP           = counter.New("gopls/mcp-tool:go_search")
 	countGoSymbolReferencesMCP = counter.New("gopls/mcp-tool:go_symbol_references")
-	countGoWorkspaceMCP        = counter.New("gopls/mcp-tool:go_workspace")
+	countWorkspaceMCP          = counter.New("gopls/mcp-tool:go_workspace")
 	countGoVulncheckMCP        = counter.New("gopls/mcp-tool:go_vulncheck")
 )

@@ -9,15 +9,15 @@
 !want `example.com`
 !want `unreferenced`
 
--- go.work --
-use example.com
-use other.net
-
--- example.com/go.mod --
+-- go.mod --
 module example.com
 go 1.18
 
--- example.com/main.go --
+require other.net v0.0.0
+
+replace other.net => ./other.net
+
+-- main.go --
 package main
 
 import "other.net"

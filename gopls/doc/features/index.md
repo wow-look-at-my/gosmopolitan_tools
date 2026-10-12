@@ -61,7 +61,7 @@ when making significant changes to existing features or when adding new ones.
   - [Split package](web.md#splitpkg): split a package into two or more components
 - Support for non-Go files:
   - [Template files](templates.md): files parsed by `text/template` and `html/template`
-  - [go.mod and go.work files](modfiles.md): Go module and workspace manifests
+  - [go.mod files](modfiles.md): Go module manifests
   - [Go *.s assembly files](assembly.md): Go assembly files
 - [Command-line interface](../command-line.md): CLI for debugging and scripting (unstable)
 - [Model Context Protocol (MCP)](mcp.md): use some features in AI-assisted environments

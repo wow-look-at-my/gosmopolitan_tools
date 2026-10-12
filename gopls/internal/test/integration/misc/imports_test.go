@@ -542,16 +542,8 @@ type Foo struct {
 	})
 }
 
-// Test for golang/go#52784
-func TestGoWorkImports(t *testing.T) {
+func TestReplaceImports(t *testing.T) {
 	const pkg = `
--- go.work --
-go 1.19
-
-use (
-        ./caller
-        ./mod
-)
 -- caller/go.mod --
 module caller.com
 
@@ -576,12 +568,13 @@ package a
 func Test() {
 }
 `
-	Run(t, pkg, func(t *testing.T, env *Env) {
+	WithOptions(
+		Settings{"includeReplaceInWorkspace": true},
+	).Run(t, pkg, func(t *testing.T, env *Env) {
 		env.OpenFile("caller/caller.go")
 		env.AfterChange(Diagnostics(env.AtRegexp("caller/caller.go", "a.Test")))
 
-		// Saving caller.go should trigger goimports, which should find a.Test in
-		// the mod.com module, thanks to the go.work file.
+		// Saving caller.go should trigger goimports, which should find a.Test in the mod.com module.
 		env.SaveBuffer("caller/caller.go")
 		env.AfterChange(NoDiagnostics(ForFile("caller/caller.go")))
 	})
@@ -630,14 +623,6 @@ var A int
 // Find the non-test package asked for in a test
 func TestTestImports(t *testing.T) {
 	const pkg = `
--- go.work --
-go 1.19
-
-use (
-        ./caller
-        ./mod
-		./xxx
-)
 -- caller/go.mod --
 module caller.com
 
@@ -671,12 +656,14 @@ package a
 func Test() {
 }
 `
-	WithOptions(Modes(Default)).Run(t, pkg, func(t *testing.T, env *Env) {
+	WithOptions(
+		Modes(Default),
+		Settings{"includeReplaceInWorkspace": true},
+	).Run(t, pkg, func(t *testing.T, env *Env) {
 		env.OpenFile("caller/caller_test.go")
 		env.AfterChange(Diagnostics(env.AtRegexp("caller/caller_test.go", "a.Test")))
 
-		// Saving caller_test.go should trigger goimports, which should find a.Test in
-		// the mod.com module, thanks to the go.work file.
+		// Saving caller_test.go should trigger goimports, which should find a.Test in the mod.com module.
 		env.SaveBuffer("caller/caller_test.go")
 		env.AfterChange(NoDiagnostics(ForFile("caller/caller_test.go")))
 		buf := env.BufferText("caller/caller_test.go")

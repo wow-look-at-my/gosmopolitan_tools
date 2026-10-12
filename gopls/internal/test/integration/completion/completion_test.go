@@ -963,53 +963,6 @@ func Benchmark${1:Xxx}(b *testing.B) {
 	})
 }
 
-func TestGoWorkCompletion(t *testing.T) {
-	const files = `
--- go.work --
-go 1.18
-
-use ./a
-use ./a/ba
-use ./a/b/
-use ./dir/foo
-use ./dir/foobar/
-use ./missing/
--- a/go.mod --
--- go.mod --
--- a/bar/go.mod --
--- a/b/c/d/e/f/go.mod --
--- dir/bar --
--- dir/foobar/go.mod --
-`
-
-	Run(t, files, func(t *testing.T, env *Env) {
-		env.OpenFile("go.work")
-
-		tests := []struct {
-			re   string
-			want []string
-		}{
-			{`use ()\.`, []string{".", "./a", "./a/bar", "./dir/foobar"}},
-			{`use \.()`, []string{"", "/a", "/a/bar", "/dir/foobar"}},
-			{`use \./()`, []string{"a", "a/bar", "dir/foobar"}},
-			{`use ./a()`, []string{"", "/b/c/d/e/f", "/bar"}},
-			{`use ./a/b()`, []string{"/c/d/e/f", "ar"}},
-			{`use ./a/b/()`, []string{`c/d/e/f`}},
-			{`use ./a/ba()`, []string{"r"}},
-			{`use ./dir/foo()`, []string{"bar"}},
-			{`use ./dir/foobar/()`, []string{}},
-			{`use ./missing/()`, []string{}},
-		}
-		for _, tt := range tests {
-			completions := env.Completion(env.RegexpSearch("go.work", tt.re))
-			diff := compareCompletionLabels(tt.want, completions.Items)
-			if diff != "" {
-				t.Errorf("%s: %s", tt.re, diff)
-			}
-		}
-	})
-}
-
 const reverseInferenceSrcPrelude = `
 -- go.mod --
 module mod.com

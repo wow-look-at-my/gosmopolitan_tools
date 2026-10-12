@@ -76,11 +76,6 @@ type GoEnv struct {
 
 	// OS environment variables (notably not go env).
 
-	// ExplicitGOWORK is the GOWORK value set explicitly in the environment. This
-	// may differ from `go env GOWORK` when the GOWORK value is implicit from the
-	// working directory.
-	ExplicitGOWORK string
-
 	// EffectiveGOPACKAGESDRIVER is the effective go/packages driver binary that
 	// will be used. This may be set via GOPACKAGESDRIVER, or may be discovered
 	// via os.LookPath("gopackagesdriver"). The latter functionality is
@@ -156,8 +151,8 @@ type View struct {
 func (v *View) definition() *viewDefinition { return v.viewDefinition }
 
 // A viewDefinition is a logical build, i.e. configuration (Folder) along with
-// a build directory and possibly an environment overlay (e.g. GOWORK=off or
-// GOOS, GOARCH=...) to affect the build.
+// a build directory and possibly an environment overlay (e.g. GOOS,
+// GOARCH=...) to affect the build.
 //
 // This type is immutable, and compared to see if the View needs to be
 // reconstructed.
@@ -170,21 +165,17 @@ func (v *View) definition() *viewDefinition { return v.viewDefinition }
 type viewDefinition struct {
 	folder *Folder // pointer comparison is OK, as any new Folder creates a new def
 
-	typ    ViewType
-	root   protocol.DocumentURI // root directory; where to run the Go command
-	gomod  protocol.DocumentURI // the nearest go.mod file, or ""
-	gowork protocol.DocumentURI // the nearest go.work file, or ""
+	typ   ViewType
+	root  protocol.DocumentURI // root directory; where to run the Go command
+	gomod protocol.DocumentURI // the nearest go.mod file, or ""
 
 	// workspaceModFiles holds the set of mod files active in this snapshot.
 	//
-	// For a go.work workspace, this is the set of workspace modfiles. For a
-	// go.mod workspace, this contains the go.mod file defining the workspace
-	// root, as well as any locally replaced modules (if
-	// "includeReplaceInWorkspace" is set).
+	// It contains the go.mod file defining the workspace root, as well as any
+	// locally replaced modules (if "includeReplaceInWorkspace" is set).
 	//
 	// TODO(rfindley): should we just run `go list -m` to compute this set?
-	workspaceModFiles    map[protocol.DocumentURI]struct{}
-	workspaceModFilesErr error // error encountered computing workspaceModFiles
+	workspaceModFiles map[protocol.DocumentURI]struct{}
 
 	// envOverlay holds additional environment to apply to this viewDefinition.
 	envOverlay map[string]string
@@ -202,9 +193,6 @@ func (d *viewDefinition) Root() protocol.DocumentURI { return d.root }
 
 // GoMod returns the nearest go.mod file for this view's root, or "".
 func (d *viewDefinition) GoMod() protocol.DocumentURI { return d.gomod }
-
-// GoWork returns the nearest go.work file for this view's root, or "".
-func (d *viewDefinition) GoWork() protocol.DocumentURI { return d.gowork }
 
 // EnvOverlay returns a new sorted slice of environment variables (in the form
 // "k=v") for this view definition's env overlay.
@@ -253,14 +241,7 @@ func (d viewDefinition) ModFiles() []protocol.DocumentURI {
 
 // viewDefinitionsEqual reports whether x and y are equivalent.
 func viewDefinitionsEqual(x, y *viewDefinition) bool {
-	if (x.workspaceModFilesErr == nil) != (y.workspaceModFilesErr == nil) {
-		return false
-	}
-	if x.workspaceModFilesErr != nil {
-		if x.workspaceModFilesErr.Error() != y.workspaceModFilesErr.Error() {
-			return false
-		}
-	} else if !moremaps.SameKeys(x.workspaceModFiles, y.workspaceModFiles) {
+	if !moremaps.SameKeys(x.workspaceModFiles, y.workspaceModFiles) {
 		return false
 	}
 	if len(x.envOverlay) != len(y.envOverlay) {
@@ -274,8 +255,7 @@ func viewDefinitionsEqual(x, y *viewDefinition) bool {
 	return x.folder == y.folder &&
 		x.typ == y.typ &&
 		x.root == y.root &&
-		x.gomod == y.gomod &&
-		x.gowork == y.gowork
+		x.gomod == y.gomod
 }
 
 // A ViewType describes how we load package information for a view.
@@ -306,11 +286,6 @@ const (
 	// Load: <modulePath>/... from the module root.
 	GoModView
 
-	// GoWorkView is a view in module mode with a go.work file.
-	//
-	// Load: <modulePath>/... from the workspace folder, for each module.
-	GoWorkView
-
 	// An AdHocView is a collection of files in a given directory, not in GOPATH
 	// or a module.
 	//
@@ -326,8 +301,6 @@ func (t ViewType) String() string {
 		return "GOPATH"
 	case GoModView:
 		return "GoMod"
-	case GoWorkView:
-		return "GoWork"
 	case AdHocView:
 		return "AdHoc"
 	default:
@@ -338,7 +311,7 @@ func (t ViewType) String() string {
 // usesModules reports whether the view uses Go modules.
 func (typ ViewType) usesModules() bool {
 	switch typ {
-	case GoModView, GoWorkView:
+	case GoModView:
 		return true
 	default:
 		return false
@@ -727,10 +700,6 @@ func (s *Snapshot) initialize(ctx context.Context, firstAttempt bool) {
 			MainError:   loadErr,
 			Diagnostics: moremaps.Group(extractedDiags, byURI),
 		}
-	case s.view.workspaceModFilesErr != nil:
-		initialErr = &InitializationError{
-			MainError: s.view.workspaceModFilesErr,
-		}
 	case len(modDiagnostics) > 0:
 		initialErr = &InitializationError{
 			MainError: errors.New(modDiagnostics[0].Message),
@@ -878,19 +847,8 @@ func defineView(ctx context.Context, fs file.Source, folder *Folder, forFile fil
 
 	var err error
 	dirURI := protocol.URIFromPath(dir)
-	goworkFromEnv := false
-	if folder.Env.ExplicitGOWORK != "off" && folder.Env.ExplicitGOWORK != "" {
-		goworkFromEnv = true
-		def.gowork = protocol.URIFromPath(folder.Env.ExplicitGOWORK)
-	} else {
-		def.gowork, err = findRootPattern(ctx, dirURI, "go.work", fs)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	// When deriving the best view for a given file, we only want to search
-	// up the directory hierarchy for modfiles.
+	// Search up the directory tree for the nearest go.mod file.
 	def.gomod, err = findRootPattern(ctx, dirURI, "go.mod", fs)
 	if err != nil {
 		return nil, err
@@ -912,7 +870,7 @@ func defineView(ctx context.Context, fs file.Source, folder *Folder, forFile fil
 	}
 
 	// From go.dev/ref/mod, module mode is active if GO111MODULE=on, or
-	// GO111MODULE=auto or "" and we are inside a module or have a GOWORK value.
+	// GO111MODULE=auto or "" and we are inside a module.
 	// But gopls is less strict, allowing GOPATH mode if GO111MODULE="", and
 	// AdHoc views if no module is found.
 
@@ -932,37 +890,7 @@ func defineView(ctx context.Context, fs file.Source, folder *Folder, forFile fil
 		return modFiles
 	}
 
-	// Prefer a go.work file if it is available and contains the module relevant
-	// to forURI.
-	if def.adjustedGO111MODULE() != "off" && folder.Env.ExplicitGOWORK != "off" && def.gowork != "" {
-		def.typ = GoWorkView
-		if goworkFromEnv {
-			// The go.work file could be anywhere, which can lead to confusing error
-			// messages.
-			def.root = dirURI
-		} else {
-			// The go.work file could be anywhere, which can lead to confusing error
-			def.root = def.gowork.Dir()
-		}
-		def.workspaceModFiles, def.workspaceModFilesErr = goWorkModules(ctx, def.gowork, fs)
-
-		// If forURI is in a module but that module is not
-		// included in the go.work file, use a go.mod view with GOWORK=off.
-		if forFile != nil && def.workspaceModFilesErr == nil && def.gomod != "" {
-			if _, ok := def.workspaceModFiles[def.gomod]; !ok {
-				def.typ = GoModView
-				def.root = def.gomod.Dir()
-				def.workspaceModFiles = gomodWorkspace()
-				if def.envOverlay == nil {
-					def.envOverlay = make(map[string]string)
-				}
-				def.envOverlay["GOWORK"] = "off"
-			}
-		}
-		return def, nil
-	}
-
-	// Otherwise, use the active module, if in module mode.
+	// Use the active module, if in module mode.
 	//
 	// Note, we could override GO111MODULE here via envOverlay if we wanted to
 	// support the case where someone opens a module with GO111MODULE=off. But
@@ -1055,15 +983,6 @@ func FetchGoEnv(ctx context.Context, folder protocol.DocumentURI, opts *settings
 				env.EffectiveGOPACKAGESDRIVER = tool
 			}
 		}
-	}
-
-	// While GOWORK is available through the Go command, we want to differentiate
-	// between an explicit GOWORK value and one which is implicit from the file
-	// system. The former doesn't change unless the environment changes.
-	if gowork, ok := opts.Env["GOWORK"]; ok {
-		env.ExplicitGOWORK = gowork
-	} else {
-		env.ExplicitGOWORK = os.Getenv("GOWORK")
 	}
 	return env, nil
 }

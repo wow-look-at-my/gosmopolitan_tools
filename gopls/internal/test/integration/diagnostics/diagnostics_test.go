@@ -1275,10 +1275,6 @@ func main() {
 // the active workspace.
 func TestWorkspaceModules(t *testing.T) {
 	const mod = `
--- go.work --
-go 1.18
-
-use a
 -- a/go.mod --
 module mod.com/a
 
@@ -1295,6 +1291,7 @@ module mod.com/b
 go 1.18
 `
 	WithOptions(
+		WorkspaceFolders("a"),
 		Settings{
 			"subdirWatchPatterns": "on",
 		},
@@ -2008,43 +2005,6 @@ func F[T any](_ T) {
 		)
 
 		env.ApplyQuickFixes("main.go", d.Diagnostics)
-		env.AfterChange(
-			NoDiagnostics(ForFile("main.go")),
-		)
-	})
-}
-
-func TestEditGoDirectiveWorkspace(t *testing.T) {
-	const files = `
--- go.mod --
-module mod.com
-
-go 1.16
--- go.work --
-go 1.18
-
-use .
--- main.go --
-package main
-
-func F[T any](_ T) {
-}
-`
-	Run(t, files, func(_ *testing.T, env *Env) { // Create a new workspace-level directory and empty file.
-		var d protocol.PublishDiagnosticsParams
-
-		// We should have a diagnostic because generics are not supported at 1.16.
-		env.OnceMet(
-			InitialWorkspaceLoad,
-			Diagnostics(env.AtRegexp("main.go", `T any`), WithMessage("type parameter")),
-			ReadDiagnostics("main.go", &d),
-		)
-
-		// This diagnostic should have a quick fix to edit the go version.
-		env.ApplyQuickFixes("main.go", d.Diagnostics)
-
-		// Once the edit is applied, the problematic diagnostics should be
-		// resolved.
 		env.AfterChange(
 			NoDiagnostics(ForFile("main.go")),
 		)
