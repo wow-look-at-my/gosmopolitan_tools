@@ -568,7 +568,9 @@ package a
 func Test() {
 }
 `
-	Run(t, pkg, func(t *testing.T, env *Env) {
+	WithOptions(
+		Settings{"includeReplaceInWorkspace": true},
+	).Run(t, pkg, func(t *testing.T, env *Env) {
 		env.OpenFile("caller/caller.go")
 		env.AfterChange(Diagnostics(env.AtRegexp("caller/caller.go", "a.Test")))
 
@@ -654,7 +656,10 @@ package a
 func Test() {
 }
 `
-	WithOptions(Modes(Default)).Run(t, pkg, func(t *testing.T, env *Env) {
+	WithOptions(
+		Modes(Default),
+		Settings{"includeReplaceInWorkspace": true},
+	).Run(t, pkg, func(t *testing.T, env *Env) {
 		env.OpenFile("caller/caller_test.go")
 		env.AfterChange(Diagnostics(env.AtRegexp("caller/caller_test.go", "a.Test")))
 

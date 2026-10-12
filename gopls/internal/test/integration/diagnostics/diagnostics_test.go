@@ -1291,6 +1291,7 @@ module mod.com/b
 go 1.18
 `
 	WithOptions(
+		WorkspaceFolders("a"),
 		Settings{
 			"subdirWatchPatterns": "on",
 		},
