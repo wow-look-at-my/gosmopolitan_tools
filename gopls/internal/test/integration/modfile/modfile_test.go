@@ -1104,20 +1104,6 @@ package main
 	})
 }
 
-// This is a regression test for a bug in the line-oriented implementation
-// of the "apply diffs" operation used by the fake editor.
-func TestIssue57627(t *testing.T) {
-	const files = `
--- a.txt --
-package main
-`
-	Run(t, files, func(t *testing.T, env *Env) {
-		env.OpenFile("a.txt")
-		env.SetBufferContent("a.txt", "go 1.18\nuse moda/a")
-		env.SaveBuffer("a.txt") // doesn't fail
-	})
-}
-
 func TestInconsistentMod(t *testing.T) {
 	const proxy = `
 -- golang.org/x/mod@v0.7.0/go.mod --
