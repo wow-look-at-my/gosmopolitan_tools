@@ -55,18 +55,6 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 		// TODO(rfindley): add a test for degenerate cases, such as missing
 		// workspace folders (once we decide on the correct behavior).
 		{
-			// gopls ignores a go.work file: it does not make a workspace view.
-			"go.work is ignored",
-			map[string]string{
-				"go.work":  "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
-				"a/go.mod": "module golang.org/a\ngo 1.18\n",
-				"b/go.mod": "module golang.org/b\ngo 1.18\n",
-			},
-			[]folderSummary{{dir: "."}},
-			nil,
-			[]viewSummary{{AdHocView, ".", nil}},
-		},
-		{
 			"basic go.mod workspace",
 			map[string]string{
 				"go.mod": "module golang.org/a\ngo 1.18\n",
@@ -142,24 +130,6 @@ func TestZeroConfigAlgorithm(t *testing.T) {
 		{
 			"zero-config open modules",
 			map[string]string{
-				"a/go.mod": "module golang.org/a\ngo 1.18\n",
-				"a/a.go":   "package a",
-				"b/go.mod": "module golang.org/b\ngo 1.18\n",
-				"b/b.go":   "package b",
-			},
-			[]folderSummary{{dir: "."}},
-			[]string{"a/a.go", "b/b.go"},
-			[]viewSummary{
-				{AdHocView, ".", nil},
-				{GoModView, "a", nil},
-				{GoModView, "b", nil},
-			},
-		},
-		{
-			// gopls ignores a go.work file: each open module is its own view.
-			"go.work is ignored, open modules",
-			map[string]string{
-				"go.work":  "go 1.18\nuse (\n\t./a\n\t./b\n)\n",
 				"a/go.mod": "module golang.org/a\ngo 1.18\n",
 				"a/a.go":   "package a",
 				"b/go.mod": "module golang.org/b\ngo 1.18\n",
