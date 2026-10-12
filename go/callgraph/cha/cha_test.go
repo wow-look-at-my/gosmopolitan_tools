@@ -168,7 +168,7 @@ func loadFile(t testing.TB, filename string, mode ssa.BuilderMode) (*packages.Pa
 			filepath.Join(dir, "go.mod"):       []byte("module x.io\ngo 1.22"),
 			filepath.Join(dir, "main/main.go"): data,
 		},
-		Env: append(os.Environ(), "GO111MODULES=on", "GOPATH=", "GOWORK=off", "GOPROXY=off"),
+		Env: append(os.Environ(), "GO111MODULES=on", "GOPATH=", "GOPROXY=off"),
 	}
 	pkgs, err := packages.Load(cfg, "./main")
 	if err != nil {

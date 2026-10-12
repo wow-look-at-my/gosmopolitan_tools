@@ -411,7 +411,6 @@ func TestOrdering(t *testing.T) {
 				Env: append(os.Environ(),
 					"GO111MODULES=on",
 					"GOPATH=",
-					"GOWORK=off",
 					"GOPROXY=off"),
 			}
 			pkgs, err := packages.Load(cfg, "x.io/p")

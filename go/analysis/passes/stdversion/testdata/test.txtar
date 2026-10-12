@@ -6,15 +6,6 @@ See also gopls/internal/test/marker/testdata/diagnostics/stdversion.txt
 which runs the same test within the gopls analysis driver, to ensure
 coverage of per-file Go version support.
 
--- go.work --
-go 1.22
-
-use .
-use mod20
-use mod21
-use mod22
-use old
-
 -- go.mod --
 module example.com
 

@@ -18,9 +18,9 @@ func Test(t *testing.T) {
 	analysistest.Run(t, dir, stdversion.Analyzer,
 		"example.com/basic",
 		"example.com/despite",
-		"example.com/mod20",
-		"example.com/mod21",
-		"example.com/mod22",
-		"example.com/old",
 	)
+	// Each nested module loads from its own directory.
+	for _, mod := range []string{"mod20", "mod21", "mod22", "old"} {
+		analysistest.Run(t, filepath.Join(dir, mod), stdversion.Analyzer, "example.com/"+mod)
+	}
 }

@@ -93,7 +93,6 @@ func MyPrintf(format string, args ...any) {
 		Dir:  tmpdir,
 		Env: append(os.Environ(),
 			"GOPROXY=off", // disable network
-			"GOWORK=off",  // an ambient GOWORK value would break package loading
 		),
 		Logf: t.Logf,
 	}
