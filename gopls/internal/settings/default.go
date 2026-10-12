@@ -77,7 +77,6 @@ func DefaultOptions(overrides ...func(*Options)) *Options {
 					protocol.SourceOrganizeImports: true,
 					protocol.QuickFix:              true,
 				},
-				file.Work: {},
 				file.Sum:  {},
 				file.Tmpl: {},
 			},

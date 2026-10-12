@@ -17,7 +17,7 @@ import (
 
 // A InitializationError is an error that causes snapshot initialization to fail.
 // It is either the error returned from go/packages.Load, or an error parsing a
-// workspace go.work or go.mod file.
+// workspace go.mod file.
 //
 // Such an error generally indicates that the View is malformed, and will never
 // be usable.
@@ -142,7 +142,6 @@ const (
 	Vulncheck              DiagnosticSource = "vulncheck imports"
 	Govulncheck            DiagnosticSource = "govulncheck"
 	TemplateError          DiagnosticSource = "template"
-	WorkFileError          DiagnosticSource = "go.work file"
 )
 
 // A SuggestedFix represents a suggested fix (for a diagnostic)

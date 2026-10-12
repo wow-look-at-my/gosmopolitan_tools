@@ -105,7 +105,6 @@ func LoadPackages(t testing.TB, ar *txtar.Archive, patterns ...string) []*packag
 		Env: append(os.Environ(),
 			"GO111MODULES=on",
 			"GOPATH=",
-			"GOWORK=off",
 			"GOPROXY=off"),
 	}
 	pkgs, err := packages.Load(cfg, patterns...)

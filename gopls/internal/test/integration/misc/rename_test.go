@@ -514,14 +514,6 @@ func main() {
 
 func TestRenamePackage_NestedModule(t *testing.T) {
 	const files = `
--- go.work --
-go 1.18
-use (
-	.
-	./foo/bar
-	./foo/baz
-)
-
 -- go.mod --
 module mod.com
 
@@ -529,6 +521,7 @@ go 1.18
 
 require (
     mod.com/foo/bar v0.0.0
+    mod.com/foo/baz v0.0.0
 )
 
 replace (

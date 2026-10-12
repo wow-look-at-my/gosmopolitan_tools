@@ -14,7 +14,6 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -32,7 +31,6 @@ import (
 	"golang.org/x/tools/gopls/internal/filecache"
 	label1 "golang.org/x/tools/gopls/internal/label"
 	"golang.org/x/tools/gopls/internal/protocol"
-	"golang.org/x/tools/gopls/internal/protocol/command"
 	"golang.org/x/tools/gopls/internal/settings"
 	"golang.org/x/tools/gopls/internal/util/bug"
 	"golang.org/x/tools/gopls/internal/util/constraints"
@@ -166,10 +164,6 @@ type Snapshot struct {
 	// The handles need not refer to only the view's go.mod file.
 	parseModHandles *persistent.Map[protocol.DocumentURI, *memoize.Promise] // *memoize.Promise[parseModResult]
 
-	// parseWorkHandles keeps track of any parseWorkHandles for the snapshot.
-	// The handles need not refer to only the view's go.work file.
-	parseWorkHandles *persistent.Map[protocol.DocumentURI, *memoize.Promise] // *memoize.Promise[parseWorkResult]
-
 	// Preserve go.mod-related handles to avoid garbage-collecting the results
 	// of various calls to the go command. The handles need not refer to only
 	// the view's go.mod file.
@@ -234,7 +228,6 @@ func (s *Snapshot) decref() {
 		s.packages.Destroy()
 		s.files.destroy()
 		s.parseModHandles.Destroy()
-		s.parseWorkHandles.Destroy()
 		s.modTidyHandles.Destroy()
 		s.modVulnHandles.Destroy()
 		s.modWhyHandles.Destroy()
@@ -322,8 +315,6 @@ func fileKind(fh file.Handle) file.Kind {
 		return file.Mod
 	case ".sum":
 		return file.Sum
-	case ".work":
-		return file.Work
 	case ".s":
 		return file.Asm
 	}
@@ -371,7 +362,7 @@ func (s *Snapshot) RunGoModUpdateCommands(ctx context.Context, modURI protocol.D
 	// TODO(rfindley): we must use ModFlag and ModFile here (rather than simply
 	// setting Args), because without knowing the verb, we can't know whether
 	// ModFlag is appropriate. Refactor so that args can be set by the caller.
-	inv, cleanupInvocation, err := s.GoCommandInvocation(NetworkOK, modURI.DirPath(), "", nil, "GOWORK=off")
+	inv, cleanupInvocation, err := s.GoCommandInvocation(NetworkOK, modURI.DirPath(), "", nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -815,21 +806,12 @@ func (s *Snapshot) fileWatchingGlobPatterns() map[protocol.RelativePattern]unit 
 	// Always watch files that may change the view definition.
 	patterns := make(map[protocol.RelativePattern]unit)
 
-	// If GOWORK is outside the folder, ensure we are watching it.
-	if s.view.gowork != "" && !s.view.folder.Dir.Encloses(s.view.gowork) {
-		workPattern := protocol.RelativePattern{
-			BaseURI: s.view.gowork.Dir(),
-			Pattern: path.Base(string(s.view.gowork)),
-		}
-		patterns[workPattern] = unit{}
-	}
-
 	for _, glob := range s.Options().WorkspaceFiles {
 		patterns[protocol.RelativePattern{Pattern: glob}] = unit{}
 	}
 
 	var extensions strings.Builder
-	extensions.WriteString("go,mod,sum,work")
+	extensions.WriteString("go,mod,sum")
 	for _, ext := range s.Options().TemplateExtensions {
 		extensions.WriteString(",")
 		extensions.WriteString(ext)
@@ -838,12 +820,6 @@ func (s *Snapshot) fileWatchingGlobPatterns() map[protocol.RelativePattern]unit 
 
 	var dirs []string
 	if s.view.typ.usesModules() {
-		if s.view.typ == GoWorkView {
-			workVendorDir := filepath.Join(s.view.gowork.DirPath(), "vendor")
-			workVendorURI := protocol.URIFromPath(workVendorDir)
-			patterns[protocol.RelativePattern{BaseURI: workVendorURI, Pattern: watchGoFiles}] = unit{}
-		}
-
 		// In module mode, watch directories containing active modules, and collect
 		// these dirs for later filtering the set of known directories.
 		//
@@ -957,8 +933,8 @@ func (s *Snapshot) filesInDir(uri protocol.DocumentURI) []protocol.DocumentURI {
 // metadata for all ordinary and test packages (but not
 // intermediate test variants) in the workspace.
 //
-// The workspace is the set of modules typically defined by a
-// go.work file. It is not transitively closed: for example,
+// The workspace is the set of main modules of the view.
+// It is not transitively closed: for example,
 // the standard library is not usually part of the workspace
 // even though every module in the workspace depends on it.
 //
@@ -1327,74 +1303,11 @@ searchOverlays:
 			if !(loadedMod || workspaceMod) {
 				modDir := goMod.DirPath()
 				viewDir := s.view.folder.Dir.Path()
-
-				// When the module is underneath the view dir, we offer
-				// "use all modules" quick-fixes.
-				inDir := pathutil.InDir(viewDir, modDir)
-
 				if rel, err := filepath.Rel(viewDir, modDir); err == nil {
 					modDir = rel
 				}
 
-				var fix string
-				if s.view.folder.Env.GoVersion >= 18 {
-					if s.view.gowork != "" {
-						fix = fmt.Sprintf("To fix this problem, you can add this module to your go.work file (%s)", s.view.gowork)
-
-						cmd := command.NewRunGoWorkCommandCommand("Run `go work use`", command.RunGoWorkArgs{
-							ViewID: s.view.ID(),
-							Args:   []string{"use", modDir},
-						})
-						suggestedFixes = append(suggestedFixes, SuggestedFix{
-							Title:      "Use this module in your go.work file",
-							Command:    cmd,
-							ActionKind: protocol.QuickFix,
-						})
-
-						if inDir {
-							cmd := command.NewRunGoWorkCommandCommand("Run `go work use -r`", command.RunGoWorkArgs{
-								ViewID: s.view.ID(),
-								Args:   []string{"use", "-r", "."},
-							})
-							suggestedFixes = append(suggestedFixes, SuggestedFix{
-								Title:      "Use all modules in your workspace",
-								Command:    cmd,
-								ActionKind: protocol.QuickFix,
-							})
-						}
-					} else {
-						fix = "To fix this problem, you can add a go.work file that uses this directory."
-
-						cmd := command.NewRunGoWorkCommandCommand("Run `go work init && go work use`", command.RunGoWorkArgs{
-							ViewID:    s.view.ID(),
-							InitFirst: true,
-							Args:      []string{"use", modDir},
-						})
-						suggestedFixes = []SuggestedFix{
-							{
-								Title:      "Add a go.work file using this module",
-								Command:    cmd,
-								ActionKind: protocol.QuickFix,
-							},
-						}
-
-						if inDir {
-							cmd := command.NewRunGoWorkCommandCommand("Run `go work init && go work use -r`", command.RunGoWorkArgs{
-								ViewID:    s.view.ID(),
-								InitFirst: true,
-								Args:      []string{"use", "-r", "."},
-							})
-							suggestedFixes = append(suggestedFixes, SuggestedFix{
-								Title:      "Add a go.work file using all modules in your workspace",
-								Command:    cmd,
-								ActionKind: protocol.QuickFix,
-							})
-						}
-					}
-				} else {
-					fix = `To work with multiple modules simultaneously, please upgrade to Go 1.18 or
-later, reinstall gopls, and use a go.work file.`
-				}
+				fix := "To fix this problem, open the module's directory as a workspace folder."
 
 				msg = fmt.Sprintf(`This file is within module %q, which is not included in your workspace.
 %s
@@ -1467,9 +1380,8 @@ func orphanedFileDiagnosticRange(ctx context.Context, cache *parseCache, fh file
 }
 
 // TODO(golang/go#53756): this function needs to consider more than just the
-// absolute URI, for example:
-//   - the position of /vendor/ with respect to the relevant module root
-//   - whether or not go.work is in use (as vendoring isn't supported in workspace mode)
+// absolute URI, for example the position of /vendor/ with respect to the
+// relevant module root.
 //
 // Most likely, each call site of inVendor needs to be reconsidered to
 // understand and correctly implement the desired behavior.
@@ -1532,7 +1444,6 @@ func (s *Snapshot) clone(ctx, bgCtx context.Context, changed StateChange, done f
 		shouldLoad:        s.shouldLoad.Clone(),      // not cloneWithout: shouldLoad is cleared on loads
 		unloadableFiles:   s.unloadableFiles.Clone(), // not cloneWithout: typing in a file doesn't necessarily make it loadable
 		parseModHandles:   cloneWithout(s.parseModHandles, changedFiles, &needsDiagnosis),
-		parseWorkHandles:  cloneWithout(s.parseWorkHandles, changedFiles, &needsDiagnosis),
 		modTidyHandles:    cloneWithout(s.modTidyHandles, changedFiles, &needsDiagnosis),
 		modWhyHandles:     cloneWithout(s.modWhyHandles, changedFiles, &needsDiagnosis),
 		modVulnHandles:    cloneWithout(s.modVulnHandles, changedFiles, &needsDiagnosis),
@@ -1630,9 +1541,6 @@ func (s *Snapshot) clone(ctx, bgCtx context.Context, changed StateChange, done f
 			continue // like with go.mod files, we only reinit when things change on disk
 		}
 		dir, base := filepath.Split(uri.Path())
-		if base == "go.work.sum" && s.view.typ == GoWorkView && dir == s.view.gowork.DirPath() {
-			reinit = true
-		}
 		if base == "go.sum" {
 			modURI := protocol.URIFromPath(filepath.Join(dir, "go.mod"))
 			if _, active := result.view.workspaceModFiles[modURI]; active {
@@ -1716,9 +1624,8 @@ func (s *Snapshot) clone(ctx, bgCtx context.Context, changed StateChange, done f
 			// While it is theoretically possible that a change in workspace module A
 			// could affect the mod-tidiness of workspace module B (if B transitively
 			// requires A), such changes are probably unlikely and not worth the
-			// penalty of re-running go mod tidy for everything. Note that mod tidy
-			// ignores GOWORK, so the two modules would have to be related by a chain
-			// of replace directives.
+			// penalty of re-running go mod tidy for everything. The modules
+			// would have to be related by a chain of replace directives.
 			//
 			// We could improve accuracy by inspecting replace directives, using
 			// overlays in go mod tidy, and/or checking for metadata changes from the

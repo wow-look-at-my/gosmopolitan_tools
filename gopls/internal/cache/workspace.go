@@ -7,7 +7,6 @@ package cache
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 
 	"golang.org/x/mod/modfile"
@@ -16,41 +15,12 @@ import (
 	"golang.org/x/tools/gopls/internal/test/integration/fake/glob"
 )
 
-// isGoWork reports if uri is a go.work file.
-func isGoWork(uri protocol.DocumentURI) bool {
-	return uri.Base() == "go.work"
-}
-
-// goWorkModules returns the URIs of go.mod files named by the go.work file.
-func goWorkModules(ctx context.Context, gowork protocol.DocumentURI, fs file.Source) (map[protocol.DocumentURI]unit, error) {
-	fh, err := fs.ReadFile(ctx, gowork)
-	if err != nil {
-		return nil, err // canceled
-	}
-	content, err := fh.Content()
-	if err != nil {
-		return nil, err
-	}
-	filename := gowork.Path()
-	dir := filepath.Dir(filename)
-	workFile, err := modfile.ParseWork(filename, content, nil)
-	if err != nil {
-		return nil, fmt.Errorf("parsing go.work: %w", err)
-	}
-	var usedDirs []string
-	for _, use := range workFile.Use {
-		usedDirs = append(usedDirs, use.Path)
-	}
-	return localModFiles(dir, usedDirs), nil
-}
-
-// localModFiles builds a set of local go.mod files referenced by
-// goWorkOrModPaths, which is a slice of paths as contained in a go.work 'use'
-// directive or go.mod 'replace' directive (and which therefore may use either
-// '/' or '\' as a path separator).
-func localModFiles(relativeTo string, goWorkOrModPaths []string) map[protocol.DocumentURI]unit {
+// localModFiles builds a set of local go.mod files referenced by modPaths.
+// This is a slice of paths as contained in a go.mod 'replace' directive (and
+// which therefore may use either '/' or '\' as a path separator).
+func localModFiles(relativeTo string, modPaths []string) map[protocol.DocumentURI]unit {
 	modFiles := make(map[protocol.DocumentURI]unit)
-	for _, path := range goWorkOrModPaths {
+	for _, path := range modPaths {
 		modDir := filepath.FromSlash(path)
 		if !filepath.IsAbs(modDir) {
 			modDir = filepath.Join(relativeTo, modDir)

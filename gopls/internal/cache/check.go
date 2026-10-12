@@ -1959,7 +1959,7 @@ func depsErrors(ctx context.Context, snapshot *Snapshot, mp *metadata.Package) (
 // based on the user's workspace mode.
 func missingPkgError(from PackageID, pkgPath string, viewType ViewType) error {
 	switch viewType {
-	case GoModView, GoWorkView:
+	case GoModView:
 		if metadata.IsCommandLineArguments(from) {
 			return fmt.Errorf("current file is not included in a workspace module")
 		} else {

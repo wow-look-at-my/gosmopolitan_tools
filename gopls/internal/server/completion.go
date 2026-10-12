@@ -17,7 +17,6 @@ import (
 	"golang.org/x/tools/gopls/internal/settings"
 	"golang.org/x/tools/gopls/internal/telemetry"
 	"golang.org/x/tools/gopls/internal/template"
-	"golang.org/x/tools/gopls/internal/work"
 	"golang.org/x/tools/internal/event"
 )
 
@@ -48,12 +47,6 @@ func (s *server) Completion(ctx context.Context, params *protocol.CompletionPara
 		candidates, surrounding, err = completion.Completion(ctx, snapshot, fh, pos, params.Context)
 	case file.Mod:
 		candidates, surrounding = nil, nil
-	case file.Work:
-		cl, err := work.Completion(ctx, snapshot, fh, pos)
-		if err != nil {
-			break
-		}
-		return cl, nil
 	case file.Tmpl:
 		var cl *protocol.CompletionList
 		cl, err = template.Completion(ctx, snapshot, fh, pos, params.Context)

@@ -97,65 +97,6 @@ func TestComputeGoModHash(t *testing.T) {
 	}
 }
 
-func TestComputeGoWorkHash(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "empty file",
-			content: "go 1.25",
-			want:    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // sha256 of empty string
-		},
-		{
-			name: "with use",
-			content: `
-			go 1.25
-			use (
-				./foo
-				./bar
-			)
-			`,
-			want: func() string {
-				h := sha256.New()
-				h.Write([]byte("./foo\x00"))
-				h.Write([]byte("./bar\x00"))
-				return hex.EncodeToString(h.Sum(nil))
-			}(),
-		},
-		{
-			name: "with replace",
-			content: `
-			go 1.25
-			replace golang.org/x/tools v0.1.0 => ./tools
-			`,
-			want: func() string {
-				h := sha256.New()
-				h.Write([]byte("golang.org/x/tools\x00v0.1.0\x00./tools\x00"))
-				return hex.EncodeToString(h.Sum(nil))
-			}(),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			workFile, err := modfile.ParseWork("go.work", []byte(tt.content), nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			got, err := computeGoWorkHash(workFile)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("computeGoWorkHash() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("computeGoWorkHash() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 type mockClient struct {
 	protocol.Client
 	showMessageRequest func(context.Context, *protocol.ShowMessageRequestParams) (*protocol.MessageActionItem, error)
@@ -239,27 +180,6 @@ func TestCheckDependencyChanges(t *testing.T) {
 			userAction:      "yes", // lowercase
 			wantPrompt:      true,
 			wantHashUpdated: true,
-		},
-		{
-			name:          "go.work: user says yes",
-			filename:      "go.work",
-			vulncheckMode: settings.ModeVulncheckPrompt,
-			oldContent:    "go 1.25",
-			newContent: `
-			go 1.25
-			use ./foo
-			`,
-			userAction:      yes,
-			wantPrompt:      true,
-			wantHashUpdated: true,
-		},
-		{
-			name:          "go.work: no changes",
-			filename:      "go.work",
-			vulncheckMode: settings.ModeVulncheckPrompt,
-			oldContent:    "go 1.25\nuse ./foo",
-			newContent:    "go 1.25\nuse ./foo",
-			wantPrompt:    false,
 		},
 	}
 

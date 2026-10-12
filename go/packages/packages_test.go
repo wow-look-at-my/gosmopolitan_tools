@@ -3050,7 +3050,6 @@ package p
 			"PATH=" + os.Getenv("PATH"),
 			"GOCACHE=" + t.TempDir(),
 			"GOPACKAGESDRIVER=off",
-			"GOWORK=off",
 		},
 	}, "./p")
 	if err != nil {
@@ -3275,7 +3274,7 @@ func TestLoadOverlayGoMod(t *testing.T) {
 		Overlay: map[string][]byte{
 			filepath.Join(cwd, "go.mod"): []byte("module example.com\ngo 1.0"),
 		},
-		Env: append(os.Environ(), "GOFLAGS=-mod=vendor", "GOWORK=off"),
+		Env: append(os.Environ(), "GOFLAGS=-mod=vendor"),
 	}
 
 	pkgs, err := packages.Load(cfg, "./testdata")
@@ -3319,7 +3318,6 @@ func TestIssue69606a(t *testing.T) {
 			os.Environ(),
 			"GO111MODULES=on",
 			"GOPATH=",
-			"GOWORK=off",
 			"GOPROXY=off",
 			fmt.Sprintf("GOROOT=%s", goroot)),
 	}, "std")
@@ -3350,7 +3348,6 @@ func TestIssue69606b(t *testing.T) {
 			os.Environ(),
 			"GO111MODULES=on",
 			"GOPATH=",
-			"GOWORK=off",
 			"GOPROXY=off",
 			fmt.Sprintf("GOROOT=%s", goroot)),
 	}, "std")
@@ -3378,7 +3375,7 @@ func TestIssue70394(t *testing.T) {
 		Dir:     dir,
 		Mode:    packages.NeedTypes, // just NeedsTypes allows for loading export data.
 		Overlay: overlay,
-		Env:     append(os.Environ(), "GOFLAGS=-mod=vendor", "GOWORK=off"),
+		Env:     append(os.Environ(), "GOFLAGS=-mod=vendor"),
 	}
 	pkgs, err := packages.Load(cfg, "m/b")
 	if err != nil {

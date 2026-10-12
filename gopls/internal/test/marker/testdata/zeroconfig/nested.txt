@@ -37,8 +37,7 @@ func _() {
 //go:build tag1
 
 // golang/go#60776: verify that we get an accurate error about build tags
-// here, rather than an inaccurate error suggesting to add a go.work
-// file (which won't help).
+// here, rather than an inaccurate error about an inactive module.
 package a //@diag(re`package (a)`, re`excluded due to its build tags`)
 
 -- mod1/b/b.go --

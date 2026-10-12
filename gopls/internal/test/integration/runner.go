@@ -221,7 +221,6 @@ func (r *Runner) Run(t *testing.T, files string, test TestFunc, opts ...RunOptio
 				v = strings.ReplaceAll(v, "$SANDBOX_WORKDIR", sandbox.Workdir.RootURI().Path())
 				environ = append(environ, fmt.Sprintf("%s=%s", k, v))
 			}
-			environ = append(environ, "GOWORK=off")
 
 			for _, dir := range config.writeGoSum {
 				if _, err := sandbox.RunGoCommand(context.Background(), dir, "list", []string{"-mod=mod", "./..."}, environ, true); err != nil {

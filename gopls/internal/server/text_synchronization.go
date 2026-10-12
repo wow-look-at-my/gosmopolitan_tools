@@ -297,7 +297,7 @@ func (s *server) handleModuleChanges(ctx context.Context, modifications []file.M
 	if cause == FromDidChangeWatchedFiles {
 		for _, m := range modifications {
 			switch m.URI.Base() {
-			case "go.mod", "go.sum", "go.work", "go.work.sum":
+			case "go.mod", "go.sum":
 				// Module metadata file; continue checking.
 			default:
 				// Batch contains non-module files; skip dependency checks.
@@ -308,7 +308,7 @@ func (s *server) handleModuleChanges(ctx context.Context, modifications []file.M
 
 	uris := make(map[protocol.DocumentURI]struct{})
 	for _, m := range modifications {
-		if (m.URI.Base() == "go.mod" || m.URI.Base() == "go.work") && (m.Action == file.Create || m.Action == file.Save) {
+		if m.URI.Base() == "go.mod" && (m.Action == file.Create || m.Action == file.Save) {
 			uris[m.URI] = struct{}{}
 		}
 	}

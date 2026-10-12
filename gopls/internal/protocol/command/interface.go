@@ -246,10 +246,6 @@ type Interface interface {
 	// command.
 	WorkspaceStats(context.Context) (WorkspaceStatsResult, error)
 
-	// RunGoWorkCommand: Run `go work [args...]`, and apply the resulting go.work
-	// edits to the current go.work file
-	RunGoWorkCommand(context.Context, RunGoWorkArgs) error
-
 	// AddTelemetryCounters: Update the given telemetry counters
 	//
 	// Gopls will prepend "fwd/" to all the counters updated using this command
@@ -603,12 +599,6 @@ type PackageStats struct {
 	Modules         int // total number of unique modules
 }
 
-type RunGoWorkArgs struct {
-	ViewID    string   // ID of the view to run the command from
-	InitFirst bool     // Whether to run `go work init` first
-	Args      []string // Args to pass to `go work`
-}
-
 // AddTelemetryCountersArgs holds the arguments to the AddCounters command
 // that updates the telemetry counters.
 type AddTelemetryCountersArgs struct {
@@ -689,7 +679,7 @@ type DiagnoseFilesArgs struct {
 type View struct {
 	ID         string               // view ID (the index of this view among all views created)
 	Type       string               // view type (via cache.ViewType.String)
-	Root       protocol.DocumentURI // root dir of the view (e.g. containing go.mod or go.work)
+	Root       protocol.DocumentURI // root dir of the view (e.g. containing go.mod)
 	Folder     protocol.DocumentURI // workspace folder associated with the view
 	EnvOverlay []string             // environment variable overrides
 }
@@ -707,8 +697,7 @@ type PackagesArgs struct {
 	// the ... pattern.
 	// The search does not cross the module boundaries and
 	// does not return packages that are not yet loaded.
-	// (e.g. those excluded by the gopls directory filter setting,
-	// or the go.work configuration)
+	// (e.g. those excluded by the gopls directory filter setting)
 	Recursive bool `json:"Recursive,omitempty"`
 
 	// Mode controls the types of information returned for each package.

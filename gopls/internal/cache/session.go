@@ -262,7 +262,6 @@ func (s *Session) createView(ctx context.Context, def *viewDefinition) (*View, *
 		shouldLoad:        new(persistent.Map[PackageID, []PackagePath]),
 		unloadableFiles:   new(persistent.Set[protocol.DocumentURI]),
 		parseModHandles:   new(persistent.Map[protocol.DocumentURI, *memoize.Promise]),
-		parseWorkHandles:  new(persistent.Map[protocol.DocumentURI, *memoize.Promise]),
 		modTidyHandles:    new(persistent.Map[protocol.DocumentURI, *memoize.Promise]),
 		modVulnHandles:    new(persistent.Map[protocol.DocumentURI, *memoize.Promise]),
 		modWhyHandles:     new(persistent.Map[protocol.DocumentURI, *memoize.Promise]),
@@ -613,10 +612,9 @@ func RelevantViews[V viewDefiner](ctx context.Context, fs file.Source, uri proto
 		return nil, err
 	}
 
-	// Prefer GoWork > GoMod > GOPATH > GoPackages > AdHoc.
+	// Prefer GoMod > GOPATH > GoPackages > AdHoc.
 	var (
 		goPackagesViews []V // prefer longest
-		workViews       []V // prefer longest
 		modViews        []V // exact match
 		gopathViews     []V // prefer longest
 		adHocViews      []V // exact match
@@ -652,10 +650,6 @@ func RelevantViews[V viewDefiner](ctx context.Context, fs file.Source, uri proto
 			if def.root.Encloses(dir) {
 				pushView(&goPackagesViews, view)
 			}
-		case GoWorkView:
-			if _, ok := def.workspaceModFiles[modURI]; ok || uri == def.gowork {
-				pushView(&workViews, view)
-			}
 		case GoModView:
 			if _, ok := def.workspaceModFiles[modURI]; ok {
 				modViews = append(modViews, view)
@@ -678,8 +672,6 @@ func RelevantViews[V viewDefiner](ctx context.Context, fs file.Source, uri proto
 	// defineView should be of the best type.
 	var relevantViews []V
 	switch {
-	case len(workViews) > 0:
-		relevantViews = workViews
 	case len(modViews) > 0:
 		relevantViews = modViews
 	case len(gopathViews) > 0:
@@ -792,8 +784,7 @@ func (s *Session) DidModifyFiles(ctx context.Context, modifications []file.Modif
 	}
 
 	// checkViews controls whether the set of views needs to be recomputed, for
-	// example because a go.mod file was created or deleted, or a go.work file
-	// changed on disk.
+	// example because a go.mod file was created, deleted, or changed on disk.
 	checkViews := false
 
 	// Hack: collect folders from existing views.
@@ -825,12 +816,8 @@ func (s *Session) DidModifyFiles(ctx context.Context, modifications []file.Modif
 			checkViews = true
 		}
 
-		// Any on-disk change to a go.work or go.mod file causes recomputing views.
-		//
-		// TODO(rfindley): go.work files need not be named "go.work" -- we need to
-		// check each view's source to handle the case of an explicit GOWORK value.
-		// Write a test that fails, and fix this.
-		if (isGoWork(c.URI) || isGoMod(c.URI) || isWorkspaceFile(c.URI, workspaceFileGlobs)) && (c.Action == file.Save || c.OnDisk) {
+		// Any on-disk change to a go.mod file causes recomputing views.
+		if (isGoMod(c.URI) || isWorkspaceFile(c.URI, workspaceFileGlobs)) && (c.Action == file.Save || c.OnDisk) {
 			checkViews = true
 		}
 
@@ -866,8 +853,7 @@ func (s *Session) DidModifyFiles(ctx context.Context, modifications []file.Modif
 
 		// TODO(rfindley): can we avoid running the go command (go env)
 		// synchronously to change processing? Can we assume that the env did not
-		// change, and derive go.work using a combination of the configured
-		// GOWORK value and filesystem?
+		// change?
 		defs, err := selectViewDefs(ctx, s, folders, openFiles)
 		if err != nil {
 			// Catastrophic failure, equivalent to a failure of session
@@ -1113,7 +1099,7 @@ func (b brokenFile) ModTime() (time.Time, error) { return time.Time{}, b.err }
 // keep the server's state up to date.
 //
 // This set includes
-//  1. all go.mod and go.work files in the workspace; and
+//  1. all go.mod files in the workspace; and
 //  2. all files defined by the WorkspaceFiles option in BuildOptions (to support custom GOPACKAGESDRIVERS); and
 //  3. for each Snapshot, its modules (or directory for ad-hoc views). In
 //     module mode, this is the set of active modules (and for VS Code, all
@@ -1147,7 +1133,7 @@ func (s *Session) FileWatchingGlobPatterns(ctx context.Context) map[protocol.Rel
 
 	// Always watch files that may change the set of views.
 	patterns := map[protocol.RelativePattern]unit{
-		{Pattern: "**/*.{mod,work}"}: {},
+		{Pattern: "**/*.mod"}: {},
 	}
 
 	for _, view := range s.views {

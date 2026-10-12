@@ -803,8 +803,6 @@ func (cli *client) openFile(ctx context.Context, uri protocol.DocumentURI) (*cmd
 		langID = "go.mod"
 	case ".sum":
 		langID = "go.sum"
-	case ".work":
-		langID = "go.work"
 	case ".s":
 		langID = "go.s"
 	}

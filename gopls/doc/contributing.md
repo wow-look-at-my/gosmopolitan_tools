@@ -72,27 +72,10 @@ This repository provides two modules:
 
 The gopls/go.mod file contains a `replace` directive pointing to the parent directory to ensure that gopls uses the version of x/tools at the exact same git commit.
 
-We recommend creating a go.work file such as this in the root directory:
-
-```go
-go 1.25
-
-use .
-use ./gopls
-```
-
-so that the go command will allow you to specify gopls packages even when working outside the gopls directory. For example:
+Run gopls tests from the gopls directory:
 
 ```
-tools$ go test -short ./gopls/...
-```
-
-For more details on how to use workspaces, see the [Go workspace documentation](https://go.dev/doc/tutorial/workspaces) or run `go help work`.
-
-With this setup, you can run tests for all modules in the workspace from the root directory using:
-
-```bash
-go test work
+tools/gopls$ go test -short ./...
 ```
 
 This will run tests for both `golang.org/x/tools` and `golang.org/x/tools/gopls`.
@@ -174,8 +157,8 @@ run the complete set, on a wide range of platforms.)
 Gopls tests are a mix of two kinds.
 
 - [Marker tests](https://golang.org/x/tools/gopls/internal/test/marker) express each test scenario
-  in a standalone text file that contains the target .go, go.mod, and
-  go.work files, in which special annotations embedded in comments
+  in a standalone text file that contains the target .go and go.mod
+  files, in which special annotations embedded in comments
   drive the test. These tests are generally easy to write and fast
   to iterate, but have limitations on what they can express.
 
