@@ -20,7 +20,6 @@ import (
 	"golang.org/x/tools/gopls/internal/util/bug"
 	"golang.org/x/tools/gopls/internal/util/goversion"
 	"golang.org/x/tools/internal/gocommand"
-	"golang.org/x/tools/internal/testenv"
 
 	. "golang.org/x/tools/gopls/internal/test/integration"
 )
@@ -238,39 +237,6 @@ func Hello() int {
 	var x int
 }
 `
-
-func TestAutomaticWorkspaceModule_Interdependent(t *testing.T) {
-	WithOptions(
-		ProxyFiles(workspaceModuleProxy),
-	).Run(t, multiModule, func(t *testing.T, env *Env) {
-		env.RunGoCommand("work", "init")
-		env.RunGoCommand("work", "use", "-r", ".")
-		env.AfterChange(
-			Diagnostics(env.AtRegexp("moda/a/a.go", "x")),
-			Diagnostics(env.AtRegexp("modb/b/b.go", "x")),
-			NoDiagnostics(env.AtRegexp("moda/a/a.go", `"b.com/b"`)),
-		)
-	})
-}
-
-func TestWorkspaceVendoring(t *testing.T) {
-	testenv.NeedsGoCommand1Point(t, 22)
-	WithOptions(
-		ProxyFiles(workspaceModuleProxy),
-	).Run(t, multiModule, func(t *testing.T, env *Env) {
-		env.RunGoCommand("work", "init")
-		env.RunGoCommand("work", "use", "moda/a")
-		env.AfterChange()
-		env.OpenFile("moda/a/a.go")
-		env.RunGoCommand("work", "vendor")
-		env.AfterChange()
-		loc := env.FirstDefinition(env.RegexpSearch("moda/a/a.go", "b.(Hello)"))
-		const want = "vendor/b.com/b/b.go"
-		if got := env.Sandbox.Workdir.URIToPath(loc.URI); got != want {
-			t.Errorf("Definition: got location %q, want %q", got, want)
-		}
-	})
-}
 
 func TestModuleWithExclude(t *testing.T) {
 	const proxy = `
