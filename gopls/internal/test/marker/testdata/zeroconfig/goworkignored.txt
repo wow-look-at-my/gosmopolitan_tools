@@ -1,9 +1,13 @@
 This test checks that gopls ignores a go.work file. The go.work file uses
-module b, but the view for module a holds only a's go.mod file.
+module b, but the view for module a holds only a's go.mod file, and a's
+import of b does not resolve. Module b has a path with no dot, so the go
+command rejects the import without the network. The rejection is an error
+log from go mod tidy.
 
 -- flags --
 -mcp
 -min_go_command=go1.23
+-errors_ok
 
 -- go.work --
 go 1.23.0
@@ -23,8 +27,10 @@ go 1.23.0
 -- a/a.go --
 package a
 
+import _ "workb" //@diag("\"workb\"", re"could not import|not in std|no required module")
+
 -- b/go.mod --
-module example.com/b
+module workb
 
 go 1.23.0
 
@@ -40,5 +46,5 @@ The `$WORKDIR/a` directory uses Go modules, with the following main modules:
 	$WORKDIR/a/go.mod (module example.com/a)
 
 The `$WORKDIR/b` directory uses Go modules, with the following main modules:
-	$WORKDIR/b/go.mod (module example.com/b)
+	$WORKDIR/b/go.mod (module workb)
 
