@@ -64,14 +64,9 @@ module example.com/c
 
 go 1.22
 
-require example.com/a v0.0.1
 require example.com/b v0.0.1 //@ refs("/b", bmod, c_b)
 
-replace example.com/a => ../a
-
 replace example.com/b => ../b
-
-replace example.com/b/x => ../b/x
 -- c/c.go --
 package c
 

@@ -96,6 +96,10 @@ import "golang.org/lsptests/rename/nine/nine/nine"
 -- othermoddir/go.mod --
 module mod.com/other
 
+require golang.org/lsptests/rename v0.0.0
+
+replace golang.org/lsptests/rename => ../
+
 -- foo/windows.go --
 //go:build windows
 package foo
