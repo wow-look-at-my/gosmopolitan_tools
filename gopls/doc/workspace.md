@@ -20,7 +20,7 @@ Gopls typically works when you open a Go file anywhere in your workspace. If it 
 Gopls guesses the builds you are working on based on the set of open files.
 When you open a file in a workspace folder, gopls checks whether the file is
 contained in a module or GOPATH directory, and configures the build
-accordingly. Each module is its own build. Gopls ignores `go.work` files.
+accordingly. Each module is its own build.
 Additionally, if you
 open a file that is constrained to a different operating system or
 architecture, for example opening `foo_windows.go` when working on Linux, gopls
@@ -66,7 +66,7 @@ improvements you'd like to see.
 
 ## Working on several modules together
 
-Gopls does not read `go.work` files. The `go` command does not support them. Add a `replace` directive with a local path to the go.mod file of the module that uses it. Do this to make changes in one module visible in another. With the [`"build.includeReplaceInWorkspace"`](https://github.com/golang/tools/blob/master/gopls/doc/settings.md#includereplaceinworkspace) setting, gopls treats locally replaced modules as workspace modules.
+Add a `replace` directive with a local path to the go.mod file of the module that uses it. Do this to make changes in one module visible in another. With the [`"build.includeReplaceInWorkspace"`](https://github.com/golang/tools/blob/master/gopls/doc/settings.md#includereplaceinworkspace) setting, gopls treats locally replaced modules as workspace modules.
 
 ## When to manually configure `GOOS`, `GOARCH`, or `-tags`
 
