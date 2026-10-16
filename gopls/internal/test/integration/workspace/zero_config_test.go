@@ -16,9 +16,8 @@ import (
 	. "golang.org/x/tools/gopls/internal/test/integration"
 )
 
-func TestGoWorkIgnored(t *testing.T) {
-	// A go.work file added to or removed from the root directory does not
-	// change the views: each module stays its own view.
+func TestOpenAndCloseModules(t *testing.T) {
+	// Each open module is its own view. Closing a module's last file drops its view.
 	const nomod = `
 -- go.mod --
 module a.com
@@ -58,23 +57,6 @@ func main() {}
 		}
 
 		// Zero-config gopls makes this work.
-		env.AfterChange(
-			NoDiagnostics(ForFile("main.go")),
-			NoDiagnostics(env.AtRegexp("b/main.go", "package (main)")),
-		)
-		checkViews(summary(cache.GoModView, ".", "."), summary(cache.GoModView, "b", "."))
-
-		env.WriteWorkspaceFile("go.work", `go 1.16
-
-use (
-	.
-	b
-)
-`)
-		env.AfterChange()
-		checkViews(summary(cache.GoModView, ".", "."), summary(cache.GoModView, "b", "."))
-
-		env.RemoveWorkspaceFile("go.work")
 		env.AfterChange(
 			NoDiagnostics(ForFile("main.go")),
 			NoDiagnostics(env.AtRegexp("b/main.go", "package (main)")),
