@@ -1295,6 +1295,17 @@ func (w *exportWriter) param(obj types.Object) {
 	w.pos(obj.Pos())
 	w.localIdent(obj)
 	w.typ(obj.Type(), obj.Pkg())
+	if w.p.version >= iexportVersionParamDefaults {
+		// A caller in another package omits the argument for this parameter,
+		// so the default belongs to the signature and has to cross the wire.
+		var deflt constant.Value
+		if v, ok := obj.(*types.Var); ok {
+			deflt = v.Default()
+		}
+		if w.bool(deflt != nil) {
+			w.value(obj.Type(), deflt, obj.Pkg())
+		}
+	}
 }
 
 // only called for constants

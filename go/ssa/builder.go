@@ -1093,6 +1093,20 @@ func (b *builder) emitCallArgs(fn *Function, sig *types.Signature, e *ast.CallEx
 		}
 	}
 
+	// A call omits a suffix of the parameter list when every parameter in
+	// that suffix carries a default. The type checker leaves the call as the
+	// source wrote it, so the values for the omitted parameters come from the
+	// signature. Depth: docs/OPTIONAL-PARAMS.md in the gosmopolitan
+	// toolchain.
+	for i := len(args) - offset; i < sig.Params().Len(); i++ {
+		p := sig.Params().At(i)
+		deflt := p.Default()
+		if deflt == nil {
+			break
+		}
+		args = append(args, NewConst(deflt, p.Type()))
+	}
+
 	// Actual->formal assignability conversions for normal parameters.
 	np := sig.Params().Len() // number of normal parameters
 	if sig.Variadic() {

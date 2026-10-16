@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -1518,5 +1519,56 @@ func TestBuildPackageGo120(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+// TestParamDefaults checks that a call omitting an argument for a defaulted
+// parameter reaches SSA with that value passed. The type checker leaves such
+// a call as the source wrote it, so the builder has to read the value off the
+// signature; a builder that does not would index past the arguments it has.
+func TestParamDefaults(t *testing.T) {
+	input := `
+package p
+
+func greet(name string = "world", n int = 3, loud bool = true) string { return name }
+
+func main() {
+	greet()
+	greet("a")
+	greet("a", 1, false)
+}
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "input.go", input, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg, _, err := ssautil.BuildPackage(&types.Config{}, fset,
+		types.NewPackage("p", ""), []*ast.File{f}, ssa.SanityCheckFunctions)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got []string
+	for _, b := range pkg.Func("main").Blocks {
+		for _, instr := range b.Instrs {
+			call, ok := instr.(*ssa.Call)
+			if !ok {
+				continue
+			}
+			var args []string
+			for _, arg := range call.Call.Args {
+				args = append(args, arg.String())
+			}
+			got = append(got, strings.Join(args, ", "))
+		}
+	}
+	want := []string{
+		`"world":string, 3:int, true:bool`,
+		`"a":string, 3:int, true:bool`,
+		`"a":string, 1:int, false:bool`,
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("call arguments:\ngot:  %q\nwant: %q", got, want)
 	}
 }

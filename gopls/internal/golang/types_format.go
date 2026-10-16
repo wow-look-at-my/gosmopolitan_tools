@@ -201,6 +201,12 @@ func NewSignature(ctx context.Context, s *cache.Snapshot, pkg *cache.Package, si
 		if el.Name() != "" {
 			p = el.Name() + " " + typ
 		}
+		// A parameter carrying a default is one a call may omit, so the
+		// signature has to show it. Depth: docs/OPTIONAL-PARAMS.md in the
+		// gosmopolitan toolchain.
+		if deflt := el.Default(); deflt != nil {
+			p += " = " + deflt.ExactString()
+		}
 		params = append(params, p)
 	}
 
@@ -512,6 +518,7 @@ func qualifyFieldList(fl *ast.FieldList, qf func(string) string) *ast.FieldList 
 	for _, f := range fl.List {
 		list = append(list, &ast.Field{
 			Comment: f.Comment,
+			Default: f.Default,
 			Doc:     f.Doc,
 			Names:   f.Names,
 			Tag:     f.Tag,
