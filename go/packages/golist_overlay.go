@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages
 
@@ -31,14 +30,10 @@ func (state *golistState) determineRootDirs() (map[string]string, error) {
 }
 
 func (state *golistState) determineRootDirsModules() (map[string]string, error) {
-	// List all of the modules--the first will be the directory for the main
-	// module. Any replaced modules will also need to be treated as roots.
-	// Editing files in the module cache isn't a great idea, so we don't
-	// plan to ever support that.
+	// List all of the modules--the first will be the directory for the main module.
 	out, err := state.invokeGo("list", "-m", "-json", "all")
 	if err != nil {
-		// 'go list all' will fail if we're outside of a module and
-		// GO111MODULE=on. Try falling back without 'all'.
+		// 'go list all' will fail if we're outside of a module and GO111MODULE=on. Try falling back without 'all'.
 		var innerErr error
 		out, innerErr = state.invokeGo("list", "-m", "-json")
 		if innerErr != nil {

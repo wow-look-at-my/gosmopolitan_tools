@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Store child window object which will display slides with notes
 var notesWindow = null;
@@ -57,7 +56,6 @@ function initNotes() {
   var curSlide = parseInt(localStorage.getItem(destSlideKey()), 10);
   var formattedNotes = '';
   var section = sections[curSlide - 1];
-  // curSlide is 0 when initialized from the first page of slides.
   // Check if section is valid before retrieving Notes.
   if (section) {
     formattedNotes = formatNotes(section.Notes);
@@ -88,8 +86,7 @@ function initNotes() {
 
   addPresenterNotesStyle();
 
-  // Add listener on notesWindow to update notes when triggered from
-  // parent window
+  // Add listener on notesWindow to update notes when triggered from parent window
   w.addEventListener('storage', updateNotes, false);
 }
 
@@ -104,8 +101,7 @@ function formatNotes(notes) {
 }
 
 function updateNotes() {
-  // When triggered from parent window, notesWindow is null
-  // The storage event listener on notesWindow will update notes
+  // When triggered from parent window, notesWindow is null The storage event listener on notesWindow will update notes
   if (!notesWindow) return;
   var destSlide = parseInt(localStorage.getItem(destSlideKey()), 10);
   var section = sections[destSlide - 1];
@@ -124,8 +120,7 @@ function updateNotes() {
 
 /* Playground syncing */
 
-// When presenter notes are enabled, playground click handlers are
-// stored here to sync click events on the correct playground
+// When presenter notes are enabled, playground click handlers are stored here to sync click events on the correct playground
 var playgroundHandlers = { onRun: [], onKill: [], onClose: [] };
 
 function updatePlay(e) {

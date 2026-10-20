@@ -1,48 +1,17 @@
 /*
 Derived from Inferno's utils/iyacc/yacc.c
-http://code.google.com/p/inferno-os/source/browse/utils/iyacc/yacc.c
-
-This copyright NOTICE applies to all files in this directory and
-subdirectories, unless another copyright notice appears in a given
-file or subdirectory.  If you take substantial code from this software to use in
-other programs, you must somehow include with it an appropriate
-copyright notice that includes the copyright notice and the other
-notices below.  It is fine (and often tidier) to do that in a separate
-file such as NOTICE, LICENCE or COPYING.
-
-	Copyright © 1994-1999 Lucent Technologies Inc.  All rights reserved.
-	Portions Copyright © 1995-1997 C H Forsyth (forsyth@terzarima.net)
-	Portions Copyright © 1997-1999 Vita Nuova Limited
-	Portions Copyright © 2000-2007 Vita Nuova Holdings Limited (www.vitanuova.com)
-	Portions Copyright © 2004,2006 Bruce Ellis
-	Portions Copyright © 2005-2007 C H Forsyth (forsyth@terzarima.net)
-	Revisions Copyright © 2000-2007 Lucent Technologies Inc. and others
-	Portions Copyright © 2009 The Go Authors. All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+http://code.google.com/p/inferno-os/source/browse/utils/iyacc/yacc.c This
+copyright NOTICE applies to all files in this directory and subdirectories,
+unless another copyright notice appears in a given file or subdirectory. If
+you take substantial code from this software to use in other programs, you
+must somehow include with it an appropriate copyright notice that includes
+the copyright notice and the other notices below. It is fine (and often
+tidier) to do that in a separate file such as NOTICE, LICENCE or COPYING.
 */
 
 package main
 
-// yacc
-// major difference is lack of stem ("y" variable)
-//
+// yacc major difference is lack of stem ("y" variable)
 
 import (
 	"bufio"
@@ -58,8 +27,7 @@ import (
 	"unicode"
 )
 
-// the following are adjustable
-// according to memory size
+// the following are adjustable according to memory size
 const (
 	ACTSIZE  = 240000
 	NSTATES  = 16000
@@ -67,16 +35,11 @@ const (
 
 	SYMINC   = 50  // increase for non-term or term
 	RULEINC  = 50  // increase for max rule length prodptr[i]
-	PRODINC  = 100 // increase for productions     prodptr
-	WSETINC  = 50  // increase for working sets    wsets
-	STATEINC = 200 // increase for states          statemem
+	PRODINC  = 100 // increase for productions prodptr
+	WSETINC  = 50  // increase for working sets wsets
+	STATEINC = 200 // increase for states statemem
 
 	PRIVATE = 0xE000 // unicode private use
-
-	// relationships which must hold:
-	//	TEMPSIZE >= NTERMS + NNONTERM + 1;
-	//	TEMPSIZE >= NSTATES;
-	//
 
 	NTBASE     = 010000
 	ERRCODE    = 8190
@@ -157,9 +120,9 @@ var foutput *bufio.Writer   // y.output file
 
 var fmtImported bool // output file has recorded an import of "fmt"
 
-var oflag string  // -o [y.go]		- y.go file
-var vflag string  // -v [y.output]	- y.output file
-var lflag bool    // -l			- disable line directives
+var oflag string  // -o [y.go] - y.go file
+var vflag string  // -v [y.output] - y.output file
+var lflag bool    // -l - disable line directives
 var prefix string // name prefix for identifiers, default yy
 
 func init() {
@@ -172,9 +135,9 @@ func init() {
 var initialstacksize = 16
 
 // communication variables between various I/O routines
-var infile string  // input file name
-var numbval int    // value of an input number
-var tokname string // input token name, slop for runes and 0
+var infile string // input file name
+var numbval int   // value of an input number
+var tokname string
 var tokflag = false
 
 // structure declarations
@@ -560,11 +523,8 @@ outer:
 		prdptr[0][1] = chfind(1, tokname)
 	}
 
-	// read rules
-	// put into prdptr array in the format
-	// target
-	// followed by id's of terminals and non-terminals
-	// followed by -nprod
+	// read rules put into prdptr array in the format target followed by id's of
+	// terminals and non-terminals followed by -nprod
 
 	for t != MARK && t != ENDFILE {
 		mem := 0
@@ -626,10 +586,7 @@ outer:
 				// make it a nonterminal
 				j = chfind(1, fmt.Sprintf("$$%v", nprod))
 
-				//
-				// the current rule will become rule number nprod+1
-				// enter null production for action
-				//
+				// the current rule will become rule number nprod+1 enter null production for action
 				prdptr[nprod] = make([]int, 2)
 				prdptr[nprod][0] = j
 				prdptr[nprod][1] = -nprod
@@ -687,10 +644,7 @@ outer:
 		errorf("too many tokens (%d) or non-terminals (%d)", ntokens, nnonter)
 	}
 
-	//
-	// end of all rules
-	// dump out the prefix code
-	//
+	// end of all rules dump out the prefix code.
 
 	fmt.Fprintf(fcode, "\n\t}")
 
@@ -710,14 +664,11 @@ outer:
 	}
 	fmt.Fprintf(ftable, "}\n")
 
-	// put out names of states.
-	// commented out to avoid a huge table just for debugging.
-	// re-enable to have the names in the binary.
+	// put out names of states. commented out to avoid a huge table for debugging. re-enable to have the names in the binary.
 	ftable.WriteRune('\n')
 	fmt.Fprintf(ftable, "var %sStatenames = [...]string{\n", prefix)
 	//	for i:=TOKSTART; i<=ntokens; i++ {
 	//		fmt.Fprintf(ftable, "\t%q,\n", tokset[i].name);
-	//	}
 	fmt.Fprintf(ftable, "}\n")
 
 	ftable.WriteRune('\n')
@@ -725,9 +676,7 @@ outer:
 	fmt.Fprintf(ftable, "const %sErrCode = 2\n", prefix)
 	fmt.Fprintf(ftable, "const %sInitialStackSize = %v\n", prefix, initialstacksize)
 
-	//
 	// copy any postfix code
-	//
 	if t == MARK {
 		if !lflag {
 			fmt.Fprintf(ftable, "\n//line %v:%v\n", infile, lineno)
@@ -761,8 +710,7 @@ func moreprod() {
 	}
 }
 
-// define s to be a terminal if nt==0
-// or a nonterminal if nt==1
+// define s to be a terminal if nt==0 or a nonterminal if nt==1
 func defin(nt int, s string) int {
 	val := 0
 	if nt != 0 {
@@ -792,8 +740,7 @@ func defin(nt int, s string) int {
 	tokset[ntokens].name = s
 	toklev[ntokens] = 0
 
-	// establish value for token
-	// single character literal
+	// establish value for token single character literal
 	if s[0] == '\'' || s[0] == '"' {
 		q, err := strconv.Unquote(s)
 		if err != nil {
@@ -1078,8 +1025,7 @@ out:
 	fmt.Fprintf(ftable, "\n\n")
 }
 
-// saves code between %{ and %}
-// adds an import for __fmt__ the first time
+// saves code between %{ and %} adds an import for __fmt__ the first time
 func cpycode() {
 	lno := lineno
 
@@ -1112,9 +1058,8 @@ func cpycode() {
 	errorf("eof before %%}")
 }
 
-// emits code saved up from between %{ and %}
-// called by cpycode
-// adds an import for __yyfmt__ after the package clause
+// emits code saved up from between %{ and %} called by cpycode adds an import
+// for __yyfmt__ after the package clause
 func emitcode(code []rune, lineno int) {
 	for i, line := range lines(code) {
 		writecode(line)
@@ -1128,7 +1073,8 @@ func emitcode(code []rune, lineno int) {
 	}
 }
 
-// does this line look like a package clause?  not perfect: might be confused by early comments.
+// does this line look like a package clause? not perfect: might be confused
+// by early comments.
 func isPackageClause(line []rune) bool {
 	line = skipspace(line)
 
@@ -1205,8 +1151,7 @@ func writecode(code []rune) {
 	}
 }
 
-// skip over comments
-// skipcom is called after reading a '/'
+// skip over comments skipcom is called after reading a '/'
 func skipcom() int {
 	c := getrune(finput)
 	if c == '/' {
@@ -1246,7 +1191,7 @@ l1:
 	return nl
 }
 
-// copy action to the next ; or closing }
+// copy action to the next; or closing }
 func cpyact(curprod []int, max int) {
 
 	if !lflag {
@@ -1476,7 +1421,6 @@ func symnam(i int) string {
 	return s
 }
 
-// set elements 0 through n-1 to c
 func aryfil(v []int, n, c int) {
 	for i := range n {
 		v[i] = c
@@ -1531,8 +1475,7 @@ func cempty() {
 
 	pempty = make([]int, nnonter+1)
 
-	// first, use the array pempty to detect productions that can never be reduced
-	// set pempty to WHONOWS
+	// first, use the array pempty to detect productions that can never be reduced set pempty to WHONOWS
 	aryfil(pempty, nnonter+1, WHOKNOWS)
 
 	// now, look at productions, marking nonterminals which derive something
@@ -1575,8 +1518,7 @@ more:
 		exit(1)
 	}
 
-	// now, compute the pempty array, to see which nonterminals derive the empty string
-	// set pempty to WHOKNOWS
+	// now, compute the pempty array, to see which nonterminals derive the empty string set pempty to WHOKNOWS
 	aryfil(pempty, nnonter+1, WHOKNOWS)
 
 	// loop as long as we keep finding empty nonterminals
@@ -1691,13 +1633,7 @@ func stagen() {
 	nstate = 1
 	pstate[2] = pstate[1]
 
-	//
-	// now, the main state generation loop
-	// first pass generates all of the states
-	// later passes fix up lookahead
-	// could be sped up a lot by remembering
-	// results of the first pass rather than recomputing
-	//
+	// now.
 	first := 1
 	for more := 1; more != 0; first = 0 {
 		more = 0
@@ -1790,7 +1726,7 @@ func closure(i int) {
 			c := wsets[u].pitem.first
 			if c < NTBASE {
 				wsets[u].flag = 0
-				// only interesting case is where . is before nonterminal
+				// only interesting case is where. is before nonterminal
 				continue
 			}
 
@@ -1832,9 +1768,7 @@ func closure(i int) {
 				}
 			}
 
-			//
-			// now loop over productions derived from c
-			//
+			// now loop over productions derived from c.
 			curres := pres[c-NTBASE]
 			n := len(curres)
 
@@ -1843,10 +1777,7 @@ func closure(i int) {
 			for s := range n {
 				prd := curres[s]
 
-				//
-				// put these items into the closure
-				// is the item there
-				//
+				// put these items into the closure is the item there
 				for v := 0; v < cwp; v++ {
 					// yes, it is there
 					if wsets[v].pitem.off == 0 &&
@@ -2044,11 +1975,7 @@ func writem(pp Pitem) string {
 
 // pack state i from temp1 into amem
 func apack(p []int, n int) int {
-	//
-	// we don't need to worry about checking because
-	// we will only look at entries known to be there...
-	// eliminate leading and trailing 0's
-	//
+	// we don't need to worry about checking.
 	off := 0
 	pp := 0
 	for ; pp <= n && p[pp] == 0; pp++ {
@@ -2196,10 +2123,8 @@ func output() {
 	fmt.Fprintf(ftable, "const %sPrivate = %v\n", prefix, PRIVATE)
 }
 
-// decide a shift/reduce conflict by precedence.
-// r is a rule number, t a token number
-// the conflict is in state s
-// temp1[t] is changed to reflect the action
+// decide a shift/reduce conflict by precedence. r is a rule number, t a token
+// number the conflict is in state s temp1[t] is changed to reflect the action
 func precftn(r, t, s int) {
 	action := NOASC
 
@@ -2230,8 +2155,7 @@ func precftn(r, t, s int) {
 	}
 }
 
-// output state i
-// temp1 has the actions, lastred the default
+// output state i temp1 has the actions, lastred the default
 func addActions(act []int, i int) []int {
 	var p, p1 int
 
@@ -2260,16 +2184,13 @@ func addActions(act []int, i int) []int {
 		}
 	}
 
-	//
-	// for error recovery, arrange that, if there is a shift on the
-	// error recovery token, `error', that the default be the error action
-	//
+	// for error recovery, arrange that, if there is a shift on the error
+	// recovery token, `error', that the default be the error action.
 	if temp1[2] > 0 {
 		lastred = 0
 	}
 
-	// clear out entries in temp1 which equal lastred
-	// count entries in optst table
+	// clear out entries in temp1 which equal lastred count entries in optst table
 	n := 0
 	for p = 0; p <= ntokens; p++ {
 		p1 = temp1[p]
@@ -2505,10 +2426,10 @@ func go2gen(c int) {
 	}
 }
 
-// in order to free up the mem and amem arrays for the optimizer,
-// and still be able to output yyr1, etc., after the sizes of
-// the action array is known, we hide the nonterminals
-// derived by productions in levprd.
+// And still be able to output yyr1, etc., after the sizes of the action
+// array is known, we hide the nonterminals. Those nonterminals are derived
+// by productions in levprd. This happens to free up the mem and amem arrays
+// for the optimizer.
 func hideprod() {
 	nred := 0
 	levprd[0] = 0
@@ -2552,8 +2473,7 @@ func callopt() {
 
 		// nontrivial situation
 		if k <= j {
-			// j is now the range
-			//			j -= k;			// call scj
+			// j is now the range j -= k; // call scj
 			if k > maxoff {
 				maxoff = k
 			}
@@ -2570,7 +2490,6 @@ func callopt() {
 		ggreed[i] = 1
 		j = 0
 
-		// minimum entry index is always 0
 		v = yypgo[i]
 		q = len(v) - 1
 		for p = 0; p < q; p += 2 {
@@ -2759,8 +2678,7 @@ nextn:
 	errorf("Error; failure to place state %v", i)
 }
 
-// this version is for limbo
-// write out the optimized parser
+// this version is for limbo write out the optimized parser
 func aoutput() {
 	ftable.WriteRune('\n')
 	fmt.Fprintf(ftable, "const %sLast = %v\n", prefix, maxa+1)
@@ -2776,9 +2694,7 @@ func others() {
 	arout("R1", levprd, nprod)
 	aryfil(temp1, nprod, 0)
 
-	//
 	//yyr2 is the number of rules for each production
-	//
 	for i = 1; i < nprod; i++ {
 		temp1[i] = len(prdptr[i]) - 2
 	}
@@ -2798,8 +2714,6 @@ func others() {
 	arout("Chk", temp1, nstate)
 	arrayOutColumns("Def", defact[:nstate], 10, false)
 
-	// put out token translation tables
-	// table 1 has 0-256
 	aryfil(temp1, 256, 0)
 	c := 0
 	for i = 1; i <= ntokens; i++ {
@@ -2823,7 +2737,7 @@ func others() {
 	}
 	arout("Tok1", temp1, c+1)
 
-	// table 2 has PRIVATE-PRIVATE+256
+	// A later table has PRIVATE-PRIVATE+256
 	aryfil(temp1, 256, 0)
 	c = 0
 	for i = 1; i <= ntokens; i++ {
@@ -2842,7 +2756,7 @@ func others() {
 	}
 	arout("Tok2", temp1, c+1)
 
-	// table 3 has everything else
+	// A later table has everything else
 	ftable.WriteRune('\n')
 	var v []int
 	for i = 1; i <= ntokens; i++ {
@@ -3076,8 +2990,6 @@ func setbit(set Lkset, bit int) { set[bit>>5] |= (1 << uint(bit&31)) }
 
 func mkset() Lkset { return make([]int, tbitset) }
 
-// set a to the union of a and b
-// return 1 if b is not a subset of a, 0 otherwise
 func setunion(a, b []int) int {
 	sub := 0
 	for i := 0; i < tbitset; i++ {
@@ -3114,8 +3026,7 @@ func isword(c rune) bool {
 	return c >= 0xa0 || c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-// return 1 if 2 arrays are equal
-// return 0 if not equal
+// One return if arrays are equal the first return if not equal
 func aryeq(a []int, b []int) int {
 	n := len(a)
 	if len(b) != n {

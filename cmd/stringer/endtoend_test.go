@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // go command is not available on android
 
@@ -26,9 +25,8 @@ import (
 )
 
 // This file contains a test that compiles and runs each program in testdata
-// after generating the string method for its type. The rule is that for testdata/x.go
-// we run stringer -type X and then compile and run the program. The resulting
-// binary panics if the String method for X is not correct, including for error cases.
+// after generating the string method for its type. The rule is that for
+// testdata/x.go we run stringer -type X and then compile and run the program.
 
 func TestMain(m *testing.M) {
 	if os.Getenv("STRINGER_TEST_IS_STRINGER") != "" {
@@ -36,9 +34,7 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 
-	// Inform subprocesses that they should run the cmd/stringer main instead of
-	// running tests. It's a close approximation to building and running the real
-	// command, and much less complicated and expensive to build and clean up.
+	// Inform subprocesses that they should run the cmd/stringer main instead of running tests.
 	os.Setenv("STRINGER_TEST_IS_STRINGER", "1")
 
 	flag.Parse()
@@ -170,15 +166,7 @@ func TestConstValueChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Unfortunately different compilers may give different error messages,
-	// so there's no easy way to verify that the build failed specifically
-	// because the constants changed rather than because the vary_day.go
-	// file is invalid.
-	//
-	// Instead we'll just rely on manual inspection of the polluted test
-	// output. An alternative might be to check that the error output
-	// matches a set of possible error strings emitted by known
-	// Go compilers.
+	// Unfortunately different compilers may give different error messages, so there's no easy way to verify that the build failed specifically.
 	t.Logf("Note: the following messages should indicate an out-of-bounds compiler error\n")
 	err = run(t, "go", "build", stringSource, source)
 	if err == nil {

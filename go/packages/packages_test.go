@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages_test
 
@@ -40,8 +39,7 @@ import (
 func TestMain(m *testing.M) {
 	testenv.ExitIfSmallMachine()
 
-	// This executable also behaves as various flavors of
-	// GOPACKAGESDRIVER command for some tests, based on ENTRYPOINT.
+	// This executable also behaves as various flavors of GOPACKAGESDRIVER command for some tests, based on ENTRYPOINT.
 	entrypoint := os.Getenv("ENTRYPOINT")
 	switch entrypoint {
 	case "":
@@ -85,21 +83,11 @@ func testAllOrModulesParallel(t *testing.T, f func(*testing.T, packagestest.Expo
 
 // TODO(adonovan): more test cases to write:
 //
-// - When the tests fail, make them print a 'cd & load' command
-//   that will allow the maintainer to interact with the failing scenario.
-// - errors in go-list metadata
-// - a foo.test package that cannot be built for some reason (e.g.
-//   import error) will result in a JSON blob with no name and a
-//   nonexistent testmain file in GoFiles. Test that we handle this
-//   gracefully.
-// - test more Flags.
-//
-// LoadSyntax & LoadAllSyntax modes:
-//   - Fset may be user-supplied or not.
-//   - Packages.Info is correctly set.
-//   - typechecker configuration is honored
-//   - import cycles are gracefully handled in type checker.
-//   - test typechecking of generated test main and cgo.
+// Make them print a 'cd & load' command that will allow the maintainer to
+// interact with the failing scenario. - errors in go-list metadata. A
+// foo.test package that cannot be built (e.g. import error) will result in
+// a JSON blob with no name and a nonexistent testmain file in GoFiles. Do
+// this - When the tests fail.
 
 // The zero-value of Config has LoadFiles mode.
 func TestLoadZeroConfig(t *testing.T) {
@@ -114,8 +102,7 @@ func TestLoadZeroConfig(t *testing.T) {
 		t.Fatalf("got %s, want [hash]", initial)
 	}
 	hash := initial[0]
-	// Even though the hash package has imports,
-	// they are not reported.
+	// Even though the hash package has imports, they are not reported.
 	got := fmt.Sprintf("srcs=%v imports=%v", srcs(hash), hash.Imports)
 	want := "srcs=[hash.go] imports=map[]"
 	if got != want {
@@ -268,8 +255,6 @@ func testLoadImportsGraph(t *testing.T, exporter packagestest.Exporter) {
 		}
 	}
 
-	// Wildcards
-	// See StdlibTest for effective test of "std" wildcard.
 	// TODO(adonovan): test "all" returns everything in the current module.
 	{
 		// "..." (subdirectory)
@@ -374,8 +359,7 @@ func TestLoadArgumentListIsNotTooLong(t *testing.T) {
 
 	t.Parallel()
 
-	// using the real ARG_MAX for some platforms increases the running time of this test by a lot,
-	// 1_000_000 seems like enough to break Windows and macOS if Load doesn't split provided patterns
+	// using the real ARG_MAX for some platforms increases the running time of this test by a lot.
 	argMax := 1_000_000
 	exported := packagestest.Export(t, packagestest.GOPATH, []packagestest.Module{{
 		Name: "golang.org/mod",
@@ -383,7 +367,7 @@ func TestLoadArgumentListIsNotTooLong(t *testing.T) {
 			"main.go": `package main"`,
 		}}})
 	defer exported.Cleanup()
-	numOfPatterns := argMax/16 + 1 // the pattern below is approx. 16 chars
+	numOfPatterns := argMax/16 + 1 // the pattern below is approx. Chars
 	patterns := make([]string, numOfPatterns)
 	for i := range numOfPatterns {
 		patterns[i] = fmt.Sprintf("golang.org/mod/p%d", i)
@@ -636,7 +620,6 @@ func testConfigFlags(t *testing.T, exporter packagestest.Exporter) {
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
 		Files: map[string]any{
-			// package a
 			"a/a.go": `package a; import _ "golang.org/fake/a/b"`,
 			"a/b.go": `// +build tag
 
@@ -693,10 +676,9 @@ package b`,
 
 func TestLoadTypes(t *testing.T) { testAllOrModulesParallel(t, testLoadTypes) }
 func testLoadTypes(t *testing.T, exporter packagestest.Exporter) {
-	// In LoadTypes and LoadSyntax modes, the compiler will
-	// fail to generate an export data file for c, because it has
-	// a type error.  The loader should fall back loading a and c
-	// from source, but use the export data for b.
+	// In LoadTypes and LoadSyntax modes, the compiler will fail to generate an
+	// export data file for c, because it has a type error. The loader should
+	// fall back loading a and c from source, but use the export data for b.
 
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
@@ -875,9 +857,7 @@ func testLoadSyntaxOK(t *testing.T, exporter packagestest.Exporter) {
 		{"golang.org/fake/e", false, false}, // export data package
 		{"golang.org/fake/f", false, false}, // export data package
 	} {
-		// TODO(matloob): LoadSyntax and LoadAllSyntax are now equivalent, wantSyntax and wantComplete
-		// are true for all packages in the transitive dependency set. Add test cases on the individual
-		// Need* fields to check the equivalents on the new API.
+		// TODO(matloob): LoadSyntax and LoadAllSyntax are now equivalent.
 		p := all[test.id]
 		if p == nil {
 			t.Errorf("missing package: %s", test.id)
@@ -957,10 +937,9 @@ func testLoadDiamondTypes(t *testing.T, exporter packagestest.Exporter) {
 
 func TestLoadSyntaxError(t *testing.T) { testAllOrModulesParallel(t, testLoadSyntaxError) }
 func testLoadSyntaxError(t *testing.T, exporter packagestest.Exporter) {
-	// A type error in a lower-level package (e) prevents go list
-	// from producing export data for all packages that depend on it
-	// [a-e]. Only f should be loaded from export data, and the rest
-	// should be IllTyped.
+	// A type error in a lower-level package (e) prevents go list from producing
+	// export data for all packages that depend on it [a-e]. Only f should be
+	// loaded from export data, and the rest should be IllTyped.
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
 		Files: map[string]any{
@@ -1066,8 +1045,7 @@ func TestAdHocPackagesBadImport(t *testing.T) {
 	t.Parallel()
 	testenv.NeedsTool(t, "go")
 
-	// This test doesn't use packagestest because we are testing ad-hoc packages,
-	// which are outside of $GOPATH and outside of a module.
+	// This test doesn't use packagestest because we are testing ad-hoc packages.
 	tmp, err := os.MkdirTemp("", "a")
 	if err != nil {
 		t.Fatal(err)
@@ -1117,8 +1095,7 @@ func TestLoadAllSyntaxImportErrors(t *testing.T) {
 	testAllOrModulesParallel(t, testLoadAllSyntaxImportErrors)
 }
 func testLoadAllSyntaxImportErrors(t *testing.T, exporter packagestest.Exporter) {
-	// TODO(matloob): Remove this once go list -e -compiled is fixed.
-	// See https://golang.org/issue/26755
+	// TODO(matloob): Remove this once go list -e -compiled is fixed. See https://golang.org/issue/26755
 	t.Skip("go list -compiled -e fails with non-zero exit status for empty packages")
 
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
@@ -1146,9 +1123,7 @@ import (
 		t.Fatal(err)
 	}
 
-	// Cycle-forming edges are removed from the graph:
-	// 	bicycle2 -> bicycle1
-	//      unicycle -> unicycle
+	// Cycle-forming edges are removed from the graph: bicycle2 -> bicycle1 unicycle -> unicycle
 	graph, all := importGraph(initial)
 	wantGraph := `
   bicycle1
@@ -1323,7 +1298,6 @@ func testContains(t *testing.T, exporter packagestest.Exporter) {
 // tool report the correct sizes function for the actual configuration.
 func TestSizes(t *testing.T) { testAllOrModulesParallel(t, testSizes) }
 func testSizes(t *testing.T, exporter packagestest.Exporter) {
-	// Only run this test on operating systems that have both an amd64 and 386 port.
 	switch runtime.GOOS {
 	case "linux", "windows", "freebsd", "openbsd", "netbsd", "android":
 	default:
@@ -1356,16 +1330,15 @@ func testSizes(t *testing.T, exporter packagestest.Exporter) {
 }
 
 // This is a regression test for a bug related to
-// github.com/golang/vscode-go/issues/3021: if types are needed (any
-// of NeedTypes{,Info,Sizes} and the types.Sizes cannot be obtained
-// (e.g. due to a bad GOARCH) then the Load operation must fail. It
-// must not return a nil TypesSizes, or use the default (wrong) size.
-// (The root cause of that issue turned out to be due to skew in the
-// Bazel GOPACKAGESDRIVER; see CL 537876.)
+// github.com/golang/vscode-go/issues/3021. If types are needed (any of
+// NeedTypes{,Info,Sizes} and the types.Sizes cannot be obtained (e.g. due to
+// a bad GOARCH) then the Load operation must fail. It must not return a nil
+// TypesSizes, or use the default (wrong) size. (The root cause of that issue
+// turned out to be due to skew in the Bazel GOPACKAGESDRIVER; see a later CL.)
 //
-// We use a file=... query because it suppresses the bad-GOARCH check
-// that the go command would otherwise perform eagerly.
-// (Gopls relies on this as a fallback.)
+// We use a file=... query because it suppresses the bad-GOARCH check that the
+// go command would otherwise perform eagerly. (Gopls relies on this as a
+// fallback.)
 func TestNeedTypeSizesWithBadGOARCH(t *testing.T) {
 	testAllOrModulesParallel(t, func(t *testing.T, exporter packagestest.Exporter) {
 		exported := packagestest.Export(t, exporter, []packagestest.Module{{
@@ -1384,9 +1357,9 @@ func TestNeedTypeSizesWithBadGOARCH(t *testing.T) {
 	})
 }
 
-// TestContainsFallbackSticks ensures that when there are both contains and non-contains queries
-// the decision whether to fallback to the pre-1.11 go list sticks across both sets of calls to
-// go list.
+// TestContainsFallbackSticks ensures that. This happens when there are both contains and
+// non-contains queries. The decision whether to fallback to the pre-1.11 go list sticks across
+// both sets of calls to go list.
 func TestContainsFallbackSticks(t *testing.T) {
 	testAllOrModulesParallel(t, testContainsFallbackSticks)
 }
@@ -1640,16 +1613,14 @@ func testPatternPassthrough(t *testing.T, exporter packagestest.Exporter) {
 // (go list) and alternative drivers specified explicitly via
 // GOPACKAGESDRIVER or implicitly via $(which gopackagesdriver).
 func TestDriver(t *testing.T) {
-	// packagestest.TestAll instead of testAllOrModulesParallel because this test
-	// can't be parallelized (it modifies the environment).
+	// packagestest.TestAll instead of testAllOrModulesParallel because this test can't be parallelized (it modifies the environment).
 	packagestest.TestAll(t, testDriver)
 }
 
 func testDriver(t *testing.T, exporter packagestest.Exporter) {
 	testenv.NeedsTool(t, "go")
 
-	// Copy the current test executable to a temp dir.
-	// We'll use it as a GOPACKAGESDRIVER.
+	// Copy the current test executable to a temp dir. We'll use it as a GOPACKAGESDRIVER.
 	exe, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
@@ -1736,8 +1707,7 @@ func testDriver(t *testing.T, exporter packagestest.Exporter) {
 
 			pattern, wantErr := strings.CutPrefix(test.want, "error: ")
 
-			// We request golist, but that's
-			// not necessarily what we get back.
+			// We request golist, but that's not necessarily what we get back.
 			pkgs, err := packages.Load(&config, "golist")
 			if err != nil {
 				errStr := sanitize(err.Error())
@@ -1772,7 +1742,7 @@ func driver1() {
 	fmt.Println(`{"Roots": ["gopackagesdriver"], "Packages": [{"ID": "gopackagesdriver", "Name": "gopackagesdriver"}]}`)
 }
 
-// driver2 returns two package with the same ID.
+// driver2 returns package with the same ID.
 func driver2() {
 	fmt.Println(`{"Roots": ["a", "b", "c"], "Packages": [
 {"ID": "a", "Name": "a"},
@@ -1804,13 +1774,13 @@ func copyfile(dst, src string) error {
 	return dstf.Close()
 }
 
-// This test that a simple x test package layout loads correctly.
-// There was a bug in go list where it returned multiple copies of the same
-// package (specifically in this case of golang.org/fake/a), and this triggered
-// a bug in go/packages where it would leave an empty entry in the root package
-// list. This would then cause a nil pointer crash.
-// This bug was triggered by the simple package layout below, and thus this
-// test will make sure the bug remains fixed.
+// This test that a simple x test package layout loads correctly. There was a
+// bug in go list where it returned multiple copies of the same package
+// (specifically in this case of golang.org/fake/a). This triggered a bug in
+// go/packages where it would leave an empty entry in the root package list.
+// This would then cause a nil pointer crash. This bug was triggered by the
+// simple package layout below, and thus this test will make sure the bug
+// remains fixed.
 func TestBasicXTest(t *testing.T) { testAllOrModulesParallel(t, testBasicXTest) }
 func testBasicXTest(t *testing.T, exporter packagestest.Exporter) {
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
@@ -1874,7 +1844,6 @@ func testReturnErrorWhenUsingNonGoFiles(t *testing.T, exporter packagestest.Expo
 	if err != nil {
 		return
 	}
-	// Go <1.14 calls the package command-line-arguments while Go 1.14+ uses the file names.
 	if len(pkgs) != 1 || (pkgs[0].PkgPath != "command-line-arguments" && pkgs[0].PkgPath != "b/b.c") {
 		t.Fatalf("packages.Load: want [command-line-arguments] or [b/b.c], got %v", pkgs)
 	}
@@ -2082,12 +2051,8 @@ const A = 4
 }
 
 func TestLoadImportsC(t *testing.T) {
-	// This test checks that when a package depends on the
-	// test variant of "syscall", "unsafe", or "runtime/cgo", that dependency
-	// is not removed when those packages are added when it imports "C".
-	//
-	// For this test to work, the external test of syscall must have a dependency
-	// on net, and net must import "syscall" and "C".
+	// This test checks that when a package depends on the test variant of
+	// "syscall", "unsafe", or "runtime/cgo".
 	if runtime.GOOS == "windows" {
 		t.Skipf("skipping on windows; packages on windows do not satisfy conditions for test.")
 	}
@@ -2112,7 +2077,7 @@ func TestLoadImportsC(t *testing.T) {
 
 	for _, test := range []struct {
 		pattern    string
-		wantImport string // an import to check for
+		wantImport string
 	}{
 		{"net", "syscall:syscall"},
 		{"net [syscall.test]", "syscall:syscall [syscall.test]"},
@@ -2610,9 +2575,9 @@ func TestIssue37629(t *testing.T) {
 	testAllOrModulesParallel(t, testIssue37629)
 }
 func testIssue37629(t *testing.T, exporter packagestest.Exporter) {
-	// Tests #37629. When automatic vendoring is triggered, and we try to determine
-	// the module root dir for a new overlay package, we previously would do a go list -m all,
-	// which is incompatible with automatic vendoring.
+	// When automatic vendoring is triggered, and we try to determine the module
+	// root dir for a new overlay package. We would do a go list -m all. This is
+	// incompatible with automatic vendoring.
 
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
@@ -2657,10 +2622,7 @@ b.com/b`,
 
 func TestIssue37098(t *testing.T) { testAllOrModulesParallel(t, testIssue37098) }
 func testIssue37098(t *testing.T, exporter packagestest.Exporter) {
-	// packages.Load should only return Go sources in
-	// (*Package).CompiledGoFiles.  This tests #37098, where using SWIG to
-	// causes C++ sources to be inadvertently included in
-	// (*Package).CompiledGoFiles.
+	// packages.Load should only return Go sources in (*Package).CompiledGoFiles.
 
 	if _, err := exec.LookPath("swig"); err != nil {
 		t.Skip("skipping test: swig not available")
@@ -2669,13 +2631,11 @@ func testIssue37098(t *testing.T, exporter packagestest.Exporter) {
 		t.Skip("skipping test: g++ not available")
 	}
 
-	// Create a fake package with an empty Go source, and a SWIG interface
-	// file.
+	// Create a fake package with an empty Go source, and a SWIG interface file.
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
 		Files: map[string]any{
-			// The "package" statement must be included for SWIG sources to
-			// be generated.
+			// The "package" statement must be included for SWIG sources to be generated.
 			"a/a.go":      "package a",
 			"a/a.swigcxx": "",
 		}}})
@@ -2761,7 +2721,6 @@ import "C"`,
 	}
 }
 
-// TestInvalidFilesInXTest checks the fix for golang/go#37971 in Go 1.15.
 func TestInvalidFilesInXTest(t *testing.T) { testAllOrModulesParallel(t, testInvalidFilesInXTest) }
 func testInvalidFilesInXTest(t *testing.T, exporter packagestest.Exporter) {
 	exported := packagestest.Export(t, exporter, []packagestest.Module{
@@ -3110,8 +3069,7 @@ func srcs(p *packages.Package) []string {
 func cleanPaths(paths []string) []string {
 	result := make([]string, len(paths))
 	for i, src := range paths {
-		// If the source file doesn't have an extension like .go or .s,
-		// it comes from GOCACHE. The names there aren't predictable.
+		// If the source file doesn't have an extension like .go or .s, it comes from GOCACHE.
 		name := filepath.Base(src)
 		if !strings.Contains(name, ".") {
 			result[i] = fmt.Sprintf("%d.go", i) // make cache names predictable
@@ -3132,8 +3090,7 @@ func importGraph(initial []*packages.Package) (string, map[string]*packages.Pack
 		initialSet[p] = true
 	}
 
-	// We can't use Visit or Postorder because we need to prune
-	// the traversal of specific edges, not just nodes.
+	// We can't use Visit or Postorder because we need to prune the traversal of specific edges, not nodes.
 	var nodes, edges []string
 	res := make(map[string]*packages.Package)
 	seen := make(map[*packages.Package]bool)
@@ -3152,9 +3109,7 @@ func importGraph(initial []*packages.Package) (string, map[string]*packages.Pack
 			}
 			nodes = append(nodes, fmt.Sprintf("%c %s", star, p.ID))
 
-			// To avoid a lot of noise,
-			// we prune uninteresting dependencies of testmain packages,
-			// which we identify by this import:
+			// To avoid a lot of noise, we prune uninteresting dependencies of testmain packages.
 			isTestMain := p.Imports["testing/internal/testdeps"] != nil
 
 			for _, imp := range p.Imports {
@@ -3164,10 +3119,6 @@ func importGraph(initial []*packages.Package) (string, map[string]*packages.Pack
 						continue
 					}
 				}
-				// math/bits took on a dependency on unsafe in 1.12, which breaks some
-				// tests. As a short term hack, prune that edge.
-				// ditto for ("errors", "internal/reflectlite") in 1.13.
-				// TODO(matloob): think of a cleaner solution, or remove math/bits from the test.
 				if p.ID == "math/bits" && imp.ID == "unsafe" {
 					continue
 				}
@@ -3206,20 +3157,18 @@ func constant(p *packages.Package, name string) *types.Const {
 }
 
 func TestExportFile(t *testing.T) {
-	// This used to trigger the log.Fatal in loadFromExportData.
-	// See go.dev/issue/45584.
+	// This used to trigger the log.Fatal in loadFromExportData. See go.dev/issue/45584.
 	cfg := new(packages.Config)
 	cfg.Mode = packages.NeedTypes
 	packages.Load(cfg, "fmt")
 }
 
-// TestLoadEitherSucceedsOrFails is an attempt to reproduce a sporadic
-// failure observed on the Android emu builders in which Load would
-// return an empty list of packages but no error. We don't expect
-// packages.Load to succeed on that platform, and testenv.NeedsGoBuild
-// would ordinarily suppress the attempt if called early. But
-// regardless of whether the 'go' command is functional, Load should
-// never return an empty set of packages but no error.
+// TestLoadEitherSucceedsOrFails is an attempt to reproduce a sporadic failure
+// observed on the Android. Emu builders in which Load would return an empty
+// list of packages but no error. We don't expect packages.Load to succeed on
+// that platform, and testenv.NeedsGoBuild would ordinarily suppress the
+// attempt if called early. But regardless of whether the 'go' command is
+// functional, Load should never return an empty set of packages but no error.
 func TestLoadEitherSucceedsOrFails(t *testing.T) {
 	const src = `package p`
 	dir := t.TempDir()
@@ -3232,16 +3181,14 @@ func TestLoadEitherSucceedsOrFails(t *testing.T) {
 	}
 	initial, err := packages.Load(cfg, "./p.go")
 	if err != nil {
-		// If Load failed because it needed 'go' and the
-		// platform doesn't have it, silently skip the test.
+		// If Load failed because it needed 'go' and the platform doesn't have it, silently skip the test.
 		testenv.NeedsGoBuild(t)
 
 		// Otherwise, it's a real failure.
 		t.Fatal(err)
 	}
 
-	// If Load returned without error,
-	// it had better give us error-free packages.
+	// If Load returned without error, it had better give us error-free packages.
 	if packages.PrintErrors(initial) > 0 {
 		t.Errorf("packages contain errors")
 	}
@@ -3253,22 +3200,13 @@ func TestLoadEitherSucceedsOrFails(t *testing.T) {
 	}
 }
 
-// TestLoadOverlayGoMod ensures that overlays containing go.mod files
-// are effective for all 'go list' calls made by go/packages (#67644).
 func TestLoadOverlayGoMod(t *testing.T) {
 	testenv.NeedsGoBuild(t)
 
 	cwd, _ := os.Getwd()
 
-	// This test ensures that the overlaid go.mod file is seen by
-	// all runs of 'go list', in particular the early run that
-	// enumerates the modules: if the go.mod file were absent,
-	// it would ascend to the parent directory (x/tools) and
-	// then (falsely) report inconsistent vendoring.
-	//
-	// (Ideally the testdata would be constructed from nothing
-	// rather than rely on the go/packages source tree, but it is
-	// turned out to a bigger project than bargained for.)
+	// This test ensures that the overlaid go.mod file is seen by all runs of 'go
+	// list'.
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 		Overlay: map[string][]byte{
@@ -3357,9 +3295,9 @@ func TestIssue69606b(t *testing.T) {
 	}
 }
 
-// TestIssue70394 tests materializing an alias type defined in a package (m/a)
-// in another package (m/b) where the types for m/b are coming from the compiler,
-// e.g. `go list -compiled=true ... m/b`.
+// TestIssue70394 tests materializing an alias type defined in a package (m/a) in
+// another package (m/b). This happens where the types for m/b are coming from
+// the compiler, e.g. `go list -compiled=true ... m/b`.
 func TestIssue70394(t *testing.T) {
 	testenv.NeedsGo1Point(t, 23)
 	testenv.NeedsTool(t, "go") // requires go list.
@@ -3373,7 +3311,7 @@ func TestIssue70394(t *testing.T) {
 	}
 	cfg := &packages.Config{
 		Dir:     dir,
-		Mode:    packages.NeedTypes, // just NeedsTypes allows for loading export data.
+		Mode:    packages.NeedTypes,
 		Overlay: overlay,
 		Env:     append(os.Environ(), "GOFLAGS=-mod=vendor"),
 	}
@@ -3432,7 +3370,6 @@ func foo() int {
 	}
 }
 
-// TestDirAndForTest tests the new fields added as part of golang/go#38445.
 func TestDirAndForTest(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
@@ -3516,7 +3453,6 @@ func Foo() int { return a.Foo() }
 	t.Logf("Packages: %+v", pkgs)
 }
 
-// TestTarget tests the new field added as part of golang/go#38445.
 // The test uses GOPATH mode because non-main packages don't usually
 // have install targets in module mode.
 func TestTarget(t *testing.T) {
@@ -3566,8 +3502,6 @@ func main() {
 // TestCompiledGoFilesIncludesDepsErrors ensures that when CompiledGoFiles
 // is missing, errors reported by go/packages include underlying dependency
 // errors from go list, rather than only a generic message.
-//
-// See golang/go#78083.
 func TestCompiledGoFilesIncludesDepsErrors(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 	testenv.NeedsTool(t, "cgo")
@@ -3615,10 +3549,7 @@ func Foo() {}
 	}
 }
 
-// TestMainPackagePathInModeTypes tests (*types.Package).Path() for
-// main packages in mode NeedTypes, a regression test for #70742, a
-// bug in cmd/compile's export data that caused them to appear as
-// "main". (The PkgPath field was always correct.)
+// (The PkgPath field was always correct.)
 func TestMainPackagePathInModeTypes(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 

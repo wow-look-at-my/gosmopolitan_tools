@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package pkgbits
 
@@ -14,7 +13,7 @@ import (
 func fmtFrames(pcs ...uintptr) []string {
 	res := make([]string, 0, len(pcs))
 	walkFrames(pcs, func(file string, line int, name string, offset uintptr) {
-		// Trim package from function name. It's just redundant noise.
+		// Trim package from function name. It's redundant noise.
 		name = strings.TrimPrefix(name, "cmd/compile/internal/noder.")
 
 		res = append(res, fmt.Sprintf("%s:%v: %s +0x%v", file, line, name, offset))
@@ -42,9 +41,7 @@ func walkFrames(pcs []uintptr, visit frameVisitor) {
 	}
 }
 
-// SyncMarker is an enum type that represents markers that may be
-// written to export data to ensure the reader and writer stay
-// synchronized.
+// SyncMarker is an enum type that represents markers that may be written to export data to ensure the reader and writer stay synchronized.
 type SyncMarker int
 
 //go:generate stringer -type=SyncMarker -trimprefix=Sync

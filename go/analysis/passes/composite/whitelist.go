@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package composite
 
@@ -26,8 +25,7 @@ var unkeyedLiteral = map[string]bool{
 	"unicode.Range16": true,
 	"unicode.Range32": true,
 
-	// These four structs are used in generated test main files,
-	// but the generator can be trusted.
+	// These structs are used in generated test main files, but the generator can be trusted.
 	"testing.InternalBenchmark":  true,
 	"testing.InternalExample":    true,
 	"testing.InternalTest":       true,

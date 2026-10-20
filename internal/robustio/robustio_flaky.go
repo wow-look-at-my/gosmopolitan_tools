@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build windows || darwin || plan9
 
@@ -15,8 +14,8 @@ import (
 
 const arbitraryTimeout = 2000 * time.Millisecond
 
-// retry retries ephemeral errors from f up to an arbitrary timeout
-// to work around filesystem flakiness on Windows, Darwin, and Plan 9.
+// retry retries ephemeral errors from f up to an arbitrary timeout to
+// work around filesystem flakiness on Windows, Darwin, and a later plan.
 func retry(f func() (err error, mayRetry bool)) error {
 	var (
 		bestErr     error
@@ -50,16 +49,6 @@ func retry(f func() (err error, mayRetry bool)) error {
 }
 
 // rename is like os.Rename, but retries ephemeral errors.
-//
-// On Windows it wraps os.Rename, which (as of 2019-06-04) uses MoveFileEx with
-// MOVEFILE_REPLACE_EXISTING.
-//
-// Windows also provides a different system call, ReplaceFile,
-// that provides similar semantics, but perhaps preserves more metadata. (The
-// documentation on the differences between the two is very sparse.)
-//
-// Empirical error rates with MoveFileEx are lower under modest concurrency, so
-// for now we're sticking with what the os package already provides.
 func rename(oldpath, newpath string) (err error) {
 	return retry(func() (err error, mayRetry bool) {
 		err = os.Rename(oldpath, newpath)
@@ -73,9 +62,7 @@ func readFile(filename string) ([]byte, error) {
 	err := retry(func() (err error, mayRetry bool) {
 		b, err = os.ReadFile(filename)
 
-		// Unlike in rename, we do not retry errFileNotFound here: it can occur
-		// as a spurious error, but the file may also genuinely not exist, so the
-		// increase in robustness is probably not worth the extra latency.
+		// Unlike in rename, we do not retry errFileNotFound here: it can occur as a spurious error, but the file may also genuinely not exist.
 		return err, isEphemeralError(err) && !errors.Is(err, errFileNotFound)
 	})
 	return b, err

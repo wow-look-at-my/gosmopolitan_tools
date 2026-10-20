@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The nodecount program illustrates the use of packages.Load to print
 // the frequency of occurrence of each type of syntax node among the
@@ -9,10 +8,6 @@
 // Example usage:
 //
 //	$ nodecount golang.org/x/tools/... std
-//
-// A typical distribution is 40% identifiers, 10% literals, 8%
-// selectors, and 6% calls; around 3% each of BinaryExpr, BlockStmt,
-// AssignStmt, Field, and Comment; and the rest accounting for 20%.
 package main
 
 import (

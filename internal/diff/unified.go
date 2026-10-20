@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package diff
 
@@ -12,13 +11,12 @@ import (
 	"strings"
 )
 
-// DefaultContextLines is the number of unchanged lines of surrounding
-// context displayed by Unified. Use ToUnified to specify a different value.
+// DefaultContextLines is the number of unchanged lines of surrounding context displayed by Unified.
 const DefaultContextLines = 3
 
-// Unified returns a unified diff of the old and new strings.
-// The old and new labels are the names of the old and new files.
-// If the strings are equal, it returns the empty string.
+// Unified returns a unified diff of the and new strings. The and new labels
+// are the names of the and new files. If the strings are equal, it returns
+// the empty string.
 func Unified(oldLabel, newLabel, old, new string) string {
 	edits := Lines(old, new)
 	unified, err := ToUnified(oldLabel, newLabel, old, edits, DefaultContextLines)
@@ -29,10 +27,9 @@ func Unified(oldLabel, newLabel, old, new string) string {
 	return unified
 }
 
-// ToUnified applies the edits to content and returns a unified diff,
-// with contextLines lines of (unchanged) context around each diff hunk.
-// The old and new labels are the names of the content and result files.
-// It returns an error if the edits are inconsistent; see ApplyEdits.
+// ToUnified applies the edits to content and returns a unified diff, with
+// contextLines lines of (unchanged) context around each diff hunk. The and
+// new labels are the names of the content and result files.
 func ToUnified(oldLabel, newLabel, content string, edits []Edit, contextLines int) (string, error) {
 	u, err := toUnified(oldLabel, newLabel, content, edits, contextLines)
 	if err != nil {
@@ -66,8 +63,6 @@ type line struct {
 	// kind is the type of line this represents, deletion, insertion or copy.
 	kind opKind
 	// content is the content of this line.
-	// For deletion it is the line being removed, for all others it is the line
-	// to put in the output.
 	content string
 }
 
@@ -75,13 +70,11 @@ type line struct {
 type opKind int
 
 const (
-	// opDelete is the operation kind for a line that is present in the input
-	// but not in the output.
+	// opDelete is the operation kind for a line that is present in the input but not in the output.
 	opDelete opKind = iota
 	// opInsert is the operation kind for a line that is new in the output.
 	opInsert
-	// opEqual is the operation kind for a line that is the same in the input and
-	// output, often used to provide context around edited lines.
+	// opEqual is the operation kind for a line that is the same in the input and output.
 	opEqual
 )
 
@@ -122,7 +115,6 @@ func toUnified(fromName, toName string, content string, edits []Edit, contextLin
 	toLine := 0
 	for _, edit := range edits {
 		// Compute the zero-based line numbers of the edit start and end.
-		// TODO(adonovan): opt: compute incrementally, avoid O(n^2).
 		start := strings.Count(content[:edit.Start], "\n")
 		end := strings.Count(content[:edit.End], "\n")
 		if edit.End == len(content) && len(content) > 0 && content[len(content)-1] != '\n' {
@@ -138,7 +130,7 @@ func toUnified(fromName, toName string, content string, edits []Edit, contextLin
 		default:
 			//need to start a new hunk
 			if h != nil {
-				// add the edge to the previous hunk
+				// add the edge to the hunk
 				addEqualLines(h, lines, last, last+contextLines)
 				u.hunks = append(u.hunks, h)
 			}

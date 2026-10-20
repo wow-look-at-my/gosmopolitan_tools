@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package intsets_test
 
@@ -115,7 +114,7 @@ func TestTakeMin(t *testing.T) {
 }
 
 func TestMinAndMax(t *testing.T) {
-	values := []int{0, 456, 123, 789, -123} // elt 0 => empty set
+	values := []int{0, 456, 123, 789, -123}
 	wantMax := []int{intsets.MinInt, 456, 456, 789, 789}
 	wantMin := []int{intsets.MaxInt, 456, 123, 123, -123}
 
@@ -237,16 +236,15 @@ func randomPset(prng *rand.Rand, maxSize int) *pset {
 	set := makePset()
 	size := int(prng.Int()) % maxSize
 	for range size {
-		// TODO(adonovan): benchmark how performance varies
-		// with this sparsity parameter.
+		// TODO(adonovan): benchmark how performance varies with this sparsity parameter.
 		n := int(prng.Int()) % 10000
 		set.add(n)
 	}
 	return set
 }
 
-// TestRandomMutations performs the same random adds/removes on two
-// set implementations and ensures that they compute the same result.
+// TestRandomMutations performs the same random adds/removes on set
+// implementations and ensures that they compute the same result.
 func TestRandomMutations(t *testing.T) {
 	const debug = false
 
@@ -276,7 +274,6 @@ func TestRandomMutations(t *testing.T) {
 }
 
 func TestLowerBound(t *testing.T) {
-	// Use random sets of sizes from 0 to about 4000.
 	prng := rand.New(rand.NewSource(0))
 	for i := range uint(12) {
 		x := randomPset(prng, 1<<i)
@@ -294,14 +291,12 @@ func TestLowerBound(t *testing.T) {
 	}
 }
 
-// TestSetOperations exercises classic set operations: ∩ , ∪, \.
+// TestSetOperations exercises classic set operations: ∩, ∪, \.
 func TestSetOperations(t *testing.T) {
 	prng := rand.New(rand.NewSource(0))
 
-	// Use random sets of sizes from 0 to about 4000.
-	// For each operator, we test variations such as
-	// Z.op(X, Y), Z.op(X, Z) and Z.op(Z, Y) to exercise
-	// the degenerate cases of each method implementation.
+	// For each operator, we test variations such as Z.op(X, Y), Z.op(X, Z). And
+	// Z.op(Z, Y) to exercise the degenerate cases of each method implementation.
 	for i := range uint(12) {
 		X := randomPset(prng, 1<<i)
 		Y := randomPset(prng, 1<<i)
@@ -479,8 +474,7 @@ func TestUnionWithChanged(t *testing.T) {
 		}
 	}
 
-	// The case marked "!" is a regression test for Issue 50352,
-	// which spuriously returned true when y ⊂ x.
+	// The case marked "!" is a regression test for, which spuriously returned true when y ⊂ x.
 
 	// same block
 	checkUnionWith(setOf(1, 2), setOf(1, 2))
@@ -496,9 +490,6 @@ func TestUnionWithChanged(t *testing.T) {
 }
 
 func TestIntersectionWith(t *testing.T) {
-	// Edge cases: the pairs (1,1), (1000,2000), (8000,4000)
-	// exercise the <, >, == cases in IntersectionWith that the
-	// TestSetOperations data is too dense to cover.
 	var X, Y intsets.Sparse
 	X.Insert(1)
 	X.Insert(1000)
@@ -635,8 +626,7 @@ func TestFailFastOnShallowCopy(t *testing.T) {
 
 func benchmarkInsertProbeSparse(b *testing.B, size, spread int) {
 	prng := rand.New(rand.NewSource(0))
-	// Generate our insertions and probes beforehand (we don't want to benchmark
-	// the prng).
+	// Generate our insertions and probes beforehand (we don't want to benchmark the prng).
 	insert := make([]int, size)
 	probe := make([]int, size*2)
 	for i := range insert {

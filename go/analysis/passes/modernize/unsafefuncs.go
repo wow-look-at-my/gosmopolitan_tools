@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -23,10 +22,9 @@ import (
 
 // TODO(adonovan): also support:
 //
-// func String(ptr *byte, len IntegerType) string
-// func StringData(str string) *byte
-// func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType
-// func SliceData(slice []ArbitraryType) *ArbitraryType
+// func String(ptr *byte, len IntegerType) string func StringData(str string)
+// *byte func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType func
+// SliceData(slice []ArbitraryType) *ArbitraryType
 
 // TODO(adonovan): needs a proposal for a public symbol.
 var unsafeFuncsAnalyzer = &analysis.Analyzer{
@@ -38,9 +36,8 @@ var unsafeFuncsAnalyzer = &analysis.Analyzer{
 }
 
 func unsafefuncs(pass *analysis.Pass) (any, error) {
-	// Short circuit if the package doesn't use unsafe.
-	// (In theory one could use some imported alias of unsafe.Pointer,
-	// but let's ignore that.)
+	// Short circuit if the package doesn't use unsafe. (In theory one could use
+	// some imported alias of unsafe.Pointer, but let's ignore that.)
 	if !typesinternal.Imports(pass.Pkg, "unsafe") {
 		return nil, nil
 	}
@@ -66,14 +63,12 @@ func unsafefuncs(pass *analysis.Pass) (any, error) {
 	// The general form is where ptr and the result are of type unsafe.Pointer:
 	//
 	// 	unsafe.Pointer(uintptr(ptr) + uintptr(n))
-	// =>
-	// 	unsafe.Add(ptr, n)
+	// => unsafe.Add(ptr, n)
 
-	// Search for 'unsafe.Pointer(uintptr + uintptr)'
-	// where the left operand was converted from a pointer.
+	// Search for 'unsafe.Pointer(uintptr + uintptr)' where the left operand was.
 	//
-	// (Start from sum, not conversion, as it is not
-	// uncommon to use a local type alias for unsafe.Pointer.)
+	// (Start from sum, not conversion, as it is not uncommon to use a local type
+	// alias for unsafe.Pointer.)
 	for curSum := range inspect.Root().Preorder((*ast.BinaryExpr)(nil)) {
 		if sum, ok := curSum.Node().(*ast.BinaryExpr); ok &&
 			sum.Op == token.ADD &&
@@ -90,7 +85,7 @@ func unsafefuncs(pass *analysis.Pass) (any, error) {
 			}
 			// Have: result ≡ unsafe.Pointer(x:...uintptr... + y:...uintptr...)
 
-			// Is sum.x converted from unsafe.Pointer?
+			// Is sum.x.Pointer?
 			_, curPtr := isConversion(curX)
 			if !curPtr.Valid() {
 				continue
@@ -109,14 +104,10 @@ func unsafefuncs(pass *analysis.Pass) (any, error) {
 			// import "unsafe"
 			unsafedot, edits := refactor.AddImport(info, file, "unsafe", "unsafe", "Add", sum.Pos())
 
-			// unsafe.Pointer(x + y)
-			// ---------------     -
-			//                x + y
+			// unsafe.Pointer(x + y) - x + y
 			edits = append(edits, deleteConv(curResult)...)
 
-			// uintptr   (ptr) + offset
-			// -----------   ----      -
-			// unsafe.Add(ptr,   offset)
+			// uintptr (ptr) + offset ---- - unsafe.Add(ptr, offset)
 			edits = append(edits, []analysis.TextEdit{
 				{
 					Pos:     sum.Pos(),
@@ -135,12 +126,8 @@ func unsafefuncs(pass *analysis.Pass) (any, error) {
 				},
 			}...)
 
-			// Variant: sum.y operand was converted from another integer type.
-			// Discard the conversion, as Add is generic over integers.
-			//
-			// e.g. unsafe.Pointer(uintptr(ptr) + uintptr(len(s)))
-			//                                    --------      -
-			//      unsafe.Add    (        ptr,           len(s))
+			// Variant: sum.y operand was. Discard the conversion, as Add is generic
+			// over integers.
 			if t, _ := isConversion(curY); t != nil && isInteger(t) {
 				edits = append(edits, deleteConv(curY)...)
 			}
@@ -172,21 +159,16 @@ func deleteConv(cur inspector.Cursor) []analysis.TextEdit {
 		return false
 	}
 
-	// Be careful not to change precedence of e.g. T(1+2) * 3.
 	// TODO(adonovan): refine this.
 	if usesPrec(cur.Parent().Node()) && usesPrec(conv.Args[0]) {
-		// T(x+y) * z
-		// -
-		//  (x+y) * z
+		// T(x+y) * z - (x+y) * z
 		return []analysis.TextEdit{{
 			Pos: conv.Fun.Pos(),
 			End: conv.Fun.End(),
 		}}
 	}
 
-	// T(x)
-	// -- -
-	//   x
+	// T(x) -- - x
 	return []analysis.TextEdit{
 		{
 			Pos: conv.Pos(),

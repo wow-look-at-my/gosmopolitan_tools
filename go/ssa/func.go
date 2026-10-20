@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -89,8 +88,6 @@ func (f *Function) selection(selector *ast.SelectorExpr) *selection {
 }
 
 // Destinations associated with unlabelled for/switch/select stmts.
-// We push/pop one of these as we enter/leave each construct and for
-// each BranchStmt we scan for the innermost target of the right type.
 type targets struct {
 	tail         *targets // rest of stack
 	_break       *BasicBlock
@@ -98,11 +95,8 @@ type targets struct {
 	_fallthrough *BasicBlock
 }
 
-// Destinations associated with a labelled block.
-// We populate these as labels are encountered in forward gotos or
-// labelled statements.
-// Forward gotos are resolved once it is known which statement they
-// are associated with inside the Function.
+// Destinations associated with a labelled block. We populate these as labels
+// are encountered in forward gotos or labelled statements.
 type lblock struct {
 	label     *types.Label // Label targeted by the blocks.
 	resolved  bool         // _goto block encountered (back jump or resolved fwd jump)
@@ -138,8 +132,8 @@ func (f *Function) lblockOf(label *types.Label) *lblock {
 // labelledBlock searches f for the block of the specified label.
 //
 // If f is a yield function, it additionally searches ancestor Functions
-// corresponding to enclosing range-over-func statements within the
-// same source function, so the returned block may belong to a different Function.
+// corresponding to enclosing range-over-func statements within the same source
+// function. The returned block may belong to a different Function.
 func labelledBlock(f *Function, label *types.Label, tok token.Token) *BasicBlock {
 	if lb := f.lblocks[label]; lb != nil {
 		var block *BasicBlock
@@ -223,30 +217,26 @@ func (f *Function) addParamVar(v *types.Var) *Parameter {
 	return param
 }
 
-// addSpilledParam declares a parameter that is pre-spilled to the
-// stack; the function body will load/store the spilled location.
-// Subsequent lifting will eliminate spills where possible.
+// addSpilledParam declares a parameter that is pre-spilled to the stack; the
+// function body will load/store the spilled location.
 func (f *Function) addSpilledParam(obj *types.Var) {
 	param := f.addParamVar(obj)
 	spill := emitLocalVar(f, obj)
 	f.emit(&Store{Addr: spill, Val: param})
 }
 
-// startBody initializes the function prior to generating SSA code for its body.
+// startBody initializes the function before generating SSA code for its body.
 // Precondition: f.Type() already set.
 func (f *Function) startBody() {
 	f.currentBlock = f.newBasicBlock("entry")
 	f.vars = make(map[*types.Var]Value) // needed for some synthetics, e.g. init
 }
 
-// createSyntacticParams populates f.Params and generates code (spills
-// and named result locals) for all the parameters declared in the
-// syntax.  In addition it populates the f.objects mapping.
+// createSyntacticParams populates f.Params and generates code (spills and
+// named result locals) for all the parameters declared in the syntax. In
+// addition it populates the f.objects mapping.
 //
-// Preconditions:
-// f.startBody() was called. f.info != nil.
-// Postcondition:
-// len(f.Params) == len(f.Signature.Params) + (f.Signature.Recv() ? 1 : 0)
+// startBody() was called. = nil. Recv()?
 func (f *Function) createSyntacticParams(recv *ast.FieldList, functype *ast.FuncType) {
 	// Receiver (at most one inner iteration).
 	if recv != nil {
@@ -254,7 +244,7 @@ func (f *Function) createSyntacticParams(recv *ast.FieldList, functype *ast.Func
 			for _, n := range field.Names {
 				f.addSpilledParam(identVar(f, n))
 			}
-			// Anonymous receiver?  No need to spill.
+			// Anonymous receiver? No need to spill.
 			if field.Names == nil {
 				f.addParamVar(f.Signature.Recv())
 			}
@@ -263,12 +253,12 @@ func (f *Function) createSyntacticParams(recv *ast.FieldList, functype *ast.Func
 
 	// Parameters.
 	if functype.Params != nil {
-		n := len(f.Params) // 1 if has recv, 0 otherwise
+		n := len(f.Params)
 		for _, field := range functype.Params.List {
 			for _, n := range field.Names {
 				f.addSpilledParam(identVar(f, n))
 			}
-			// Anonymous parameter?  No need to spill.
+			// Anonymous parameter? No need to spill.
 			if field.Names == nil {
 				f.addParamVar(f.Signature.Params().At(len(f.Params) - n))
 			}
@@ -295,8 +285,7 @@ func (f *Function) createSyntacticParams(recv *ast.FieldList, functype *ast.Func
 // createDeferStack initializes fn.deferstack to local variable
 // initialized to a ssa:deferstack() call.
 func (fn *Function) createDeferStack() {
-	// Each syntactic function makes a call to ssa:deferstack,
-	// which is spilled to a local. Unused ones are later removed.
+	// Each syntactic function makes a call to ssa:deferstack, which is spilled to a local. Unused ones are later removed.
 	fn.deferstack = newVar("defer$stack", tDeferStack)
 	call := &Call{Call: CallCommon{Value: vDeferStack}}
 	call.setType(tDeferStack)
@@ -326,8 +315,7 @@ func numberRegisters(f *Function) {
 }
 
 // buildReferrers populates the def/use information in all non-nil
-// Value.Referrers slice.
-// Precondition: all such slices are initially empty.
+// Value.Referrers slice. Precondition: all such slices are initially empty.
 func buildReferrers(f *Function) {
 	var rands []*Value
 	for _, b := range f.Blocks {
@@ -376,9 +364,7 @@ func (f *Function) finishBody() {
 	buildDomTree(f)
 
 	if f.Prog.mode&NaiveForm == 0 {
-		// For debugging pre-state of lifting pass:
-		// numberRegisters(f)
-		// f.WriteTo(os.Stderr)
+		// For debugging pre-state of lifting pass: numberRegisters(f) f.WriteTo(os.Stderr)
 		lift(f)
 	}
 
@@ -390,7 +376,7 @@ func (f *Function) finishBody() {
 	// clear out other function state (keep consistent with buildParamsOnly)
 	f.subst = nil
 
-	numberRegisters(f) // uses f.namedRegisters
+	numberRegisters(f)
 }
 
 // done marks the building of f's SSA body complete,
@@ -421,7 +407,7 @@ func (f *Function) done() {
 }
 
 // removeNilBlocks eliminates nils from f.Blocks and updates each
-// BasicBlock.Index.  Use this after any pass that may delete blocks.
+// BasicBlock.Index. Use this after any pass that may delete blocks.
 func (f *Function) removeNilBlocks() {
 	j := 0
 	for _, b := range f.Blocks {
@@ -438,10 +424,8 @@ func (f *Function) removeNilBlocks() {
 	f.Blocks = f.Blocks[:j]
 }
 
-// SetDebugMode sets the debug mode for package pkg.  If true, all its
-// functions will include full debug info.  This greatly increases the
-// size of the instruction stream, and causes Functions to depend upon
-// the ASTs, potentially keeping them live in memory for longer.
+// SetDebugMode sets the debug mode for package pkg. If true, all its
+// functions will include full debug info.
 func (pkg *Package) SetDebugMode(debug bool) {
 	pkg.debug = debug
 }
@@ -503,30 +487,9 @@ func (f *Function) emit(instr Instruction) Value {
 // package name, receiver type, etc.
 //
 // The specific formatting rules are not guaranteed and may change.
-//
-// Examples:
-//
-//	"math.IsNaN"                  // a package-level function
-//	"(*bytes.Buffer).Bytes"       // a declared method or a wrapper
-//	"(*bytes.Buffer).Bytes$thunk" // thunk (func wrapping method; receiver is param 0)
-//	"(*bytes.Buffer).Bytes$bound" // bound (func wrapping method; receiver supplied by closure)
-//	"main.main$1"                 // an anonymous function in main
-//	"main.init#1"                 // a declared init function
-//	"main.init"                   // the synthesized package initializer
-//
-// When these functions are referred to from within the same package
-// (i.e. from == f.Pkg.Object), they are rendered without the package path.
-// For example: "IsNaN", "(*Buffer).Bytes", etc.
-//
-// All non-synthetic functions have distinct package-qualified names.
-// (But two methods may have the same name "(T).f" if one is a synthetic
-// wrapper promoting a non-exported method "f" from another package; in
-// that case, the strings are equal but the identifiers "f" are distinct.)
 func (f *Function) RelString(from *types.Package) string {
 	// Anonymous?
 	if f.parent != nil {
-		// An anonymous function's Name() looks like "parentName$1",
-		// but its String() should include the type/package/etc.
 		parent := f.parent.RelString(from)
 		for i, anon := range f.parent.AnonFuncs {
 			if anon == f {
@@ -587,7 +550,7 @@ func writeSignature(buf *bytes.Buffer, from *types.Package, name string, sig *ty
 func (fn *Function) declaredPackage() *Package {
 	switch {
 	case fn.Pkg != nil:
-		return fn.Pkg // non-generic function  (does that follow??)
+		return fn.Pkg // non-generic function (does that follow??)
 	case fn.topLevelOrigin != nil:
 		return fn.topLevelOrigin.Pkg // instance of a named generic function
 	case fn.parent != nil:
@@ -657,8 +620,7 @@ func WriteFunction(buf *bytes.Buffer, f *Function) {
 		buf.WriteString("\t(external)\n")
 	}
 
-	// NB. column calculations are confused by non-ASCII
-	// characters and assume 8-space tabs.
+	// NB. column calculations are confused by non-ASCII characters and assume 8-space tabs.
 	const punchcard = 80 // for old time's sake.
 	const tabwidth = 8
 	for _, b := range f.Blocks {
@@ -718,9 +680,7 @@ func WriteFunction(buf *bytes.Buffer, f *Function) {
 	fmt.Fprintf(buf, "\n")
 }
 
-// newBasicBlock adds to f a new basic block and returns it.  It does
-// not automatically become the current block for subsequent calls to emit.
-// comment is an optional string for more readable debugging output.
+// newBasicBlock adds to f a new basic block and returns it.
 func (f *Function) newBasicBlock(comment string) *BasicBlock {
 	b := &BasicBlock{
 		Index:   len(f.Blocks),
@@ -732,27 +692,13 @@ func (f *Function) newBasicBlock(comment string) *BasicBlock {
 	return b
 }
 
-// NewFunction returns a new synthetic Function instance belonging to
-// prog, with its name and signature fields set as specified.
-//
-// The caller is responsible for initializing the remaining fields of
-// the function object, e.g. Pkg, Params, Blocks.
-//
-// It is practically impossible for clients to construct well-formed
-// SSA functions/packages/programs directly, so we assume this is the
-// job of the Builder alone.  NewFunction exists to provide clients a
-// little flexibility.  For example, analysis tools may wish to
-// construct fake Functions for the root of the callgraph, a fake
-// "reflect" package, etc.
-//
-// TODO(adonovan): think harder about the API here.
+// NewFunction returns a new synthetic Function instance belonging to prog,
+// with its name and signature fields set as specified.
 func (prog *Program) NewFunction(name string, sig *types.Signature, provenance string) *Function {
 	return &Function{Prog: prog, name: name, Signature: sig, Synthetic: provenance}
 }
 
-// Syntax returns the function's syntax (*ast.Func{Decl,Lit})
-// if it was produced from syntax or an *ast.RangeStmt if
-// it is a range-over-func yield function.
+// Syntax returns the function's syntax.
 func (f *Function) Syntax() ast.Node { return f.syntax }
 
 // identVar returns the variable defined by id.
@@ -761,35 +707,21 @@ func identVar(fn *Function, id *ast.Ident) *types.Var {
 }
 
 // unique returns a unique positive int within the source tree of f.
-// The source tree of f includes all of f's ancestors by parent and all
-// of the AnonFuncs contained within these.
 func unique(f *Function) int64 {
 	f.uniq++
 	return f.uniq
 }
 
-// exit is a change of control flow going from a range-over-func
-// yield function to an ancestor function caused by a break, continue,
-// goto, or return statement.
-//
-// There are 3 types of exits:
-// * return from the source function (from ReturnStmt),
-// * jump to a block (from break and continue statements [labelled/unlabelled]),
-// * go to a label (from goto statements).
-//
-// As the builder does one pass over the ast, it is unclear whether
-// a forward goto statement will leave a range-over-func body.
-// The function being exited to is unresolved until the end
-// of building the range-over-func body.
+// exit is a change of control flow going from a range-over-func yield
+// function to an ancestor function caused by a break, continue, goto.
 type exit struct {
-	id   int64     // unique value for exit within from and to
-	from *Function // the function the exit starts from
+	id   int64
+	from *Function
 	to   *Function // the function being exited to (nil if unresolved)
 	pos  token.Pos
 
 	block *BasicBlock  // basic block within to being jumped to.
 	label *types.Label // forward label being jumped to via goto.
-	// block == nil && label == nil => return
 }
 
 // storeVar emits to function f code to store a value v to a *types.Var x.

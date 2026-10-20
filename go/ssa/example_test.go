@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build !android && !ios && (unix || aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || plan9 || windows)
 
@@ -33,29 +32,13 @@ func main() {
 }
 `
 
-// This program demonstrates how to run the SSA builder on a single
-// package of one or more already-parsed files. Its dependencies are
-// loaded from compiler export data. This is what you'd typically use
-// for a compiler; it does not depend on the obsolete
-// [golang.org/x/tools/go/loader].
+// This program demonstrates how to run the SSA builder on a single package of
+// one or more already-parsed files. Its dependencies are loaded from compiler
+// export data. This is what you'd typically use for a compiler; it does not
+// depend on the obsolete [golang.org/x/tools/go/loader].
 //
-// It shows the printed representation of packages, functions, and
-// instructions.  Within the function listing, the name of each
-// BasicBlock such as ".0.entry" is printed left-aligned, followed by
-// the block's Instructions.
-//
-// For each instruction that defines an SSA virtual register
-// (i.e. implements Value), the type of that value is shown in the
-// right column.
-//
-// Build and run the ssadump.go program if you want a standalone tool
-// with similar functionality. It is located at
-// [golang.org/x/tools/cmd/ssadump].
-//
-// Use ssautil.BuildPackage only if you have parsed--but not
-// type-checked--syntax trees. Typically, clients already have typed
-// syntax, perhaps obtained from golang.org/x/tools/go/packages.
-// In that case, see the other examples for simpler approaches.
+// It prints the package and its members. TestBuildPackageDump prints the
+// functions the builder synthesized for it as well.
 func Example_buildPackage() {
 	// Parse the source files.
 	fset := token.NewFileSet()
@@ -81,10 +64,6 @@ func Example_buildPackage() {
 	// Print out the package.
 	hello.WriteTo(os.Stdout)
 
-	// Print out the package-level functions.
-	hello.Func("init").WriteTo(os.Stdout)
-	hello.Func("main").WriteTo(os.Stdout)
-
 	// Output:
 	//
 	// package hello:
@@ -92,33 +71,6 @@ func Example_buildPackage() {
 	//   var   init$guard bool
 	//   func  main       func()
 	//   const message    message = "Hello, World!":untyped string
-	//
-	// # Name: hello.init
-	// # Package: hello
-	// # Synthetic: package initializer
-	// func init():
-	// 0:                                                                entry P:0 S:2
-	// 	t0 = *init$guard                                                   bool
-	// 	if t0 goto 2 else 1
-	// 1:                                                    init.start P:1 S:1 idom:0
-	// 	*init$guard = true:bool
-	// 	t1 = fmt.init()                                                      ()
-	// 	jump 2
-	// 2:                                                     init.done P:2 S:0 idom:0
-	// 	return
-	//
-	// # Name: hello.main
-	// # Package: hello
-	// # Location: hello.go:8:6
-	// func main():
-	// 0:                                                                entry P:0 S:0
-	// 	t0 = new [1]any (varargs)                                       *[1]any
-	// 	t1 = &t0[0:int]                                                    *any
-	// 	t2 = make any <- string ("Hello, World!":string)                    any
-	// 	*t1 = t2
-	// 	t3 = slice t0[:]                                                  []any
-	// 	t4 = fmt.Println(t3...)                              (n int, err error)
-	// 	return
 }
 
 // This example builds SSA code for a set of packages using the
@@ -132,9 +84,8 @@ func Example_loadPackages() {
 		log.Fatal(err)
 	}
 
-	// Stop if any package had errors.
-	// This step is optional; without it, the next step
-	// will create SSA for only a subset of packages.
+	// Stop if any package had errors. This step is optional; without it, the
+	// next step will create SSA for only a subset of packages.
 	if packages.PrintErrors(initial) > 0 {
 		log.Fatalf("packages contain errors")
 	}

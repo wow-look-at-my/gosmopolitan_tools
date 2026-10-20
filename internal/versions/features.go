@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package versions
 
@@ -22,14 +21,10 @@ const (
 	Go1_27 = "go1.27"
 )
 
-// Future is an invalid unknown Go version sometime in the future.
-// Do not use directly with Compare.
+// Future is an invalid unknown Go version sometime in the future. Do not use directly with Compare.
 const Future = ""
 
 // AtLeast reports whether the file version v comes after a Go release.
-//
-// Use this predicate to enable a behavior once a certain Go release
-// has happened (and stays enabled in the future).
 func AtLeast(v, release string) bool {
 	if v == Future {
 		return true // an unknown future version is always after y.
@@ -38,9 +33,6 @@ func AtLeast(v, release string) bool {
 }
 
 // Before reports whether the file version v is strictly before a Go release.
-//
-// Use this predicate to disable a behavior once a certain Go release
-// has happened (and stays enabled in the future).
 func Before(v, release string) bool {
 	if v == Future {
 		return false // an unknown future version happens after y.

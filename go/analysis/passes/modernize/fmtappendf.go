@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -54,11 +53,8 @@ func fmtappendf(pass *analysis.Pass) (any, error) {
 					if len(call.Args) == 0 {
 						continue
 					}
-					// fmt.Sprint(f) and fmt.Append(f) have different nil semantics
-					// when the format produces an empty string:
-					// []byte(fmt.Sprintf("")) returns an empty but non-nil
-					// []byte{}, while fmt.Appendf(nil, "") returns nil) so we
-					// should skip these cases.
+					// fmt.Sprint(f) and fmt.Append(f) have different nil semantics when the
+					// format produces an empty string.
 					if fn.Name() == "Sprint" || fn.Name() == "Sprintf" {
 						format := info.Types[call.Args[0]].Value
 						if format != nil && mayFormatEmpty(constant.StringVal(format)) {
@@ -83,12 +79,7 @@ func fmtappendf(pass *analysis.Pass) (any, error) {
 							End: conv.Args[0].Pos(), // always exactly one argument in a valid byte slice conversion
 						},
 						{
-							// Delete ")", including any non-args (space or
-							// commas) that come before the right parenthesis.
-							// Leaving an extra comma here produces invalid
-							// code. (See golang/go#74709)
-							// Unfortunately, this and the edit above may result
-							// in deleting some comments.
+							// Delete ")", including any non-args (space or commas) that come before the right parenthesis.
 							Pos: conv.Args[0].End(),
 							End: conv.Rparen + 1,
 						},
@@ -122,7 +113,7 @@ func fmtappendf(pass *analysis.Pass) (any, error) {
 }
 
 // mayFormatEmpty reports whether fmt.Sprintf might produce an empty string.
-// It returns false in the following two cases:
+// It returns false in the following cases:
 //  1. formatStr contains non-operation characters.
 //  2. formatStr contains formatting verbs besides s, v, x, X (verbs which may
 //     produce empty results)
@@ -134,18 +125,14 @@ func mayFormatEmpty(formatStr string) bool {
 	}
 	operations, err := fmtstr.Parse(formatStr, 0)
 	if err != nil {
-		// If formatStr is malformed, the printf analyzer will report a
-		// diagnostic, so we can ignore this error.
-		// Calling Parse on a string without % formatters also returns an error,
-		// in which case we can safely return false.
+		// If formatStr is malformed, the printf analyzer will report a diagnostic, so we can ignore this error.
 		return false
 	}
 	totalOpsLen := 0
 	for _, op := range operations {
 		totalOpsLen += len(op.Text)
 		if !strings.ContainsRune("svxX", rune(op.Verb.Verb)) && op.Prec.Fixed != 0 {
-			// A non [s, v, x, X] formatter with non-zero precision cannot
-			// produce an empty string.
+			// A non [s, v, x, X] formatter with non-zero precision cannot produce an empty string.
 			return false
 		}
 	}
@@ -154,9 +141,6 @@ func mayFormatEmpty(formatStr string) bool {
 	if totalOpsLen != len(formatStr) {
 		return false
 	}
-	// If we get here, it means that all formatting verbs are %s, %v, %x, %X,
-	// and there are no additional non-operation characters. We conservatively
-	// report that this may format as an empty string, ignoring uses of
-	// precision and the values of the formatter args.
+	// If we get here, it means that all formatting verbs are %s, %v, %x, %X.
 	return true
 }

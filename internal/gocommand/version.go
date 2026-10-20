@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gocommand
 
@@ -12,14 +11,14 @@ import (
 	"strings"
 )
 
-// GoVersion reports the minor version number of the highest release
-// tag built into the go command on the PATH.
+// GoVersion reports the minor version number of the highest release tag built
+// into the go command on the PATH.
 //
-// Note that this may be higher than the version of the go tool used
-// to build this application, and thus the versions of the standard
-// go/{scanner,parser,ast,types} packages that are linked into it.
-// In that case, callers should either downgrade to the version of
-// go used to build the application, or report an error that the
+// This may be higher than the version of the go tool used to build this
+// application. Thus the versions of the standard
+// go/{scanner,parser,ast,types} packages that are linked into it. In that
+// case, callers should either downgrade to the version of go used to build
+// the application, or report an error. That error is one that the
 // application is too old to use the go command on the PATH.
 func GoVersion(ctx context.Context, inv Invocation, r *Runner) (int, error) {
 	inv.Verb = "list"
@@ -28,8 +27,6 @@ func GoVersion(ctx context.Context, inv Invocation, r *Runner) (int, error) {
 	inv.ModFlag = ""
 	inv.ModFile = ""
 	// Set GO111MODULE=off so that we are immune to errors in go.{work,mod}.
-	// Unfortunately, this breaks the Go 1.21+ toolchain directive and
-	// may affect the set of ReleaseTags; see #68495.
 	inv.Env = append(inv.Env[:len(inv.Env):len(inv.Env)], "GO111MODULE=off")
 
 	stdoutBytes, err := r.Run(ctx, inv)

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stacktest
 
@@ -11,7 +10,6 @@ import (
 	"golang.org/x/tools/internal/jsonrpc2/stack"
 )
 
-// this is only needed to support pre 1.14 when testing.TB did not have Cleanup
 type withCleanup interface {
 	Cleanup(func())
 }

@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -48,8 +47,6 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 		expr := call.Args[0]
 
 		// reflect.TypeFor cannot be instantiated with an untyped nil.
-		// We use type information rather than checking the identifier name
-		// to correctly handle edge cases where "nil" is shadowed (e.g. nil := "nil").
 		if info.Types[expr].IsNil() {
 			continue
 		}
@@ -69,9 +66,7 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 				call2 := astutil.UnparenEnclosingCursor(curSel).Parent().Node().(*ast.CallExpr) // potentially .Elem()
 				obj := typeutil.Callee(info, call2)
 				if typesinternal.IsMethodNamed(obj, "reflect", "Type", "Elem") {
-					// reflect.TypeOf(expr).Elem()
-					//                     -------
-					// reflect.TypeOf(expr)
+					// reflect.TypeOf(expr).Elem() ------- reflect.TypeOf(expr)
 					if typ, hasElem := t.(interface{ Elem() types.Type }); hasElem {
 						// Have: TypeOf(expr).Elem() where expr is *T, []T, [k]T, chan T, map[K]T, etc.
 						t = typ.Elem()
@@ -84,19 +79,14 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 			}
 		}
 
-		// TypeOf(x) where x has an interface type is a
-		// dynamic operation; don't transform it to TypeFor.
-		// (edits == nil means "not the Elem() special case".)
+		// TypeOf(x) where x has an interface type is a dynamic operation; don't
+		// transform it to TypeFor.
 		if types.IsInterface(t) && edits == nil {
 			continue
 		}
 
-		// Don't offer the fix if it would erase a reference to a
-		// (non-type) symbol, as this may break intended coupling.
-		// Examples:
-		//   TypeOf(0)       -> TypeFor[int]()  // ok
-		//   TypeOf(pkg.Var) -> TypeFor[int]()  // bad: loses connection to pkg.Var
-		//   TypeOf(uint(0)) -> TypeFor[uint]() // ok: (most) type symbols are preserved
+		// Don't offer the fix if it would erase a reference to a (non-type) symbol,
+		// as this may break intended coupling.
 		if usesNonTypeSymbol(info, expr) {
 			continue
 		}
@@ -107,9 +97,6 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 		}
 
 		// Format the type as valid Go syntax.
-		// TODO(adonovan): FileQualifier needs to respect
-		// visibility at the current point, and either fail
-		// or edit the imports as needed.
 		qual := typesinternal.FileQualifier(file, pass.Pkg)
 		tstr := types.TypeString(t, qual)
 
@@ -120,15 +107,11 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 
 		// Don't offer a fix if the type contains an unnamed struct or unnamed
 		// interface because the replacement would be significantly more verbose.
-		// (See golang/go#76698)
 		if isComplicatedType(t) {
 			continue
 		}
 
-		// Don't offer the fix if the type string is too long. We define "too
-		// long" as more than three times the length of the original expression
-		// and at least 16 characters (a 3x length increase of a very
-		// short expression should not be cause for skipping the fix).
+		// Don't offer the fix if the type string is too long.
 		oldLen := int(expr.End() - expr.Pos())
 		newLen := len(tstr)
 		if newLen >= 16 && newLen > 3*oldLen {
@@ -140,9 +123,7 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 			End:     call.Fun.End(),
 			Message: "reflect.TypeOf call can be simplified using TypeFor",
 			SuggestedFixes: []analysis.SuggestedFix{{
-				// reflect.TypeOf    (...T value...)
-				//         ------     -------------
-				// reflect.TypeFor[T](             )
+				// reflect.TypeOf (...T value...) ------------- reflect.TypeFor[T]( )
 				Message: "Replace TypeOf by TypeFor",
 				TextEdits: append([]analysis.TextEdit{
 					{
@@ -163,16 +144,9 @@ func reflecttypefor(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// usesNonTypeSymbol reports whether expr uses a non-type symbol:
-// a value-level object (a var, const, or func) or any other named entity
-// whose identifier would disappear in a TypeFor replacement. We suppress
-// the fix in that case so the rewrite does not erase a symbol the author
-// named on purpose, for example reflect.TypeOf(f), reflect.TypeOf(x.Field),
-// or a named array length such as [arrayLen]byte.
-//
-// Type names, package names, nil, and builtins are not such symbols: they
-// either reappear in the type argument (e.g. T in reflect.TypeOf(T{})) or
-// are irrelevant to it, so the rewrite is allowed.
+// usesNonTypeSymbol reports whether expr uses a non-type symbol. A
+// value-level object (a var, const, or func) or any other named entity whose
+// identifier would disappear in a TypeFor replacement.
 func usesNonTypeSymbol(info *types.Info, expr ast.Expr) bool {
 	for n := range ast.Preorder(expr) {
 		id, ok := n.(*ast.Ident)
@@ -204,8 +178,7 @@ func isComplicatedType(t types.Type) bool {
 			}
 			return false
 		case *types.Struct, *types.Interface, *types.Signature:
-			// These are complex types with potentially many elements
-			// so we should avoid duplicating their definition.
+			// These are complex types with potentially many elements so we should avoid duplicating their definition.
 			return true
 		case *types.Pointer:
 			return check(t.Elem())

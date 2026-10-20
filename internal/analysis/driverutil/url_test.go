@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package driverutil_test
 
@@ -14,9 +13,6 @@ import (
 )
 
 func TestResolveURLs(t *testing.T) {
-	// TestResolveURL test the 12 different combinations for how URLs can be resolved
-	// when Analyzer.URL are Diagnostic.Category are empty or non-empty, and when
-	// Diagnostic.URL is empty, absolute or relative.
 
 	aURL := &analysis.Analyzer{URL: "https://analyzer.example"}
 	noURL := &analysis.Analyzer{URL: ""}

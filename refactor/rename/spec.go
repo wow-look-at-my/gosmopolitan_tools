@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package rename
 
@@ -32,37 +31,27 @@ import (
 // It is populated from an -offset flag or -from query;
 // see Usage for the allowed -from query forms.
 type spec struct {
-	// pkg is the package containing the position
-	// specified by the -from or -offset flag.
-	// If filename == "", our search for the 'from' entity
-	// is restricted to this package.
+	// pkg is the package containing the position specified by the -from or -offset flag.
 	pkg string
 
 	// The original name of the entity being renamed.
-	// If the query had a ::from component, this is that;
-	// otherwise it's the last segment, e.g.
-	//   (encoding/json.Decoder).from
-	//   encoding/json.from
 	fromName string
 
-	// -- The remaining fields are private to this file.  All are optional. --
+	// -- The remaining fields are private to this file. All are optional.
 
 	// The query's ::x suffix, if any.
 	searchFor string
 
-	// e.g. "Decoder" in "(encoding/json.Decoder).fieldOrMethod"
-	//                or "encoding/json.Decoder
+	// e.g. "Decoder" in "(encoding/json.Decoder).fieldOrMethod" or "encoding/json.Decoder
 	pkgMember string
 
 	// e.g. fieldOrMethod in "(encoding/json.Decoder).fieldOrMethod"
 	typeMember string
 
-	// Restricts the query to this file.
-	// Implied by -from="file.go::x" and -offset flags.
+	// Restricts the query to this file. Implied by -from="file.go::x" and -offset flags.
 	filename string
 
-	// Byte offset of the 'from' identifier within the file named 'filename'.
-	// -offset mode only.
+	// Byte offset of the 'from' identifier within the file named 'filename'. -offset mode only.
 	offset int
 }
 
@@ -78,7 +67,6 @@ func parseFromFlag(ctxt *build.Context, fromFlag string) (*spec, error) {
 		main = parts[0]
 		spec.searchFor = parts[1]
 		if parts[1] == "" {
-			// error
 		}
 	default:
 		return nil, fmt.Errorf("-from %q: invalid identifier specification (see -help for formats)", fromFlag)
@@ -101,10 +89,8 @@ func parseFromFlag(ctxt *build.Context, fromFlag string) (*spec, error) {
 		spec.pkg = bp.ImportPath
 
 	} else {
-		// main is one of:
-		//  "importpath"
-		//  "importpath".member
-		//  (*"importpath".type).fieldormethod           (parens and star optional)
+		// main is one of: "importpath" "importpath".member
+		// (*"importpath".type).fieldormethod (parens and star optional)
 		if err := parseObjectSpec(&spec, main); err != nil {
 			return nil, err
 		}
@@ -185,10 +171,9 @@ func parseObjectSpec(spec *spec, main string) error {
 	return fmt.Errorf("-from %q: invalid expression", main)
 }
 
-// parseImportPath returns the import path of the package denoted by e.
-// Any import path may be represented as a string literal;
-// single-segment import paths (e.g. "bytes") may also be represented as
-// ast.Ident.  parseImportPath returns "" for all other expressions.
+// parseImportPath returns the import path of the package denoted by e. Any
+// import path may be represented as a string literal; single-segment import
+// paths (e.g. "bytes") may also be represented as ast.Ident.
 func parseImportPath(e ast.Expr) string {
 	switch e := e.(type) {
 	case *ast.Ident:
@@ -206,7 +191,6 @@ func parseImportPath(e ast.Expr) string {
 // parseOffsetFlag interprets the "-offset" flag value as a renaming specification.
 func parseOffsetFlag(ctxt *build.Context, offsetFlag string) (*spec, error) {
 	var spec spec
-	// Validate -offset, e.g. file.go:#123
 	parts := strings.Split(offsetFlag, ":#")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("-offset %q: invalid offset specification", offsetFlag)
@@ -258,12 +242,11 @@ var wd = func() string {
 	return wd
 }()
 
-// For source trees built with 'go build', the -from or -offset
-// spec identifies exactly one initial 'from' object to rename,
-// but certain proprietary build systems allow a single file to
-// appear in multiple packages (e.g. the test package contains a
-// copy of its library), so there may be multiple objects for
-// the same source entity.
+// For source trees built with 'go build', the -from. It -offset spec
+// identifies exactly one initial 'from' object to rename. However, certain
+// proprietary build systems allow a single file to appear in multiple
+// packages (e.g. the test package contains a copy of its library). There
+// may be multiple objects for the same source entity.
 
 func findFromObjects(iprog *loader.Program, spec *spec) ([]types.Object, error) {
 	if spec.filename != "" {
@@ -272,15 +255,7 @@ func findFromObjects(iprog *loader.Program, spec *spec) ([]types.Object, error) 
 
 	// Search for objects defined in specified package.
 
-	// TODO(adonovan): the iprog.ImportMap has an entry {"main": ...}
-	// for main packages, even though that's not an import path.
-	// Seems like a bug.
-	//
-	// pkg := iprog.ImportMap[spec.pkg]
-	// if pkg == nil {
-	// 	return fmt.Errorf("cannot find package %s", spec.pkg) // can't happen?
-	// }
-	// info := iprog.AllPackages[pkg]
+	// TODO(adonovan): the iprog.ImportMap has an entry {"main": ...} for main packages.
 
 	// Workaround: lookup by value.
 	var info *loader.PackageInfo
@@ -308,9 +283,8 @@ func findFromObjects(iprog *loader.Program, spec *spec) ([]types.Object, error) 
 func findFromObjectsInFile(iprog *loader.Program, spec *spec) ([]types.Object, error) {
 	var fromObjects []types.Object
 	for _, info := range iprog.AllPackages {
-		// restrict to specified filename
-		// NB: under certain proprietary build systems, a given
-		// filename may appear in multiple packages.
+		// restrict to specified filename NB: under certain proprietary build
+		// systems, a given filename may appear in multiple packages.
 		for _, f := range info.Files {
 			thisFile := iprog.Fset.File(f.FileStart)
 			if !sameFile(thisFile.Name(), spec.filename) {
@@ -408,10 +382,9 @@ func typeSwitchVar(info *types.Info, path []ast.Node) types.Object {
 	return nil
 }
 
-// On success, findObjects returns the list of objects named
-// spec.fromName matching the spec.  On success, the result has exactly
-// one element unless spec.searchFor!="", in which case it has at least one
-// element.
+// On success, findObjects returns the list of objects named spec.fromName
+// matching the spec. On success, the result has exactly one element unless
+// spec.searchFor!="", in which case it has at least one element.
 func findObjects(info *loader.PackageInfo, spec *spec) ([]types.Object, error) {
 	if spec.pkgMember == "" {
 		if spec.searchFor == "" {
@@ -445,9 +418,7 @@ func findObjects(info *loader.PackageInfo, spec *spec) ([]types.Object, error) {
 				spec.searchFor, objectKind(pkgMember), pkgMember)
 		}
 	} else {
-		// field/method of type
-		// e.g. (encoding/json.Decoder).Decode
-		// or ::x within it.
+		// field/method of type e.g. (encoding/json.Decoder).Decode or ::x within it.
 
 		tName, _ := pkgMember.(*types.TypeName)
 		if tName == nil {
@@ -494,11 +465,8 @@ func findObjects(info *loader.PackageInfo, spec *spec) ([]types.Object, error) {
 
 	var objects []types.Object
 	for _, obj := range searchDefs(&info.Info, spec.searchFor) {
-		// We use positions, not scopes, to determine whether
-		// the obj is within searchFunc.  This is clumsy, but the
-		// alternative, using the types.Scope tree, doesn't
-		// account for non-lexical objects like fields and
-		// interface methods.
+		// We use positions, not scopes, to determine whether the obj is within
+		// searchFunc.
 		if decl.Pos() <= obj.Pos() && obj.Pos() < decl.End() && obj != searchFunc {
 			objects = append(objects, obj)
 		}
@@ -525,10 +493,7 @@ func searchDefs(info *types.Info, name string) []types.Object {
 	var objects []types.Object
 	for id, obj := range info.Defs {
 		if obj == nil {
-			// e.g. blank ident.
-			// TODO(adonovan): but also implicit y in
-			//    switch y := x.(type)
-			// Needs some thought.
+			// e.g. blank ident. TODO(adonovan): but also implicit y in switch y := x.(type) Needs some thought.
 			continue
 		}
 		if id.Name == name {

@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 package callgraph_test
 
 import (
@@ -21,31 +20,6 @@ import (
 // Benchmarks comparing different callgraph algorithms implemented in
 // x/tools/go/callgraph. Comparison is on both speed, memory and precision.
 // Fewer edges and fewer reachable nodes implies a more precise result.
-// Comparison is done on a hello world http server using net/http.
-//
-// Current results were on an i7 macbook on go version devel go1.20-2730.
-// Number of nodes, edges, and reachable function are expected to vary between
-// go versions. Timing results are expected to vary between machines.
-// BenchmarkStatic-12	 53 ms/op     6 MB/op	12113 nodes	 37355 edges	1522 reachable
-// BenchmarkCHA-12    	 86 ms/op	 16 MB/op	12113 nodes	131717 edges	7640 reachable
-// BenchmarkRTA-12		110 ms/op	 12 MB/op	 6566 nodes	 42291 edges	5099 reachable
-// BenchmarkPTA-12	   1427 ms/op	600 MB/op	 8714 nodes	 28244 edges	4184 reachable
-// BenchmarkVTA-12		600 ms/op	 78 MB/op	12114 nodes	 44861 edges	4919 reachable
-// BenchmarkVTA2-12		793 ms/op	104 MB/op	 5450 nodes	 22208 edges	4042 reachable
-// BenchmarkVTA3-12		977 ms/op	124 MB/op	 4621 nodes	 19331 edges	3700 reachable
-// BenchmarkVTAAlt-12	372 ms/op	 57 MB/op	 7763 nodes	 29912 edges	4258 reachable
-// BenchmarkVTAAlt2-12	570 ms/op	 78 MB/op	 4838 nodes	 20169 edges	3737 reachable
-//
-// Note:
-// * Static is unsound and may miss real edges.
-// * RTA starts from a main function and only includes reachable functions.
-// * CHA starts from all functions.
-// * VTA, VTA2, and VTA3 are starting from all functions and the CHA callgraph.
-//   VTA2 and VTA3 are the result of re-applying VTA to the functions reachable
-//   from main() via the callgraph of the previous stage.
-// * VTAAlt, and VTAAlt2 start from the functions reachable from main via the
-//   CHA callgraph.
-// * All algorithms are unsound w.r.t. reflection.
 
 const httpEx = `
 -- go.mod --

@@ -1,6 +1,5 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package shift
 
@@ -32,8 +31,7 @@ func updateDead(info *types.Info, dead map[ast.Node]bool, node ast.Node) {
 
 	switch stmt := node.(type) {
 	case *ast.IfStmt:
-		// "if" branch is dead if its condition evaluates
-		// to constant false.
+		// "if" branch is dead if its condition evaluates to constant false.
 		v := info.Types[stmt.Cond].Value
 		if v == nil {
 			return
@@ -67,9 +65,7 @@ func updateDead(info *types.Info, dead map[ast.Node]bool, node ast.Node) {
 			return
 		}
 
-		// Case clause is dead if its constant value doesn't match
-		// the constant value from the switch tag.
-		// TODO: This handles integer comparisons only.
+		// Case clause is dead if its constant value doesn't match the constant value from the switch tag.
 		v := info.Types[stmt.Tag].Value
 		if v == nil || v.Kind() != constant.Int {
 			return

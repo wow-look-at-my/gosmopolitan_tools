@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector_test
 
@@ -132,8 +131,7 @@ func g() {
 func TestCursor_Children(t *testing.T) {
 	inspect := netInspect
 
-	// Assert that Cursor.Children agrees with
-	// reference implementation for every node.
+	// Assert that Cursor.Children agrees with reference implementation for every node.
 	var want, got []ast.Node
 	for c := range inspect.Root().Preorder() {
 
@@ -149,8 +147,7 @@ func TestCursor_Children(t *testing.T) {
 			})
 		}
 
-		// Check cursor-based implementation
-		// (uses FirstChild+NextSibling).
+		// Check cursor-based implementation (uses FirstChild+NextSibling).
 		got = got[:0]
 		for child := range c.Children() {
 			got = append(got, child.Node())
@@ -163,8 +160,7 @@ func TestCursor_Children(t *testing.T) {
 				c, sliceTypes(got), sliceTypes(want))
 		}
 
-		// Second cursor-based implementation
-		// using LastChild+PrevSibling+reverse.
+		// Second cursor-based implementation using LastChild+PrevSibling+reverse.
 		got = got[:0]
 		for c, ok := c.LastChild(); ok; c, ok = c.PrevSibling() {
 			got = append(got, c.Node())
@@ -183,8 +179,7 @@ func TestCursor_Children(t *testing.T) {
 func TestCursor_Inspect(t *testing.T) {
 	inspect := netInspect
 
-	// In all three loops, we'll gather both kinds of type switches,
-	// but we'll prune the traversal from descending into (value) switches.
+	// In all loops, we'll gather both kinds of type switches.
 	switches := []ast.Node{(*ast.SwitchStmt)(nil), (*ast.TypeSwitchStmt)(nil)}
 
 	// reference implementation (ast.Inspect)
@@ -224,11 +219,7 @@ func TestCursor_Inspect(t *testing.T) {
 func TestCursor_FindNode(t *testing.T) {
 	inspect := netInspect
 
-	// Enumerate all nodes of a particular type,
-	// then check that FindByPos can find them,
-	// starting at the root.
-	//
-	// (We use BasicLit because they are numerous.)
+	// Enumerate all nodes of a particular type, then check that FindByPos can find them, starting at the root.
 	root := inspect.Root()
 	for c := range root.Preorder((*ast.BasicLit)(nil)) {
 		node := c.Node()
@@ -379,14 +370,8 @@ func TestCursor_Edge(t *testing.T) {
 	}
 }
 
-// Regression test for multiple matching nodes in FindByPos (#76872).
 func TestCursor_FindByPos_Boundary(t *testing.T) {
-	// This test verifies that when a cursor position is on the boundary of two
-	// adjacent nodes (e.g. "foo|("), FindByPos returns the first node
-	// encountered in traversal order (which is usually the node "to the left").
-	//
-	// Note: The source is intentionally unformatted (no space between ')' and
-	// '{') to ensure the nodes are strictly adjacent at the boundary.
+	// This test verifies that when a cursor position is on the boundary of adjacent nodes.
 	const src = `package p; func foo(a int){}`
 	var (
 		fset    = token.NewFileSet()
@@ -432,16 +417,8 @@ func TestCursor_FindByPos_Boundary(t *testing.T) {
 	}
 }
 
-// Regression test for FuncDecl.Type irregularity in FindByPos (#75997).
 func TestCursor_FindByPos(t *testing.T) {
-	// Observe that the range of FuncType has a hole between
-	// the "func" token and the start of Type.Params.
-	// The hole contains FuncDecl.{Recv,Name}.
-	//
-	//                      ~~~~~~~~~~~~FuncDecl~~~~~~~~~~~~~~~~~~~~~~~~~
-	//                           ~Recv~ ~Name~
-	//                      ~~~~--------------~~~~FuncType~~~~~~
-	//                                        ~Params~ ~Results~
+	// Observe that the range of FuncType has a hole between the "func" token and the start of Type.Params.
 	const src = `package a; func (recv) method(params) (results) { body }`
 	var (
 		fset    = token.NewFileSet()
@@ -469,8 +446,7 @@ func TestCursor_FindByPos(t *testing.T) {
 		{d.Pos(), d.End(), d},                // decl
 		{d.Recv.Pos(), d.Recv.End(), d.Recv}, // recv
 		{d.Name.Pos(), d.Name.End(), d.Name}, // name
-		// (A FuncDecl can't have both Recv and TypeParams, so skip this one.)
-		// {d.Type.TypeParams.Pos(), d.Type.TypeParams.End(), d.Type.TypeParams},
+		// (A FuncDecl can't have both Recv and TypeParams, so skip this.)
 		{d.Type.Params.Pos(), d.Type.Params.End(), d.Type.Params},    // params
 		{d.Type.Results.Pos(), d.Type.Results.End(), d.Type.Results}, // results
 		{d.Body.Pos(), d.Body.End(), d.Body},                         // body
@@ -647,8 +623,7 @@ func BenchmarkCursor_FindNode(b *testing.B) {
 
 	callExprs := []ast.Node{(*ast.CallExpr)(nil)}
 
-	// Choose a needle in the haystack to use as the search target:
-	// a CallExpr not too near the start nor at too shallow a depth.
+	// Choose a needle in the haystack to use as the search target.
 	var needle inspector.Cursor
 	{
 		count := 0
@@ -684,7 +659,6 @@ func BenchmarkCursor_FindNode(b *testing.B) {
 		}
 	})
 
-	// This method is about 10-15% faster than Cursor.Preorder.
 	b.Run("Cursor.FindNode", func(b *testing.B) {
 		for b.Loop() {
 			found, ok := root.FindNode(needle.Node())

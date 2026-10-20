@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Program for performing test runs using "fuzz-driver".
 // Main loop iteratively runs "fuzz-driver" to create a corpus,
@@ -86,9 +85,8 @@ func usage(msg string) {
 	os.Exit(2)
 }
 
-// docmd executes the specified command in the dir given and pipes the
-// output to stderr. return status is 0 if command passed, 1
-// otherwise.
+// docmd executes the specified command in the dir given and pipes the output
+// to stderr.
 func docmd(cmd []string, dir string) int {
 	verb(2, "docmd: %s", strings.Join(cmd, " "))
 	c := exec.Command(cmd[0], cmd[1:]...)
@@ -132,13 +130,11 @@ func docmdout(cmd []string, dir string, outfile string) int {
 	return st
 }
 
-// gen is the main hook for kicking off code generation. For
-// non-minimization runs, 'singlepk' and 'singlefn' will both be -1
-// (indicating that we want all functions and packages to be
-// generated).  If 'singlepk' is set to a non-negative value, then
-// code generation will be restricted to the single package with that
-// index (as a try at minimization), similarly with 'singlefn'
-// restricting the codegen to a single specified function.
+// gen is the main hook for kicking off code generation. If 'singlepk' is set
+// to a non-negative value, then code generation will be restricted to the
+// package with that index (as a try at minimization), similarly with
+// 'singlefn'. That 'singlefn is restricting the codegen to a single
+// specified function.
 func (c *config) gen(singlepk int, singlefn int) {
 
 	// clean the output dir
@@ -147,11 +143,10 @@ func (c *config) gen(singlepk int, singlefn int) {
 		fatal("error cleaning gen dir %s: %v", c.gendir, err)
 	}
 
-	// emit code into the output dir. Here we either invoke the
-	// generator directly, or invoke fuzz-driver if -execflag is
-	// set.  If the code generation process itself fails, this is
-	// typically a bug in the fuzzer itself, so it gets reported
-	// as a fatal error.
+	// emit code into the output dir. Here we either invoke the generator
+	// directly, or invoke fuzz-driver if -execflag is set. If the code
+	// generation process itself fails, this is typically a bug in the fuzzer
+	// itself, so it gets reported as a fatal error.
 	if *execflag {
 		args := []string{"fuzz-driver",
 			"-numpkgs", strconv.Itoa(c.NumTestPackages),
@@ -230,9 +225,8 @@ func (c *config) build(emitout bool) int {
 	return c.action(cmd, c.buildOutFile, emitout)
 }
 
-// run invokes a binary built from a generated corpus of Go code. If
-// 'emitout' is set, then dump out the results of the run after it
-// completes.
+// run invokes a binary built from a generated corpus of Go code. If 'emitout'
+// is set, then dump out the results of the run after it completes.
 func (c *config) run(emitout bool) int {
 	// Issue a run of the generated code.
 	c.runOutFile = filepath.Join(c.tmpdir, "run.err.txt")
@@ -330,7 +324,6 @@ func (c *config) minimize(mode minimizeMode) int {
 				break
 			}
 		}
-		// not the function we want ... continue the hunt
 	}
 	if foundFcn == -1 {
 		verb(0, "** function minimization failed, could not locate bad function")
@@ -364,15 +357,7 @@ func (c *config) perform() int {
 	// Main loop
 	for iter := 0; iter < *loopitflag; iter++ {
 		if iter != 0 && iter%50 == 0 {
-			// Note: cleaning the Go cache periodically is
-			// pretty much a requirement if you want to do
-			// things like overnight runs of the fuzzer,
-			// but it is also a very unfriendly thing do
-			// to if we're executing as part of a unit
-			// test run (in which case there may be other
-			// tests running in parallel with this
-			// one). Check the "cleancache" flag before
-			// doing this.
+			// Note.
 			if *cleancacheflag {
 				docmd([]string{"go", "clean", "-cache"}, "")
 			}
@@ -419,8 +404,8 @@ func main() {
 	// set up params for this run
 	c := &config{
 		GenConfig: generator.GenConfig{
-			NumTestPackages:  *numpkgsflag, // 100
-			NumTestFunctions: *numfcnsflag, // 20
+			NumTestPackages:  *numpkgsflag,
+			NumTestFunctions: *numfcnsflag,
 			Seed:             *seedflag,
 			OutDir:           gendir,
 			Pragma:           "-maxfail=9999",

@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package servertest provides utilities for running tests against a remote LSP
 // server.
@@ -22,8 +21,7 @@ type Connector interface {
 }
 
 // TCPServer is a helper for executing tests against a remote jsonrpc2
-// connection. Once initialized, its Addr field may be used to connect a
-// jsonrpc2 client.
+// connection.
 type TCPServer struct {
 	*connList
 
@@ -89,9 +87,7 @@ func (s *PipeServer) Connect(ctx context.Context) jsonrpc2.Conn {
 	return clientConn
 }
 
-// connList tracks closers to run when a testserver is closed.  This is a
-// convenience, so that callers don't have to worry about closing each
-// connection.
+// connList tracks closers to run when a testserver is closed.
 type connList struct {
 	mu    sync.Mutex
 	conns []jsonrpc2.Conn

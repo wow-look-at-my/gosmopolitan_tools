@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package printf
 
@@ -37,14 +36,6 @@ func matchArgType(pass *analysis.Pass, t printfArgType, arg ast.Expr) (reason st
 }
 
 // argMatcher recursively matches types against the printfArgType t.
-//
-// To short-circuit recursion, it keeps track of types that have already been
-// matched (or are in the process of being matched) via the seen map. Recursion
-// arises from the compound types {map,chan,slice} which may be printed with %d
-// etc. if that is appropriate for their element types, as well as from type
-// parameters, which are expanded to the constituents of their type set.
-//
-// The reason field may be set to report the cause of the mismatch.
 type argMatcher struct {
 	t      printfArgType
 	seen   map[types.Type]bool
@@ -53,9 +44,9 @@ type argMatcher struct {
 
 // match checks if typ matches m's printf arg type. If topLevel is true, typ is
 // the actual type of the printf arg, for which special rules apply. As a
-// special case, top level type parameters pass topLevel=true when checking for
-// matches among the constituents of their type set, as type arguments will
-// replace the type parameter at compile time.
+// special case, top level type parameters pass topLevel=true. This happens
+// when checking for matches among the constituents of their type set, as type
+// arguments will replace the type parameter at compile time.
 func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 	// %w accepts only errors.
 	if m.t == argError {
@@ -84,12 +75,7 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 		}
 
 		if len(terms) == 0 {
-			// No restrictions on the underlying of typ. Type parameters implementing
-			// error, fmt.Formatter, or fmt.Stringer were handled above, and %v and
-			// %T was handled in matchType. We're about to check restrictions the
-			// underlying; if the underlying type is unrestricted there must be an
-			// element of the type set that violates one of the arg type checks
-			// below, so we can safely return false here.
+			// No restrictions on the underlying of typ.
 
 			if m.t == anyType { // anyType must have already been handled.
 				panic("unexpected printfArgType")
@@ -97,10 +83,7 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 			return false
 		}
 
-		// Only report a reason if typ is the argument type, otherwise it won't
-		// make sense. Note that it is not sufficient to check if topLevel == here,
-		// as type parameters can have a type set consisting of other type
-		// parameters.
+		// Only report a reason if typ is the argument type, otherwise it won't make sense. it is not sufficient to check if topLevel == here.
 		reportReason := len(m.seen) == 1
 
 		for _, term := range terms {
@@ -121,13 +104,6 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 	typ = typ.Underlying()
 	if m.seen[typ] {
 		// We've already considered typ, or are in the process of considering it.
-		// In case we've already considered typ, it must have been valid (else we
-		// would have stopped matching). In case we're in the process of
-		// considering it, we must avoid infinite recursion.
-		//
-		// There are some pathological cases where returning true here is
-		// incorrect, for example `type R struct { F []R }`, but these are
-		// acceptable false negatives.
 		return true
 	}
 	m.seen[typ] = true
@@ -160,11 +136,9 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 			return true // %s matches []byte
 		}
 		if m.t == argPointer {
-			return true // %p prints a slice's 0th element
+			return true
 		}
-		// Recur: []int matches %d. But watch out for
-		//	type T []T
-		// If the element is a pointer type (type T[]*T), it's handled fine by the Pointer case below.
+		// Recur: []int matches %d.
 		return m.match(typ.Elem(), false)
 
 	case *types.Pointer:
@@ -173,7 +147,7 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 		if typ.Elem() == types.Typ[types.Invalid] {
 			return true // special case
 		}
-		// If it's actually a pointer with %p, it prints as one.
+		// If it's a pointer with %p, it prints as one.
 		if m.t == argPointer {
 			return true
 		}
@@ -195,10 +169,8 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 			}
 			return m.t&argPointer != 0
 		}
-		// If it's a top-level pointer to a struct, array, slice, type param, or
-		// map, that's equivalent in our analysis to whether we can
-		// print the type being pointed to. Pointers in nested levels
-		// are not supported to minimize fmt running into loops.
+		// If it is a top-level pointer to a struct, array, slice, type param, or
+		// map.
 		if !topLevel {
 			return false
 		}
@@ -212,16 +184,14 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 				return false
 			}
 			if m.t&argString != 0 && !typf.Exported() && isConvertibleToString(typf.Type()) {
-				// Issue #17798: unexported Stringer or error cannot be properly formatted.
+				// : unexported Stringer or error cannot be properly formatted.
 				return false
 			}
 		}
 		return true
 
 	case *types.Interface:
-		// There's little we can do.
-		// Whether any particular verb is valid depends on the argument.
-		// The user may have reasonable prior knowledge of the contents of the interface.
+		// There's little we can do. Whether any particular verb is valid depends on the argument.
 		return true
 
 	case *types.Basic:
@@ -284,9 +254,7 @@ func (m *argMatcher) match(typ types.Type, topLevel bool) bool {
 
 func isConvertibleToString(typ types.Type) bool {
 	if bt, ok := types.Unalias(typ).(*types.Basic); ok && bt.Kind() == types.UntypedNil {
-		// We explicitly don't want untyped nil, which is
-		// convertible to both of the interfaces below, as it
-		// would just panic anyway.
+		// We explicitly don't want untyped nil, which is convertible to both of the interfaces below.
 		return false
 	}
 	if types.ConvertibleTo(typ, errorType) {

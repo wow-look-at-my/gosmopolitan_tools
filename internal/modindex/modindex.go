@@ -1,18 +1,12 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package modindex contains code for building and searching an
 // [Index] of the Go module cache.
 package modindex
 
-// The directory containing the index, returned by
-// [IndexDir], contains a file index-name-<ver> that contains the name
-// of the current index. We believe writing that short file is atomic.
-// [Read] reads that file to get the file name of the index.
-// WriteIndex writes an index with a unique name and then
-// writes that name into a new version of index-name-<ver>.
-// (<ver> stands for the CurrentVersion of the index format.)
+// The directory containing the index, returned by [IndexDir], contains a file
+// index-name-<ver> that contains the name of the current index.
 
 import (
 	"maps"
@@ -25,9 +19,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Update updates the index for the specified Go
-// module cache directory, creating it as needed.
-// On success it returns the current index.
+// Update updates the index for the specified Go module cache directory,
+// creating it as needed. On success it returns the current index.
 func Update(gomodcache string) (*Index, error) {
 	prev, err := Read(gomodcache)
 	if err != nil {
@@ -41,9 +34,8 @@ func Update(gomodcache string) (*Index, error) {
 
 // update builds, writes, and returns the current index.
 //
-// If old is nil, the new index is built from all of GOMODCACHE;
-// otherwise it is built from the old index plus cache updates
-// since the previous index's time.
+// If old is nil, the new index is built from all of GOMODCACHE. Otherwise it
+// is built from the index plus cache updates since the index's time.
 func update(gomodcache string, old *Index) (*Index, error) {
 	gomodcache, err := filepath.Abs(gomodcache)
 	if err != nil {
@@ -61,36 +53,31 @@ func update(gomodcache string, old *Index) (*Index, error) {
 	return new, nil
 }
 
-// build returns a new index for the specified Go module cache (an
-// absolute path).
+// build returns a new index for the specified Go module cache (an absolute
+// path).
 //
-// If an old index is provided, only directories more recent than it
-// that it are scanned; older directories are provided by the old
-// Index.
+// If an old index is provided, only directories more recent than it that it
+// are scanned; older directories are provided by the Index.
 //
 // The boolean result indicates whether new entries were found.
 func build(gomodcache string, old *Index) (*Index, bool, error) {
 	// Set the time window.
 	var start time.Time // = dawn of time
 	if old != nil {
-		// -1s to accommodate skew between (fine-grained) time.Now
-		// and (coarse) file system's mtime clock.
+		// -1s to accommodate skew between (fine-grained) time.Now and (coarse) file system's mtime clock.
 		start = old.ValidAt.Add(-1 * time.Second)
 	}
 	now := time.Now()
 	end := now.Add(24 * time.Hour) // safely in the future
 
-	// Enumerate GOMODCACHE package directories.
-	// Choose the best (latest) package for each import path.
+	// Enumerate GOMODCACHE package directories. Choose the best (latest) package for each import path.
 	pkgDirs := findDirs(gomodcache, start, end)
 	dirByPath, err := bestDirByImportPath(pkgDirs)
 	if err != nil {
 		return nil, false, err
 	}
 
-	// For each import path it might occur only in
-	// dirByPath, only in old, or in both.
-	// If both, use the semantically later one.
+	// For each import path it might occur only in dirByPath, only in old, or in both.
 	var entries []Entry
 	if old != nil {
 		for _, entry := range old.Entries {

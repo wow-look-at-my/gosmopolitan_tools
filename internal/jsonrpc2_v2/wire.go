@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -16,20 +15,16 @@ var (
 	ErrParse = NewError(-32700, "JSON RPC parse error")
 	// ErrInvalidRequest is used when the JSON sent is not a valid Request object.
 	ErrInvalidRequest = NewError(-32600, "JSON RPC invalid request")
-	// ErrMethodNotFound should be returned by the handler when the method does
-	// not exist / is not available.
+	// ErrMethodNotFound should be returned by the handler when the method does not exist / is not available.
 	ErrMethodNotFound = NewError(-32601, "JSON RPC method not found")
-	// ErrInvalidParams should be returned by the handler when method
-	// parameter(s) were invalid.
+	// ErrInvalidParams should be returned by the handler when method parameter(s) were invalid.
 	ErrInvalidParams = NewError(-32602, "JSON RPC invalid params")
 	// ErrInternal indicates a failure to process a call correctly
 	ErrInternal = NewError(-32603, "JSON RPC internal error")
 
-	// The following errors are not part of the json specification, but
-	// compliant extensions specific to this implementation.
+	// The following errors are not part of the json specification.
 
-	// ErrServerOverloaded is returned when a message was refused due to a
-	// server being temporarily unable to accept any new messages.
+	// ErrServerOverloaded is returned when a message was refused due to a server being temporarily unable to accept any new messages.
 	ErrServerOverloaded = NewError(-32000, "JSON RPC overloaded")
 	// ErrUnknown should be used for all non coded errors.
 	ErrUnknown = NewError(-32001, "JSON RPC unknown error")
@@ -63,9 +58,6 @@ type WireError struct {
 }
 
 // NewError returns an error that will encode on the wire correctly.
-// The standard codes are made available from this package, this function should
-// only be used to build errors for application specific codes as allowed by the
-// specification.
 func NewError(code int64, message string) error {
 	return &WireError{
 		Code:    code,

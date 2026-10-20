@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -31,26 +30,7 @@ var MapsLoopAnalyzer = &analysis.Analyzer{
 	URL:      "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_mapsloop",
 }
 
-// The mapsloop pass offers to simplify a loop of map insertions:
-//
-//	for k, v := range x {
-//		m[k] = v
-//	}
-//
-// by a call to go1.23's maps package. There are four variants, the
-// product of two axes: whether the source x is a map or an iter.Seq2,
-// and whether the destination m is a newly created map:
-//
-//	maps.Copy(m, x)		(x is map)
-//	maps.Insert(m, x)       (x is iter.Seq2)
-//	m = maps.Clone(x)       (x is a non-nil map, m is a new map)
-//	m = maps.Collect(x)     (x is iter.Seq2, m is a new map)
-//
-// A map is newly created if the preceding statement has one of these
-// forms, where M is a map type:
-//
-//	m = make(M)
-//	m = M{}
+// The mapsloop pass offers to simplify a loop of map insertions:.
 func mapsloop(pass *analysis.Pass) (any, error) {
 	// Skip the analyzer in packages where its
 	// fixes would create an import cycle.
@@ -78,20 +58,14 @@ func mapsloop(pass *analysis.Pass) (any, error) {
 			}
 			xmap = false
 
-			// Record in tx the unnamed map[K]V type
-			// derived from the yield function.
-			// This is the type of maps.Collect(x).
+			// Record in tx the unnamed map[K]V type derived from the yield function. This is the type of maps.Collect(x).
 			tx = types.NewMap(k, v)
 
 		default:
 			return // e.g. slice, channel (or no core type!)
 		}
 
-		// Is the preceding statement of the form
-		//    m = make(M) or M{}
-		// and can we replace its RHS with slices.{Clone,Collect}?
-		//
-		// Beware: if x may be nil, we cannot use Clone as it preserves nilness.
+		// Is the preceding statement of the form m = make(M) or M{} and can we replace its RHS with slices.{Clone,Collect}?
 		var mrhs ast.Expr       // make(M) or M{}, or nil
 		var mAssign token.Token // token used to assign m
 		if curPrev, ok := curRange.PrevSibling(); ok {
@@ -126,25 +100,19 @@ func mapsloop(pass *analysis.Pass) (any, error) {
 					// - maps.Collect(x) returns an unnamed map type.
 
 					if assign.Tok == token.DEFINE {
-						// DEFINE (:=): we must not
-						// change the type of RHS.
+						// DEFINE (:=): we must not change the type of RHS.
 						if types.Identical(tx, trhs) {
 							mrhs = rhs
 						}
 					} else {
-						// ASSIGN (=): the types of LHS
-						// and RHS may differ in namedness.
+						// ASSIGN (=): the types of LHS and RHS may differ in namedness.
 						if types.AssignableTo(tx, trhs) {
 							mrhs = rhs
 						}
 					}
 
-					// Temporarily disable the transformation to the
-					// (nil-preserving) maps.Clone until we can prove
-					// that x is non-nil. This is rarely possible,
-					// and may require control flow analysis
-					// (e.g. a dominating "if len(x)" check).
-					// See #71844.
+					// Temporarily disable the transformation to the (nil-preserving)
+					// maps.Clone until we can prove that x is non-nil.
 					if xmap {
 						mrhs = nil
 					}
@@ -169,14 +137,6 @@ func mapsloop(pass *analysis.Pass) (any, error) {
 		)
 		if mrhs != nil {
 			// Replace assignment and loop with expression.
-			//
-			//   m = make(...)
-			//   for k, v := range x { /* comments */ m[k] = v }
-			//
-			//   ->
-			//
-			//   /* comments */
-			//   m = maps.Collect(x)
 			curPrev, _ := curRange.PrevSibling()
 			start, end = curPrev.Node().Pos(), rng.End()
 			newText = fmt.Appendf(nil, "%s%s %s %s%s(%s)",
@@ -188,13 +148,6 @@ func mapsloop(pass *analysis.Pass) (any, error) {
 				astutil.Format(pass.Fset, x))
 		} else {
 			// Replace loop with call statement.
-			//
-			//   for k, v := range x { /* comments */ m[k] = v }
-			//
-			//   ->
-			//
-			//   /* comments */
-			//   maps.Copy(m, x)
 			start, end = rng.Pos(), rng.End()
 			newText = fmt.Appendf(nil, "%s%s%s(%s, %s)",
 				allComments(file, start, end),
@@ -259,9 +212,7 @@ func mapsloop(pass *analysis.Pass) (any, error) {
 						types.Identical(info.TypeOf(index), info.TypeOf(rng.Value)) && // m[k], v
 						types.Identical(tmap.Key(), info.TypeOf(rng.Key)) {
 
-						// Have: for k, v := range x { m[k] = v }
-						// where there is no implicit conversion
-						// of either key or value.
+						// Have: for k, v := range x { m[k] = v } where there is no implicit conversion of either key or value.
 						check(file, curRange, assign, index.X, rng.X)
 					}
 				}

@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa_test
 
@@ -33,12 +32,10 @@ func (x *Pointer[T]) Load() *T {
 
 func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 `
-	// The SSA members for this package should look something like this:
-	//      func  LoadPointer func(addr *unsafe.Pointer) (val unsafe.Pointer)
-	//      type  Pointer     struct{v unsafe.Pointer}
-	//        method (*Pointer[T any]) Load() *T
-	//      func  init        func()
-	//      var   init$guard  bool
+	// The SSA members for this package should look something like this: func
+	// LoadPointer func(addr *unsafe.Pointer) (val unsafe.Pointer) type Pointer
+	// struct{v unsafe.Pointer} method (*Pointer[T any]) Load() *T func init
+	// func() var init$guard bool
 
 	for _, mode := range []ssa.BuilderMode{
 		ssa.SanityCheckFunctions,

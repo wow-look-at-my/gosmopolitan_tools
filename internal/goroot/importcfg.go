@@ -1,12 +1,9 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package goroot is a copy of package internal/goroot
-// in the main GO repot. It provides a utility to produce
-// an import path to package file map mapping
-// standard library packages to the locations of their export
-// data files.
+// Package goroot is a copy of package internal/goroot in the main GO repot.
+// It provides a utility to produce an import path to package file map mapping
+// standard library packages to the locations of their export data files.
 package goroot
 
 import (
@@ -16,9 +13,8 @@ import (
 	"sync"
 )
 
-// PkgfileMap returns a map of package paths to the location on disk
-// of the .a file for the package.
-// The caller must not modify the map.
+// PkgfileMap returns a map of package paths to the location on disk of the .a
+// file for the package. The caller must not modify the map.
 func PkgfileMap() (map[string]string, error) {
 	return pkgFileMapOnce()
 }

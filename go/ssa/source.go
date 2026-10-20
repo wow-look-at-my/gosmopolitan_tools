@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -21,12 +20,6 @@ import (
 //
 // Syntax associated with package-level variable specifications is
 // enclosed by the package's init() function.
-//
-// Returns nil if not found; reasons might include:
-//   - the node is not enclosed by any function.
-//   - the node is within an anonymous function (FuncLit) and
-//     its SSA function has not been created yet
-//     (pkg.Build() has not yet been called).
 func EnclosingFunction(pkg *Package, path []ast.Node) *Function {
 	// Start with package-level function...
 	fn := findEnclosingPackageLevelFunction(pkg, path)
@@ -48,7 +41,7 @@ outer:
 			// SSA function not found:
 			// - package not yet built, or maybe
 			// - builder skipped FuncLit in dead block
-			//   (in principle; but currently the Builder
+			//   (in principle; but the Builder
 			//   generates even dead FuncLits).
 			return nil
 		}
@@ -56,14 +49,9 @@ outer:
 	return fn
 }
 
-// HasEnclosingFunction returns true if the AST node denoted by path
-// is contained within the declaration of some function or
-// package-level variable.
-//
-// Unlike EnclosingFunction, the behaviour of this function does not
-// depend on whether SSA code for pkg has been built, so it can be
-// used to quickly reject check inputs that will cause
-// EnclosingFunction to fail, prior to SSA building.
+// HasEnclosingFunction returns true if the AST node denoted by path is
+// contained within the declaration of some function or package-level
+// variable.
 func HasEnclosingFunction(pkg *Package, path []ast.Node) bool {
 	return findEnclosingPackageLevelFunction(pkg, path) != nil
 }
@@ -91,8 +79,7 @@ func findEnclosingPackageLevelFunction(pkg *Package, path []ast.Node) *Function 
 						}
 					}
 				}
-				// Hack: return non-nil when SSA is not yet
-				// built so that HasEnclosingFunction works.
+				// Hack: return non-nil when SSA is not yet built so that HasEnclosingFunction works.
 				return pkg.init
 			}
 			// Declared function/method.
@@ -105,8 +92,7 @@ func findEnclosingPackageLevelFunction(pkg *Package, path []ast.Node) *Function 
 // findNamedFunc returns the named function whose FuncDecl.Ident is at
 // position pos.
 func findNamedFunc(pkg *Package, pos token.Pos) *Function {
-	// Look at all package members and method sets of named types.
-	// Not very efficient.
+	// Look at all package members and method sets of named types. Not efficient.
 	for _, mem := range pkg.Members {
 		switch mem := mem.(type) {
 		case *Function:
@@ -131,26 +117,6 @@ func findNamedFunc(pkg *Package, pos token.Pos) *Function {
 
 // ValueForExpr returns the SSA Value that corresponds to non-constant
 // expression e.
-//
-// It returns nil if no value was found, e.g.
-//   - the expression is not lexically contained within f;
-//   - f was not built with debug information; or
-//   - e is a constant expression.  (For efficiency, no debug
-//     information is stored for constants. Use
-//     go/types.Info.Types[e].Value instead.)
-//   - e is a reference to nil or a built-in function.
-//   - the value was optimised away.
-//
-// If e is an addressable expression used in an lvalue context,
-// value is the address denoted by e, and isAddr is true.
-//
-// The types of e (or &e, if isAddr) and the result are equal
-// (modulo "untyped" bools resulting from comparisons).
-//
-// (Tip: to find the ssa.Value given a source position, use
-// astutil.PathEnclosingInterval to locate the ast.Node, then
-// EnclosingFunction to locate the Function, then ValueForExpr to find
-// the ssa.Value.)
 func (f *Function) ValueForExpr(e ast.Expr) (value Value, isAddr bool) {
 	if f.debugInfo() { // (opt)
 		e = ast.Unparen(e)
@@ -169,20 +135,14 @@ func (f *Function) ValueForExpr(e ast.Expr) (value Value, isAddr bool) {
 
 // --- Lookup functions for source-level named entities (types.Objects) ---
 
-// Package returns the SSA Package corresponding to the specified
-// type-checker package. It returns nil if no such Package was
-// created by a prior call to prog.CreatePackage.
+// Package returns the SSA Package corresponding to the specified type-checker
+// package.
 func (prog *Program) Package(pkg *types.Package) *Package {
 	return prog.packages[pkg]
 }
 
-// packageLevelMember returns the package-level member corresponding
-// to the specified symbol, which may be a package-level const
-// (*NamedConst), var (*Global) or func/method (*Function) of some
-// package in prog.
-//
-// It returns nil if the object belongs to a package that has not been
-// created by prog.CreatePackage.
+// packageLevelMember returns the package-level member corresponding to the
+// specified symbol.
 func (prog *Program) packageLevelMember(obj types.Object) Member {
 	if pkg, ok := prog.packages[obj.Pkg()]; ok {
 		return pkg.objects[obj]
@@ -190,10 +150,8 @@ func (prog *Program) packageLevelMember(obj types.Object) Member {
 	return nil
 }
 
-// FuncValue returns the SSA function or (non-interface) method
-// denoted by the specified func symbol. It returns nil if the symbol
-// denotes an interface method, or belongs to a package that was not
-// created by prog.CreatePackage.
+// FuncValue returns the SSA function or (non-interface) method denoted by the
+// specified func symbol.
 func (prog *Program) FuncValue(obj *types.Func) *Function {
 	fn, _ := prog.packageLevelMember(obj).(*Function)
 	return fn
@@ -215,41 +173,17 @@ func (prog *Program) ConstValue(obj *types.Const) *Const {
 	return NewConst(obj.Val(), obj.Type())
 }
 
-// VarValue returns the SSA Value that corresponds to a specific
-// identifier denoting the specified var symbol.
+// VarValue returns the SSA Value that corresponds to a specific identifier
+// denoting the specified var symbol.
 //
-// VarValue returns nil if a local variable was not found, perhaps
-// because its package was not built, the debug information was not
-// requested during SSA construction, or the value was optimized away.
+// VarValue returns nil if a local variable was not found, perhaps because its
+// package was not built. The debug information was not requested during SSA
+// construction. Otherwise, the value was optimized away.
 //
-// ref is the path to an ast.Ident (e.g. from PathEnclosingInterval),
-// and that ident must resolve to obj.
+// ref is the path to an ast.Ident (e.g. from PathEnclosingInterval), and that
+// ident must resolve to obj.
 //
-// pkg is the package enclosing the reference.  (A reference to a var
-// always occurs within a function, so we need to know where to find it.)
-//
-// If the identifier is a field selector and its base expression is
-// non-addressable, then VarValue returns the value of that field.
-// For example:
-//
-//	func f() struct {x int}
-//	f().x  // VarValue(x) returns a *Field instruction of type int
-//
-// All other identifiers denote addressable locations (variables).
-// For them, VarValue may return either the variable's address or its
-// value, even when the expression is evaluated only for its value; the
-// situation is reported by isAddr, the second component of the result.
-//
-// If !isAddr, the returned value is the one associated with the
-// specific identifier.  For example,
-//
-//	var x int    // VarValue(x) returns Const 0 here
-//	x = 1        // VarValue(x) returns Const 1 here
-//
-// It is not specified whether the value or the address is returned in
-// any particular case, as it may depend upon optimizations performed
-// during SSA code generation, such as registerization, constant
-// folding, avoidance of materialization of subexpressions, etc.
+// pkg is the package enclosing the reference.
 func (prog *Program) VarValue(obj *types.Var, pkg *Package, ref []ast.Node) (value Value, isAddr bool) {
 	// All references to a var are local to some function, possibly init.
 	fn := EnclosingFunction(pkg, ref)

@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gocommand
 
@@ -37,7 +36,6 @@ var modFlagRegexp = regexp.MustCompile(`-mod[ =](\w+)`)
 // VendorEnabled reports whether vendoring is enabled. It takes a *Runner to execute Go commands
 // with the supplied context.Context and Invocation. The Invocation can contain pre-defined fields,
 // of which only Verb and Args are modified to run the appropriate Go command.
-// Inspired by setDefaultBuildMod in modload/init.go
 func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *ModuleJSON, error) {
 	mainMod, go114, err := getMainModuleAnd114(ctx, inv, r)
 	if err != nil {
@@ -66,10 +64,8 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *Modul
 	if mainMod == nil || !go114 {
 		return false, nil, nil
 	}
-	// Check 1.14's automatic vendor mode.
 	if fi, err := os.Stat(filepath.Join(mainMod.Dir, "vendor")); err == nil && fi.IsDir() {
 		if mainMod.GoVersion != "" && semver.Compare("v"+mainMod.GoVersion, "v1.14") >= 0 {
-			// The Go version is at least 1.14, and a vendor directory exists.
 			// Set -mod=vendor by default.
 			return true, mainMod, nil
 		}
@@ -77,9 +73,7 @@ func VendorEnabled(ctx context.Context, inv Invocation, r *Runner) (bool, *Modul
 	return false, nil, nil
 }
 
-// getMainModuleAnd114 gets one of the main modules' information and whether the
-// go command in use is 1.14+. This is the information needed to figure out
-// if vendoring should be enabled.
+// This is the information needed to figure out if vendoring should be enabled.
 func getMainModuleAnd114(ctx context.Context, inv Invocation, r *Runner) (*ModuleJSON, bool, error) {
 	const format = `{{.Path}}
 {{.Dir}}

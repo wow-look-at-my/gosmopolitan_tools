@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The genericfeatures package provides utilities for detecting usage of
 // generic programming in Go packages.
@@ -14,30 +13,22 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Features is a set of flags reporting which features of generic Go code a
-// package uses, or 0.
 type Features int
 
 const (
-	// GenericTypeDecls indicates whether the package declares types with type
-	// parameters.
+	// GenericTypeDecls indicates whether the package declares types with type parameters.
 	GenericTypeDecls Features = 1 << iota
 
-	// GenericFuncDecls indicates whether the package declares functions with
-	// type parameters.
+	// GenericFuncDecls indicates whether the package declares functions with type parameters.
 	GenericFuncDecls
 
-	// EmbeddedTypeSets indicates whether the package declares interfaces that
-	// contain structural type restrictions, i.e. are not fully described by
-	// their method sets.
+	// EmbeddedTypeSets indicates whether the package declares interfaces that contain structural type restrictions.
 	EmbeddedTypeSets
 
-	// TypeInstantiation indicates whether the package instantiates any generic
-	// types.
+	// TypeInstantiation indicates whether the package instantiates any generic types.
 	TypeInstantiation
 
-	// FuncInstantiation indicates whether the package instantiates any generic
-	// functions.
+	// FuncInstantiation indicates whether the package instantiates any generic functions.
 	FuncInstantiation
 )
 

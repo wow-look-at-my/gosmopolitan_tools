@@ -1,13 +1,11 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package typeindex defines an analyzer that provides a
 // [golang.org/x/tools/internal/typesinternal/typeindex.Index].
 //
-// Like [golang.org/x/tools/go/analysis/passes/inspect], it is
-// intended to be used as a helper by other analyzers; it reports no
-// diagnostics of its own.
+// Like [golang.org/x/tools/go/analysis/passes/inspect], it is intended to be
+// used as a helper by other analyzers. It reports no diagnostics of its own.
 package typeindex
 
 import (

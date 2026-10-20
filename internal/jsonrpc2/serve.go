@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -17,9 +16,7 @@ import (
 )
 
 // NOTE: This file provides an experimental API for serving multiple remote
-// jsonrpc2 clients over the network. For now, it is intentionally similar to
-// net/http, but that may change in the future as we figure out the correct
-// semantics.
+// jsonrpc2 clients over the network. it is intentionally similar to net/http.
 
 // A StreamServer is used to serve incoming jsonrpc2 clients communicating over
 // a newly created connection.
@@ -27,8 +24,7 @@ type StreamServer interface {
 	ServeStream(context.Context, Conn) error
 }
 
-// The ServerFunc type is an adapter that implements the StreamServer interface
-// using an ordinary function.
+// The ServerFunc type is an adapter that implements the StreamServer interface using an ordinary function.
 type ServerFunc func(context.Context, Conn) error
 
 // ServeStream calls f(ctx, s).
@@ -46,9 +42,9 @@ func HandlerServer(h Handler) StreamServer {
 	})
 }
 
-// ListenAndServe starts a jsonrpc2 server on the given address.  If
-// idleTimeout is non-zero, ListenAndServe exits after there are no clients for
-// this duration, otherwise it exits only on error.
+// ListenAndServe starts a jsonrpc2 server on the given address. If
+// idleTimeout is non-zero, ListenAndServe exits after there are no clients
+// for this duration, otherwise it exits only on error.
 func ListenAndServe(ctx context.Context, network, addr string, server StreamServer, idleTimeout time.Duration) error {
 	ln, err := net.Listen(network, addr)
 	if err != nil {
@@ -83,8 +79,7 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
-		// Signal the Accept goroutine to stop immediately
-		// and terminate all newly-accepted connections until it returns.
+		// Signal the Accept goroutine to stop immediately and terminate all newly-accepted connections until it returns.
 		ln.Close()
 		for nc := range newConns {
 			nc.Close()
@@ -100,7 +95,7 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 		}
 	}()
 
-	// Max duration: ~290 years; surely that's long enough.
+	// Max duration: many years; surely that's long enough.
 	const forever = math.MaxInt64
 	if idleTimeout <= 0 {
 		idleTimeout = forever
@@ -115,8 +110,7 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 				return acceptErr
 			}
 			if activeConns == 0 && !connTimer.Stop() {
-				// connTimer.C may receive a value even after Stop returns.
-				// (See https://golang.org/issue/37196.)
+				// connTimer.C may receive a value even after Stop returns. (See https://golang.org/issue/37196.)
 				<-connTimer.C
 			}
 			activeConns++
@@ -147,15 +141,13 @@ func Serve(ctx context.Context, ln net.Listener, server StreamServer, idleTimeou
 }
 
 // isClosingError reports if the error occurs normally during the process of
-// closing a network connection. It uses imperfect heuristics that err on the
-// side of false negatives, and should not be used for anything critical.
+// closing a network connection.
 func isClosingError(err error) bool {
 	if errors.Is(err, io.EOF) {
 		return true
 	}
 	// Per https://github.com/golang/go/issues/4373, this error string should not
-	// change. This is not ideal, but since the worst that could happen here is
-	// some superfluous logging, it is acceptable.
+	// change.
 	if err.Error() == "use of closed network connection" {
 		return true
 	}

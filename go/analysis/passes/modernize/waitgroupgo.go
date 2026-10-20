@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -36,30 +35,6 @@ var WaitGroupGoAnalyzer = &analysis.Analyzer{
 
 // The waitgroupgo pass replaces old more complex code with
 // go1.25 added API WaitGroup.Go.
-//
-// Patterns:
-//
-//  1. wg.Add(1); go func() { defer wg.Done(); ... }()
-//     =>
-//     wg.Go(go func() { ... })
-//
-//  2. wg.Add(1); go func() { ...; wg.Done() }()
-//     =>
-//     wg.Go(go func() { ... })
-//
-// The wg.Done must occur within the first statement of the block in a
-// defer format or last statement of the block, and the offered fix
-// only removes the first/last wg.Done call. It doesn't fix existing
-// wrong usage of sync.WaitGroup.
-//
-// The use of WaitGroup.Go in pattern 1 implicitly introduces a
-// 'defer', which may change the behavior in the case of panic from
-// the "..." logic. In this instance, the change is safe: before and
-// after the transformation, an unhandled panic inevitably results in
-// a fatal crash. The fact that the transformed code calls wg.Done()
-// before the crash doesn't materially change anything. (If Done had
-// other effects, or blocked, or if WaitGroup.Go propagated panics
-// from child to parent goroutine, the argument would be different.)
 func waitgroup(pass *analysis.Pass) (any, error) {
 	var (
 		index             = pass.ResultOf[typeindexanalyzer.Analyzer].(*typeindex.Index)
@@ -77,8 +52,6 @@ func waitgroup(pass *analysis.Pass) (any, error) {
 		if !isIntLiteral(info, addCall.Args[0], 1) {
 			continue // not a call to wg.Add(1)
 		}
-		// Inv: the Args[0] check ensures addCall is not of
-		// the form sync.WaitGroup.Add(&wg, 1).
 		addCallRecv := ast.Unparen(addCall.Fun).(*ast.SelectorExpr).X
 
 		// Following statement must be go func() { ... } ().
@@ -141,8 +114,7 @@ func waitgroup(pass *analysis.Pass) (any, error) {
 		}
 
 		pass.Report(analysis.Diagnostic{
-			// go func() {
-			// ~~~~~~~~~
+			// go func() { ~~~~~~~~~
 			Pos:     goStmt.Pos(),
 			End:     lit.Type.End(),
 			Message: "Goroutine creation can be simplified using WaitGroup.Go",
@@ -154,17 +126,12 @@ func waitgroup(pass *analysis.Pass) (any, error) {
 					// delete "wg.Done()" or "defer wg.Done()"
 					refactor.DeleteStmt(tokFile, curDoneStmt),
 					[]analysis.TextEdit{
-						// go    func()
-						// ------
-						// wg.Go(func()
+						// go func() ------ wg.Go(func()
 						{
 							Pos:     goStmt.Pos(),
 							End:     goStmt.Call.Pos(),
 							NewText: fmt.Appendf(nil, "%s.Go(", addCallRecvText.String()),
 						},
-						// ... }()
-						//      -
-						// ... } )
 						{
 							Pos: goStmt.Call.Lparen,
 							End: goStmt.Call.Rparen,

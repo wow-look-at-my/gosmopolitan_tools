@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package generator
 
@@ -16,47 +15,19 @@ import (
 // this interface.
 type parm interface {
 
-	// Declare emits text containing a declaration of this param
-	// or return var into the specified buffer. Prefix is a tag to
-	// prepend before the declaration (for example a variable
-	// name) followed by a space; suffix is an arbitrary string to
-	// tack onto the end of the param's type text. Here 'caller'
-	// is set to true if we're emitting the caller part of a test
-	// pair as opposed to the checker.
+	// Declare emits text containing a declaration of this param or return var into the specified buffer.
 	Declare(b *bytes.Buffer, prefix string, suffix string, caller bool)
 
-	// GenElemRef returns a pair [X,Y] corresponding to a
-	// component piece of some composite parm, where X is a string
-	// forming the reference (ex: ".field" if we're picking out a
-	// struct field) and Y is a parm object corresponding to the
-	// type of the element.
+	// GenElemRef returns a pair [X,Y] corresponding to a component piece of some composite parm, where X is a string forming the reference.
 	GenElemRef(elidx int, path string) (string, parm)
 
-	// GenValue constructs a new concrete random value appropriate
-	// for the type in question and returns it, along with a
-	// sequence number indicating how many random decisions we had
-	// to make. Here "s" is the current generator state, "f" is
-	// the current function we're emitting, value is a sequence
-	// number indicating how many random decisions have been made
-	// up until this point, and 'caller' is set to true if we're
-	// emitting the caller part of a test pair as opposed to the
-	// checker.  Return value is a pair [V,I] where V is the text
-	// if the value, and I is a new sequence number reflecting any
-	// additional random choices we had to make.  For example, if
-	// the parm is something like "type Foo struct { f1 int32; f2
-	// float64 }" then we might expect GenValue to emit something
-	// like "Foo{int32(-9), float64(123.123)}".
+	// GenValue constructs a new concrete random value appropriate for the type in question and returns it.
 	GenValue(s *genstate, f *funcdef, value int, caller bool) (string, int)
 
-	// IsControl returns true if this specific param has been marked
-	// as the single param that controls recursion for a recursive
-	// checker function. The test code doesn't check this param for a specific
-	// value, but instead returns early if it has value 0 or decrements it
-	// on a recursive call.
+	// IsControl returns true if this specific param has been marked as the param that controls recursion for a recursive checker function.
 	IsControl() bool
 
-	// NumElements returns the total number of discrete elements contained
-	// in this parm. For non-composite types, this will always be 1.
+	// NumElements returns the total number of discrete elements contained in this parm.
 	NumElements() int
 
 	// String returns a descriptive string for this parm.
@@ -68,36 +39,22 @@ type parm interface {
 	// QualName returns a package-qualified type name for this parm.
 	QualName() string
 
-	// HasPointer returns true if this parm is of pointer type, or
-	// if it is a composite that has a pointer element somewhere inside.
-	// Strings and slices return true for this hook.
+	// HasPointer returns true if this parm is of pointer type.
 	HasPointer() bool
 
-	// IsBlank() returns true if the name of this parm is "_" (that is,
-	// if we randomly chose to make it a blank). SetBlank() is used
-	// to set the 'blank' property for this parm.
+	// IsBlank() returns true if the name of this parm is "_" (that is, if we randomly chose to make it a blank).
 	IsBlank() bool
 	SetBlank(v bool)
 
-	// AddrTaken() return a token indicating whether this parm should
-	// be address taken or not, the nature of the address-taken-ness (see
-	// below at the def of addrTakenHow). SetAddrTaken is used to set
-	// the address taken property of the parm.
+	// SetAddrTaken is used to set the address taken property of the parm.
 	AddrTaken() addrTakenHow
 	SetAddrTaken(val addrTakenHow)
 
-	// IsGenVal() returns true if the values of this type should
-	// be obtained by calling a helper func, as opposed to
-	// emitting code inline (as one would for things like numeric
-	// types). SetIsGenVal is used to set the gen-val property of
-	// the parm.
+	// IsGenVal() returns true if the values of this type should be obtained by calling a helper func, as opposed to emitting code inline.
 	IsGenVal() bool
 	SetIsGenVal(val bool)
 
-	// SkipCompare() returns true if we've randomly decided that
-	// we don't want to compare the value for this param or
-	// return.  SetSkipCompare is used to set the skip-compare
-	// property of the parm.
+	// SkipCompare() returns true if we've randomly decided that we don't want to compare the value for this param or return.
 	SkipCompare() skipCompare
 	SetSkipCompare(val skipCompare)
 }

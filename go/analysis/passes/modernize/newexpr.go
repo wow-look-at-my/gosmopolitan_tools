@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -56,7 +55,7 @@ func run(pass *analysis.Pass) (any, error) {
 								sig.Params().At(0) == v &&
 								!sig.Variadic() { // we can't safely transform a variadic function call, so skip them
 
-								// Export a fact for each one.
+								// Export a fact for each.
 								pass.ExportObjectFact(fn, &newLike{})
 
 								// Check file version.
@@ -67,14 +66,11 @@ func run(pass *analysis.Pass) (any, error) {
 
 								var edits []analysis.TextEdit
 
-								// If 'new' is not shadowed, replace func body: &x -> new(x).
-								// This makes it safely and cleanly inlinable.
+								// If 'new' is not shadowed, replace func body: &x -> new(x). This makes it safely and cleanly inlinable.
 								curRet, _ := curFuncDecl.FindNode(ret)
 								if lookup(info, curRet, "new") == builtinNew {
 									edits = []analysis.TextEdit{
-										// return    &x
-										//        ---- -
-										// return new(x)
+										// return &x - return new(x)
 										{
 											Pos:     unary.OpPos,
 											End:     unary.OpPos + token.Pos(len("&")),
@@ -146,24 +142,14 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			// The return type *T must exactly match the argument type T.
-			// (We formulate it this way--not in terms of the parameter
-			// type--to support generics.)
 			var targ types.Type
 			{
 				arg := call.Args[0]
 				tvarg := info.Types[arg]
 
-				// Constants: we must work around the type checker
-				// bug that causes info.Types to wrongly report the
-				// "typed" type for an untyped constant.
+				// Constants: we must work around the type checker bug that causes
+				// info.Types to wrongly report the "typed" type for an untyped constant.
 				// (See "historical reasons" in issue go.dev/issue/70638.)
-				//
-				// We don't have a reliable way to do this but we can attempt
-				// to re-typecheck the constant expression on its own, in
-				// the original lexical environment but not as a part of some
-				// larger expression that implies a conversion to some "typed" type.
-				// (For the genesis of this idea see (*state).arguments
-				// in ../../../../internal/refactor/inline/inline.go.)
 				if tvarg.Value != nil {
 					info2 := &types.Info{Types: make(map[ast.Expr]types.TypeAndValue)}
 					if err := types.CheckExpr(token.NewFileSet(), pass.Pkg, token.NoPos, arg, info2); err != nil {

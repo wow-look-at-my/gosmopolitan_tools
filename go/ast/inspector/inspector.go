@@ -1,48 +1,21 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package inspector provides helper functions for traversal over the
-// syntax trees of a package, including node filtering by type, and
-// materialization of the traversal stack.
+// Package inspector provides helper functions for traversal over the syntax
+// trees of a package, including node filtering by type, and materialization
+// of the traversal stack.
 //
-// During construction, the inspector does a complete traversal and
-// builds a list of push/pop events and their node type. Subsequent
-// method calls that request a traversal scan this list, rather than walk
-// the AST, and perform type filtering using efficient bit sets.
-// This representation is sometimes called a "balanced parenthesis tree."
+// During construction, the inspector does a complete traversal and builds a
+// list of push/pop events and their node type. Subsequent method calls that
+// request a traversal scan this list, rather than walk the AST, and perform
+// type filtering using efficient bit sets. This representation is sometimes
+// called a "balanced parenthesis tree."
 //
-// Experiments suggest the inspector's traversals are about 2.5x faster
-// than [ast.Inspect], but it may take around 5 traversals for this
-// benefit to amortize the inspector's construction cost.
-// If efficiency is the primary concern, do not use Inspector for
-// one-off traversals.
-//
-// The [Cursor] type provides a more flexible API for efficient
-// navigation of syntax trees in all four "cardinal directions". For
-// example, traversals may be nested, so you can find each node of
-// type A and then search within it for nodes of type B. Or you can
-// traverse from a node to its immediate neighbors: its parent, its
-// previous and next sibling, or its first and last child. We
-// recommend using methods of Cursor in preference to Inspector where
-// possible.
+// Experiments suggest the inspector's traversals are about 2.5x faster than
+// [ast.Inspect]. However, it may take traversals for this benefit to
+// amortize the inspector's construction cost. If efficiency is the primary
+// concern, do not use Inspector for one-off traversals.
 package inspector
-
-// There are four orthogonal features in a traversal:
-//  1 type filtering
-//  2 pruning
-//  3 postorder calls to f
-//  4 stack
-// Rather than offer all of them in the API,
-// only a few combinations are exposed:
-// - Preorder is the fastest and has fewest features,
-//   but is the most commonly needed traversal.
-// - Nodes and WithStack both provide pruning and postorder calls,
-//   even though few clients need it, because supporting two versions
-//   is not justified.
-// More combinations could be supported by expressing them as
-// wrappers around a more generic traversal, but this was measured
-// and found to degrade performance significantly (30%).
 
 import (
 	"go/ast"
@@ -63,9 +36,7 @@ func packEdgeKindAndIndex(ek edge.Kind, index int) int32 {
 // unpackEdgeKindAndIndex unpacks the edge kind and edge index (within
 // an []ast.Node slice) from the parent field of a pop event.
 func unpackEdgeKindAndIndex(x int32) (edge.Kind, int) {
-	// The "parent" field of a pop node holds the
-	// edge Kind in the lower 7 bits and the index+1
-	// in the upper 25.
+	// The "parent" field of a pop node holds the edge Kind in the lower several bits and the index+1 in a later upper.
 	return edge.Kind(x & 0x7f), int(x>>7) - 1
 }
 
@@ -74,8 +45,7 @@ func New(files []*ast.File) *Inspector {
 	return &Inspector{traverse(files)}
 }
 
-// An event represents a push or a pop
-// of an ast.Node during a traversal.
+// An event represents a push or a pop of an ast.Node during a traversal.
 type event struct {
 	node   ast.Node
 	typ    uint64 // typeOf(node) on push event, or union of typ strictly between push and pop events on pop events
@@ -87,32 +57,10 @@ type event struct {
 // Type can be recovered from the sole bit in typ.
 // [Tried this, wasn't faster. --adonovan]
 
-// Preorder visits all the nodes of the files supplied to [New] in
-// depth-first order. It calls f(n) for each node n before it visits
-// n's children.
-//
-// The complete traversal sequence is determined by [ast.Inspect].
-// The types argument, if non-empty, enables type-based filtering of
-// events. The function f is called only for nodes whose type
-// matches an element of the types slice.
-//
-// The [Cursor.Preorder] method provides a richer alternative interface.
-// Example:
-//
-//	for c := range in.Root().Preorder(types) { ... }
+// Preorder visits all the nodes of the files supplied to [New] in depth-first
+// order. It calls f(n) for each node n before it visits n's children.
 func (in *Inspector) Preorder(types []ast.Node, f func(ast.Node)) {
-	// Because it avoids postorder calls to f, and the pruning
-	// check, Preorder is almost twice as fast as Nodes. The two
-	// features seem to contribute similar slowdowns (~1.4x each).
-
-	// This function is equivalent to the PreorderSeq call below,
-	// but to avoid the additional dynamic call (which adds 13-35%
-	// to the benchmarks), we expand it out.
-	//
-	// in.PreorderSeq(types...)(func(n ast.Node) bool {
-	// 	f(n)
-	// 	return true
-	// })
+	// Because it avoids postorder calls to f, and the pruning check, Preorder is almost twice as fast as Nodes.
 
 	mask := maskOf(types)
 	for i := int32(0); i < int32(len(in.events)); {
@@ -133,24 +81,8 @@ func (in *Inspector) Preorder(types []ast.Node, f func(ast.Node)) {
 	}
 }
 
-// Nodes visits the nodes of the files supplied to [New] in depth-first
-// order. It calls f(n, true) for each node n before it visits n's
-// children. If f returns true, Nodes invokes f recursively for each
-// of the non-nil children of the node, followed by a call of
-// f(n, false).
-//
-// The complete traversal sequence is determined by [ast.Inspect].
-// The types argument, if non-empty, enables type-based filtering of
-// events. The function f if is called only for nodes whose type
-// matches an element of the types slice.
-//
-// The [Cursor.Inspect] method provides a richer alternative interface.
-// Example:
-//
-//	in.Root().Inspect(types, func(c Cursor) bool {
-//		...
-//		return true
-//	}
+// Nodes visits the nodes of the files supplied to [New] in depth-first order. It calls f(n, true) for each node n before it visits n's children. If f returns true, Nodes invokes f recursively for each of the non-nil children of the node, followed by a call of f(n, false). The complete traversal sequence is determined by [ast.Inspect]. The types
+// argument, if non-empty, enables type-based filtering of events.
 func (in *Inspector) Nodes(types []ast.Node, f func(n ast.Node, push bool) (proceed bool)) {
 	mask := maskOf(types)
 	for i := int32(0); i < int32(len(in.events)); {
@@ -160,7 +92,7 @@ func (in *Inspector) Nodes(types []ast.Node, f func(n ast.Node, push bool) (proc
 			pop := ev.index
 			if ev.typ&mask != 0 {
 				if !f(ev.node, true) {
-					i = pop + 1 // jump to corresponding pop + 1
+					i = pop + 1
 					continue
 				}
 			}
@@ -228,11 +160,7 @@ func (in *Inspector) WithStack(types []ast.Node, f func(n ast.Node, push bool, s
 
 // traverse builds the table of events representing a traversal.
 func traverse(files []*ast.File) []event {
-	// Preallocate approximate number of events
-	// based on source file extent of the declarations.
-	// (We use End-Pos not FileStart-FileEnd to neglect
-	// the effect of long doc comments.)
-	// This makes traverse faster by 4x (!).
+	// Preallocate approximate number of events based on source file extent of the declarations.
 	var extent int
 	for _, f := range files {
 		extent += int(f.End() - f.Pos())

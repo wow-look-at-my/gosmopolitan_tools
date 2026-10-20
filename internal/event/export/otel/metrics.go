@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package otel
 
@@ -98,8 +97,7 @@ func convertHistogramInt64Data(d *metric.HistogramInt64Data) otlpMetric {
 
 	groups := d.Groups()
 	for i, row := range d.Rows {
-		// OTLP expects bucket counts, not cumulative counts
-		// The internal format uses cumulative, so we need to convert
+		// OTLP expects bucket counts, not cumulative counts The internal format uses cumulative, so we need to convert
 		bucketCounts := make([]intAsString, len(row.Values)+1)
 		var prev int64
 		for j, v := range row.Values {

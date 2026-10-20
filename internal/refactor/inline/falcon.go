@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -29,89 +28,25 @@ type falconResult struct {
 
 // A falconType specifies the name and underlying type of a synthetic
 // defined type for use in falcon constraints.
-//
-// Unique types from callee code are bijectively mapped onto falcon
-// types so that constraints are independent of callee type
-// information but preserve type equivalence classes.
-//
-// Fresh names are deliberately obscure to avoid shadowing even if a
-// callee parameter has a name like "int" or "any".
 type falconType struct {
 	Name string
 	Kind types.BasicKind // string/number/bool
 }
 
-// falcon identifies "fallible constant" expressions, which are
-// expressions that may fail to compile if one or more of their
-// operands is changed from non-constant to constant.
+// falcon identifies "fallible constant" expressions, which are expressions
+// that may fail to compile if one or more of their operands is.
 //
 // Consider:
 //
 //	func sub(s string, i, j int) string { return s[i:j] }
 //
-// If parameters are replaced by constants, the compiler is
-// required to perform these additional checks:
+// If parameters are replaced by constants, the compiler is required to
+// perform these additional checks:
 //
 //   - if i is constant, 0 <= i.
 //   - if s and i are constant, i <= len(s).
 //   - ditto for j.
 //   - if i and j are constant, i <= j.
-//
-// s[i:j] is thus a "fallible constant" expression dependent on {s, i,
-// j}. Each falcon creates a set of conditional constraints across one
-// or more parameter variables.
-//
-//   - When inlining a call such as sub("abc", -1, 2), the parameter i
-//     cannot be eliminated by substitution as its argument value is
-//     negative.
-//
-//   - When inlining sub("", 2, 1), all three parameters cannot be
-//     simultaneously eliminated by substitution without violating i
-//     <= len(s) and j <= len(s), but the parameters i and j could be
-//     safely eliminated without s.
-//
-// Parameters that cannot be eliminated must remain non-constant,
-// either in the form of a binding declaration:
-//
-//	{ var i int = -1; return "abc"[i:2] }
-//
-// or a parameter of a literalization:
-//
-//	func (i int) string { return "abc"[i:2] }(-1)
-//
-// These example expressions are obviously doomed to fail at run
-// time, but in realistic cases such expressions are dominated by
-// appropriate conditions that make them reachable only when safe:
-//
-//	if 0 <= i && i <= j && j <= len(s) { _ = s[i:j] }
-//
-// (In principle a more sophisticated inliner could entirely eliminate
-// such unreachable blocks based on the condition being always-false
-// for the given parameter substitution, but this is tricky to do safely
-// because the type-checker considers only a single configuration.
-// Consider: if runtime.GOOS == "linux" { ... }.)
-//
-// We believe this is an exhaustive list of "fallible constant" operations:
-//
-//   - switch z { case x: case y } 	// duplicate case values
-//   - s[i], s[i:j], s[i:j:k]		// index out of bounds (0 <= i <= j <= k <= len(s))
-//   - T{x: 0}				// index out of bounds, duplicate index
-//   - x/y, x%y, x/=y, x%=y		// integer division by zero; minint/-1 overflow
-//   - x+y, x-y, x*y			// arithmetic overflow
-//   - x<<y				// shift out of range
-//   - -x				// negation of minint
-//   - T(x)				// value out of range
-//
-// The fundamental reason for this elaborate algorithm is that the
-// "separate analysis" of callee and caller, as required when running
-// in an environment such as unitchecker, means that there is no way
-// for us to simply invoke the type checker on the combination of
-// caller and callee code, as by the time we analyze the caller, we no
-// longer have access to type information for the callee (and, in
-// particular, any of its direct dependencies that are not direct
-// dependencies of the caller). So, in effect, we are forced to map
-// the problem in a neutral (callee-type-independent) constraint
-// system that can be verified later.
 func falcon(logf func(string, ...any), fset *token.FileSet, params map[*types.Var]*paramInfo, info *types.Info, decl *ast.FuncDecl) falconResult {
 
 	st := &falconState{
@@ -161,29 +96,16 @@ type falconState struct {
 	result falconResult
 }
 
-// typename returns the name in the falcon constraint system
-// of a given string/number/bool type t. Falcon types are
-// specified directly in go/types data structures rather than
-// by name, avoiding potential shadowing conflicts with
-// confusing parameter names such as "int".
-//
-// Also, each distinct type (as determined by types.Identical)
-// is mapped to a fresh type in the falcon system so that we
-// can map the types in the callee code into a neutral form
-// that does not depend on imports, allowing us to detect
-// potential conflicts such as
-//
-//	map[any]{T1(1): 0, T2(1): 0}
-//
-// where T1=T2.
+// typename returns the name in the falcon constraint system of a given
+// string/number/bool type t. Falcon types are specified directly in go/types
+// data structures rather than by name, avoiding potential shadowing conflicts
+// with confusing parameter names such as "int".
 func (st *falconState) typename(t types.Type) string {
 	name, ok := st.typenames.At(t).(string)
 	if !ok {
 		basic := t.Underlying().(*types.Basic)
 
-		// That dot ۰ is an Arabic zero numeral U+06F0.
-		// It is very unlikely to appear in a real program.
-		// TODO(adonovan): use a non-heuristic solution.
+		// It is unlikely to appear in a real program.
 		name = fmt.Sprintf("%s۰%d", basic, st.typenames.Len())
 		st.typenames.Set(t, name)
 		st.logf("falcon: emit type %s %s // %q", name, basic, t)
@@ -197,10 +119,9 @@ func (st *falconState) typename(t types.Type) string {
 
 // -- constraint emission --
 
-// emit emits a Go expression that must have a legal type.
-// In effect, we let the go/types constant folding algorithm
-// do most of the heavy lifting (though it may be hard to
-// believe from the complexity of this algorithm!).
+// emit emits a Go expression that must have a legal type. In effect, we let
+// the go/types constant folding algorithm do most of the heavy lifting
+// (though it may be hard to believe from the complexity of this algorithm!).
 func (st *falconState) emit(constraint ast.Expr) {
 	var out strings.Builder
 	if err := format.Node(&out, st.fset, constraint); err != nil {
@@ -238,10 +159,7 @@ func (st *falconState) emitMonotonic(i, j ast.Expr) {
 	})
 }
 
-// emitUnique emits a T{elem1: 0, ... elemN: 0} constraint,
-// which ensures that all constant elems are unique.
-// T may be a map, slice, or array depending
-// on the desired check semantics.
+// T may be a map, slice, or array depending on the desired check semantics.
 func (st *falconState) emitUnique(typ ast.Expr, elems []ast.Expr) {
 	if len(elems) > 1 {
 		var elts []ast.Expr
@@ -260,16 +178,15 @@ func (st *falconState) emitUnique(typ ast.Expr, elems []ast.Expr) {
 
 // -- traversal --
 
-// The traversal functions scan the callee body for expressions that
-// are not constant but would become constant if the parameter vars
-// were redeclared as constants, and emits for each one a constraint
-// (a Go expression) with the property that it will not type-check
-// (using types.CheckExpr) if the particular argument values are
-// unsuitable.
+// The traversal functions scan the callee body for expressions that are not
+// constant but would become constant. This happens if the parameter vars were
+// redeclared as constants. Emits for each a constraint (a Go expression) with
+// the property that it will not type-check (using types.CheckExpr) if the
+// argument values are unsuitable.
 //
-// These constraints are checked by Inline with the actual
-// constant argument values. Violations cause it to reject
-// parameters as candidates for substitution.
+// These constraints are checked by Inline with the actual constant argument
+// values. Violations cause it to reject parameters as candidates for
+// substitution.
 
 func (st *falconState) stmt(s ast.Stmt) {
 	ast.Inspect(s, func(n ast.Node) bool {
@@ -281,9 +198,7 @@ func (st *falconState) stmt(s ast.Stmt) {
 		case *ast.AssignStmt:
 			switch n.Tok {
 			case token.QUO_ASSIGN, token.REM_ASSIGN:
-				// x /= y
-				// Possible "integer division by zero"
-				// Emit constraint: 1/y.
+				// x /= y Possible "integer division by zero" Emit constraint: 1/y.
 				_ = st.expr(n.Lhs[0])
 				kY := st.expr(n.Rhs[0])
 				if kY, ok := kY.(ast.Expr); ok {
@@ -312,9 +227,6 @@ func (st *falconState) stmt(s ast.Stmt) {
 			}
 
 			// Possible "duplicate case value".
-			// Emit constraint map[T]int{v1: 0, ..., vN:0}
-			// to ensure all maybe-constant case values are unique
-			// (unless switch tag is boolean, which is relaxed).
 			var unique []ast.Expr
 			for _, clause := range n.Body.List {
 				clause := clause.(*ast.CaseClause)
@@ -352,39 +264,18 @@ func (st *falconState) fieldTypes(fields *ast.FieldList) {
 	}
 }
 
-// expr visits the expression (or type) and returns a
-// non-nil result if the expression is constant or would
-// become constant if all suitable function parameters were
-// redeclared as constants.
+// expr visits the expression (or type). It returns a non-nil result if the
+// expression is constant or would become constant if all suitable function
+// parameters were redeclared as constants.
 //
-// If the expression is constant, st.expr returns its type
-// and value (types.TypeAndValue). If the expression would
-// become constant, st.expr returns an ast.Expr tree whose
-// leaves are literals and parameter references, and whose
-// interior nodes are operations that may become constant,
-// such as -x, x+y, f(x), and T(x). We call these would-be
-// constant expressions "fallible constants", since they may
-// fail to type-check for some values of x, i, and j. (We
-// refer to the non-nil cases collectively as "maybe
-// constant", and the nil case as "definitely non-constant".)
-//
-// As a side effect, st.expr emits constraints for each
-// fallible constant expression; this is its main purpose.
-//
-// Consequently, st.expr must visit the entire subtree so
-// that all necessary constraints are emitted. It may not
-// short-circuit the traversal when it encounters a constant
-// subexpression as constants may contain arbitrary other
-// syntax that may impose constraints. Consider (as always)
-// this contrived but legal example of a type parameter (!)
-// that contains statement syntax:
-//
-//	func f[T [unsafe.Sizeof(func() { stmts })]int]()
-//
-// There is no need to emit constraints for (e.g.) s[i] when s
-// and i are already constants, because we know the expression
-// is sound, but it is sometimes easier to emit these
-// redundant constraints than to avoid them.
+// If the expression is constant, st.expr returns its type and value
+// (types.TypeAndValue). St.expr returns an ast.Expr tree whose leaves are
+// literals and parameter references. Whose interior nodes are operations
+// that may become constant, such as -x, x+y, f(x), and T(x). This happens if
+// the expression would become constant. We call these would-be constant
+// expressions "fallible constants", since they may fail to type-check for
+// some values of x, i, and j. (We refer to the non-nil cases collectively as
+// "maybe constant", and the nil case as "definitely non-constant".)
 func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | ast.Expr
 	tv := st.info.Types[e]
 	if tv.Value != nil {
@@ -413,22 +304,8 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		// definitely non-constant
 
 	case *ast.CompositeLit:
-		// T{k: v, ...}, where T ∈ {array,*array,slice,map},
-		// imposes a constraint that all constant k are
-		// distinct and, for arrays [n]T, within range 0-n.
-		//
-		// Types matter, not just values. For example,
-		// an interface-keyed map may contain keys
-		// that are numerically equal so long as they
-		// are of distinct types. For example:
-		//
-		//   type myint int
-		//   map[any]bool{1: true, 1:        true} // error: duplicate key
-		//   map[any]bool{1: true, int16(1): true} // ok
-		//   map[any]bool{1: true, myint(1): true} // ok
-		//
-		// This can be asserted by emitting a
-		// constraint of the form T{k1: 0, ..., kN: 0}.
+		// T{k: v, ...}, where T ∈ {array,*array,slice,map}, imposes a constraint
+		// that all constant k are distinct and, for arrays [n]T.
 		if e.Type != nil {
 			_ = st.expr(e.Type)
 		}
@@ -449,8 +326,6 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		}
 		if len(mapKeys) > 0 {
 			// Inlining a map literal may replace variable key expressions by constants.
-			// All such constants must have distinct values.
-			// (Array and slice literals do not permit non-constant keys.)
 			t := ct.(*types.Map)
 			var typ ast.Expr
 			if types.IsInterface(t.Key()) {
@@ -471,9 +346,8 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 	case *ast.SelectorExpr:
 		_ = st.expr(e.X)
 		_ = st.expr(e.Sel)
-		// The defer is sufficient to handle
-		// qualified identifiers (pkg.Const).
-		// All other cases are definitely non-constant.
+		// The defer is sufficient to handle qualified identifiers (pkg.Const). All
+		// other cases are definitely non-constant.
 
 	case *ast.IndexExpr:
 		if tv.IsType() {
@@ -481,25 +355,14 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 			_ = st.expr(e.X)
 			_ = st.expr(e.Index)
 		} else {
-			// term x[i]
-			//
-			// Constraints (if x is slice/string/array/*array, not map):
-			// - i >= 0
-			//     if i is a fallible constant
-			// - i < len(x)
-			//     if x is array/*array and
-			//     i is a fallible constant;
-			//  or if s is a string and both i,
-			//     s are maybe-constants,
-			//     but not both are constants.
+			// term x[i].
 			kX := st.expr(e.X)
 			kI := st.expr(e.Index)
 			if kI != nil && !is[*types.Map](st.info.TypeOf(e.X).Underlying()) {
 				if kI, ok := kI.(ast.Expr); ok {
 					st.emitNonNegative(kI)
 				}
-				// Emit constraint to check indices against known length.
-				// TODO(adonovan): factor with SliceExpr logic.
+				// Emit constraint to check indices against known length. TODO(adonovan): factor with SliceExpr logic.
 				var x ast.Expr
 				if kX != nil {
 					// string
@@ -524,12 +387,7 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		// definitely non-constant
 
 	case *ast.SliceExpr:
-		// x[low:high:max]
-		//
-		// Emit non-negative constraints for each index,
-		// plus low <= high <= max <= len(x)
-		// for each pair that are maybe-constant
-		// but not definitely constant.
+		// x[low:high:max].
 
 		kX := st.expr(e.X)
 		var kLow, kHigh, kMax any
@@ -602,9 +460,7 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 	case *ast.CallExpr:
 		_ = st.expr(e.Fun)
 		if tv, ok := st.info.Types[e.Fun]; ok && tv.IsType() {
-			// conversion T(x)
-			//
-			// Possible "value out of range".
+			// conversion T(x).
 			kX := st.expr(e.Args[0])
 			if kX != nil && isBasic(tv.Type, types.IsConstType) {
 				conv := convert(makeIdent(st.typename(tv.Type)), st.toExpr(kX))
@@ -628,9 +484,8 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 			}
 		}
 
-		// Calls to built-ins with fallibly constant arguments
-		// may become constant. All other calls are either
-		// constant or non-constant
+		// Calls to built-ins with fallibly constant arguments may become constant.
+		// All other calls are either constant or non-constant
 		if id, ok := e.Fun.(*ast.Ident); ok && all && tv.Value == nil {
 			if builtin, ok := st.info.Uses[id].(*types.Builtin); ok {
 				switch builtin.Name() {
@@ -648,10 +503,7 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		_ = st.expr(e.X)
 
 	case *ast.UnaryExpr:
-		// + - ! ^ & <- ~
-		//
-		// Possible "negation of minint".
-		// Emit constraint: -x
+		// Possible "negation of minint". Emit constraint: -x
 		kX := st.expr(e.X)
 		if kX != nil && !is[types.TypeAndValue](kX) {
 			if e.Op == token.SUB {
@@ -674,9 +526,8 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		case token.QUO, token.REM:
 			// x/y, x%y
 			//
-			// Possible "integer division by zero" or
-			// "minint / -1" overflow.
-			// Emit constraint: x/y or 1/y
+			// Possible "integer division by zero" or "minint / -1" overflow. Emit
+			// constraint: x/y or 1/y
 			if kY != nil {
 				if kX == nil {
 					kX = makeIntLit(1)
@@ -691,8 +542,7 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		case token.ADD, token.SUB, token.MUL:
 			// x+y, x-y, x*y
 			//
-			// Possible "arithmetic overflow".
-			// Emit constraint: x+y
+			// Possible "arithmetic overflow". Emit constraint: x+y
 			if kX != nil && kY != nil {
 				st.emit(&ast.BinaryExpr{
 					Op: e.Op,
@@ -704,13 +554,8 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 		case token.SHL, token.SHR:
 			// x << y, x >> y
 			//
-			// Possible "constant shift too large".
-			// Either operand may be too large individually,
-			// and they may be too large together.
-			// Emit constraint:
-			//    x << y (if both maybe-constant)
-			//    x << 0 (if y is non-constant)
-			//    1 << y (if x is non-constant)
+			// Possible "constant shift too large". Either operand may be too large
+			// individually, and they may be too large together.
 			if kX != nil || kY != nil {
 				x := st.toExpr(kX)
 				if x == nil {
@@ -728,16 +573,6 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 			}
 
 		case token.LSS, token.GTR, token.EQL, token.NEQ, token.LEQ, token.GEQ:
-			// < > == != <= <=
-			//
-			// A "x cmp y" expression with constant operands x, y is
-			// itself constant, but I can't see how a constant bool
-			// could be fallible: the compiler doesn't reject duplicate
-			// boolean cases in a switch, presumably because boolean
-			// switches are less like n-way branches and more like
-			// sequential if-else chains with possibly overlapping
-			// conditions; and there is (sadly) no way to convert a
-			// boolean constant to an int constant.
 		}
 		if kX != nil && kY != nil {
 			return &ast.BinaryExpr{
@@ -747,16 +582,7 @@ func (st *falconState) expr(e ast.Expr) (res any) { // = types.TypeAndValue | as
 			}
 		}
 
-	// types
-	//
-	// We need to visit types (and even type parameters)
-	// in order to reach all the places where things could go wrong:
-	//
-	// 	const (
-	// 		s = ""
-	// 		i = 0
-	// 	)
-	// 	type C[T [unsafe.Sizeof(func() { _ = s[i] })]int] bool
+	// types.
 
 	case *ast.IndexListExpr:
 		_ = st.expr(e.X)
@@ -826,9 +652,6 @@ func (st *falconState) toExpr(x any) ast.Expr {
 func makeLiteral(v constant.Value) ast.Expr {
 	switch v.Kind() {
 	case constant.Bool:
-		// Rather than refer to the true or false built-ins,
-		// which could be shadowed by poorly chosen parameter
-		// names, we use 0 == 0 for true and 0 != 0 for false.
 		op := token.EQL
 		if !constant.BoolVal(v) {
 			op = token.NEQ

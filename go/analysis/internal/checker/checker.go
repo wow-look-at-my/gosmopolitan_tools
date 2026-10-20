@@ -1,14 +1,12 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package internal/checker defines various implementation helpers for
-// the singlechecker and multichecker packages, which provide the
-// complete main function for an analysis driver executable
-// based on go/packages.
+// Package internal/checker defines various implementation helpers for the
+// singlechecker and multichecker packages. These provide the complete main
+// function for an analysis driver executable based on go/packages.
 //
-// (Note: it is not used by the public 'checker' package, since the
-// latter provides a set of pure functions for use as building blocks.)
+// (Note: it is not used by the public 'checker' package, since the latter
+// provides a set of pure functions for use as building blocks.)
 package checker
 
 // TODO(adonovan): publish the JSON schema in go/analysis or analysisjson.
@@ -36,14 +34,7 @@ import (
 )
 
 var (
-	// Debug is a set of single-letter flags:
-	//
-	//	f	show [f]acts as they are created
-	// 	p	disable [p]arallel execution of analyzers
-	//	s	do additional [s]anity checks on fact types and serialization
-	//	t	show [t]iming info (NB: use 'p' flag to avoid GC/scheduler noise)
-	//	v	show [v]erbose logging
-	//
+	// Debug is a set of single-letter flags:.
 	Debug = ""
 
 	// Log files for optional performance tracing.
@@ -55,8 +46,7 @@ var (
 
 // RegisterFlags registers command-line flags used by the analysis driver.
 func RegisterFlags() {
-	// When adding flags here, remember to update
-	// the list of suppressed flags in analysisflags.
+	// When adding flags here, remember to update the list of suppressed flags in analysisflags.
 
 	flag.StringVar(&Debug, "debug", Debug, `debug flags, any subset of "fpstv"`)
 
@@ -66,37 +56,26 @@ func RegisterFlags() {
 	flag.BoolVar(&IncludeTests, "test", IncludeTests, "indicates whether test files should be analyzed, too")
 }
 
-// Run loads the packages specified by args using go/packages,
-// then applies the specified analyzers to them.
-// Analysis flags must already have been set.
-// Analyzers must be valid according to [analysis.Validate].
-// It provides most of the logic for the main functions of both the
-// singlechecker and the multi-analysis commands.
-// It returns the appropriate exit code.
+// Run loads the packages specified by args using go/packages, then applies
+// the specified analyzers to them. Analysis flags must already have been set.
+// Analyzers must be valid according to [analysis.Validate]. It provides most
+// of the logic for the main functions of both the singlechecker and the
+// multi-analysis commands. It returns the appropriate exit code.
 //
-// TODO(adonovan): tests should not call this function directly.
-// Fiddling with global variables (flags such as [analysisflags.Fix])
-// is error-prone and hostile to parallelism. Instead, use unit tests
-// of the actual units (e.g. checker.Analyze) and integration tests
-// (e.g. TestScript) of whole executables.
+// TODO(adonovan): tests should not call this function directly. Fiddling with
+// global variables (flags such as [analysisflags.Fix]) is error-prone and
+// hostile to parallelism. Instead, use unit tests of the actual units (e.g.
+// checker.Analyze) and integration tests (e.g. TestScript) of whole
+// executables.
 func Run(args []string, analyzers []*analysis.Analyzer) (exitcode int) {
-	// Instead of returning a code directly,
-	// call this function to monotonically increase the exit code.
-	// This allows us to keep going in the face of some errors
-	// without having to remember what code to return.
-	//
-	// TODO(adonovan): interpreting exit codes is like reading tea-leaves.
-	// Instead of wasting effort trying to encode a multidimensional result
-	// into 7 bits we should just emit structured JSON output, and
-	// an exit code of 0 or 1 for success or failure.
+	// Instead of returning a code directly, call this function to monotonically
+	// increase the exit code.
 	exitAtLeast := func(code int) {
 		exitcode = max(code, exitcode)
 	}
 
-	// Since analysisflags is linked in (for {single,multi}checker),
-	// the -v flag is registered for complex legacy reasons
-	// related to cmd/vet CLI.
-	// Treat it as an undocumented alias for -debug=v.
+	// Since analysisflags is linked in (for {single,multi}checker), the -v flag
+	// is registered for complex legacy reasons related to cmd/vet CLI.
 	if v := flag.CommandLine.Lookup("v"); v != nil &&
 		v.Value.(flag.Getter).Get() == true &&
 		!strings.Contains(Debug, "v") {
@@ -152,8 +131,7 @@ func Run(args []string, analyzers []*analysis.Analyzer) (exitcode int) {
 		log.Printf("load %s", args)
 	}
 
-	// Optimization: if the selected analyzers don't produce/consume
-	// facts, we need source only for the initial packages.
+	// Optimization: if the selected analyzers don't produce/consume facts, we need source only for the initial packages.
 	allSyntax := needFacts(analyzers)
 	initial, err := load(args, allSyntax)
 	if err != nil {
@@ -189,8 +167,7 @@ func Run(args []string, analyzers []*analysis.Analyzer) (exitcode int) {
 		return
 	}
 
-	// Don't print the diagnostics,
-	// but apply all fixes from the root actions.
+	// Don't print the diagnostics, but apply all fixes from the root actions.
 	if analysisflags.Fix {
 		fixActions := make([]driverutil.FixAction, len(graph.Roots))
 		for i, act := range graph.Roots {
@@ -214,16 +191,11 @@ func Run(args []string, analyzers []*analysis.Analyzer) (exitcode int) {
 			exitAtLeast(1)
 			return
 		}
-		// Don't proceed to print text/JSON,
-		// and don't report an error
-		// just because there were diagnostics.
+		// Don't proceed to print text/JSON, and don't report an error because there were diagnostics.
 		return
 	}
 
-	// Print the results. If !RunDespiteErrors and there
-	// are errors in the packages, this will have 0 exit
-	// code. Otherwise, we prefer to return exit code
-	// indicating diagnostics.
+	// Print the results.
 	exitAtLeast(printDiagnostics(graph))
 
 	return
@@ -235,8 +207,7 @@ func printDiagnostics(graph *checker.Graph) (exitcode int) {
 	// Keep consistent with analogous logic in
 	// processResults in ../../unitchecker/unitchecker.go.
 
-	// Print the results.
-	// With -json, the exit code is always zero.
+	// Print the results. With -json, the exit code is always zero.
 	if analysisflags.JSON {
 		if err := graph.PrintJSON(os.Stdout); err != nil {
 			return 1
@@ -276,7 +247,6 @@ func printDiagnostics(graph *checker.Graph) (exitcode int) {
 			total += act.Duration
 		}
 
-		// Print actions accounting for 90% of the total.
 		sort.Slice(list, func(i, j int) bool {
 			return list[i].Duration > list[j].Duration
 		})
@@ -306,12 +276,7 @@ func load(patterns []string, allSyntax bool) ([]*packages.Package, error) {
 	mode |= packages.NeedModule
 	conf := packages.Config{
 		Mode: mode,
-		// Ensure that child process inherits correct alias of PWD.
-		// (See discussion at Dir field of [exec.Command].)
-		// However, this currently breaks some tests.
-		// TODO(adonovan): Investigate.
-		//
-		// Dir:   os.Getenv("PWD"),
+		// Ensure that child process inherits correct alias of PWD. (See discussion at Dir field of [exec.Command].)
 		Tests: IncludeTests,
 	}
 	initial, err := packages.Load(&conf, patterns...)
@@ -321,8 +286,8 @@ func load(patterns []string, allSyntax bool) ([]*packages.Package, error) {
 	return initial, err
 }
 
-// needFacts reports whether any analysis required by the specified set
-// needs facts.  If so, we must load the entire program from source.
+// needFacts reports whether any analysis required by the specified set needs
+// facts. If so, we must load the entire program from source.
 func needFacts(analyzers []*analysis.Analyzer) bool {
 	seen := make(map[*analysis.Analyzer]bool)
 	var q []*analysis.Analyzer // for BFS

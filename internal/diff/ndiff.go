@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package diff
 
@@ -12,7 +11,7 @@ import (
 	"golang.org/x/tools/internal/diff/lcs"
 )
 
-// Lines computes differences between two strings. All edits are at line boundaries.
+// Lines computes differences between strings. All edits are at line boundaries.
 func Lines(before, after string) []Edit {
 	beforeLines, bOffsets := splitLines(before)
 	afterLines, _ := splitLines(after)
@@ -30,8 +29,8 @@ func Lines(before, after string) []Edit {
 	return res
 }
 
-// Strings computes the differences between two strings.
-// The resulting edits respect rune boundaries.
+// Strings computes the differences between strings. The
+// resulting edits respect rune boundaries.
 func Strings(before, after string) []Edit {
 	if before == after {
 		return nil // common case
@@ -44,7 +43,6 @@ func Strings(before, after string) []Edit {
 	return diffRunes([]rune(before), []rune(after))
 }
 
-// Bytes computes the differences between two byte slices.
 // The resulting edits respect rune boundaries.
 func Bytes(before, after []byte) []Edit {
 	if bytes.Equal(before, after) {
@@ -71,9 +69,7 @@ func diffASCII(before, after []byte) []Edit {
 func diffRunes(before, after []rune) []Edit {
 	diffs := lcs.DiffRunes(before, after)
 
-	// The diffs returned by the lcs package use indexes
-	// into whatever slice was passed in.
-	// Convert rune offsets to byte offsets.
+	// The diffs returned by the lcs package use indexes into whatever slice was passed in.
 	res := make([]Edit, len(diffs))
 	lastEnd := 0
 	utf8Len := 0

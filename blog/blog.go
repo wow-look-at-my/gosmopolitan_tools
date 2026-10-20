@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package blog implements a web server for articles written in present format.
 package blog // import "golang.org/x/tools/blog"
@@ -147,7 +146,6 @@ var funcMap = template.FuncMap{
 }
 
 // sectioned returns true if the provided Doc contains more than one section.
-// This is used to control whether to display the table of contents and headings.
 func sectioned(d *present.Doc) bool {
 	return len(d.Sections) > 1
 }
@@ -186,9 +184,9 @@ func authorName(a present.Author) string {
 }
 
 // loadDocs reads all content from the provided file system root, renders all
-// the articles it finds, adds them to the Server's docs field, computes the
-// denormalized docPaths, docTags, and tags fields, and populates the various
-// helper fields (Next, Previous, Related) for each Doc.
+// the articles it finds and adds them to the Server's docs field. loadDocs
+// also computes the denormalized docPaths, docTags, and tags fields, and
+// populates the various helper fields (Next, Previous, Related) for each Doc.
 func (s *Server) loadDocs(root string) error {
 	// Read content into docs field.
 	const ext = ".article"
@@ -316,8 +314,7 @@ func (s *Server) renderAtomFeed() error {
 			break
 		}
 
-		// Use original article path as ID in atom feed
-		// to avoid articles being treated as new when renamed.
+		// Use original article path as ID in atom feed to avoid articles being treated as new when renamed.
 		idPath := doc.Path
 		if len(doc.OldURL) > 0 {
 			old := doc.OldURL[0]
@@ -464,7 +461,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		doc, ok := s.docPaths[p]
 		if !ok {
-			// Not a doc; try to just serve static content.
+			// Not a doc; try to serve static content.
 			s.content.ServeHTTP(w, r)
 			return
 		}

@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -51,8 +50,7 @@ func stringsbuilder(pass *analysis.Pass) (any, error) {
 		info    = pass.TypesInfo
 	)
 
-	// Gather all local string variables that appear on the
-	// LHS of some string += string assignment.
+	// Gather all local string variables that appear on the LHS of some string += string assignment.
 	candidates := make(map[*types.Var]bool)
 	for curAssign := range inspect.Root().Preorder((*ast.AssignStmt)(nil)) {
 		assign := curAssign.Node().(*ast.AssignStmt)
@@ -67,8 +65,7 @@ func stringsbuilder(pass *analysis.Pass) (any, error) {
 
 	lexicalOrder := func(x, y *types.Var) int { return cmp.Compare(x.Pos(), y.Pos()) }
 
-	// File and Pos of last fix edit,
-	// for overlapping fix span detection.
+	// File and Pos of last fix edit, for overlapping fix span detection.
 	var (
 		lastEditFile *ast.File
 		lastEditEnd  token.Pos
@@ -79,25 +76,13 @@ nextcand:
 	for _, v := range slices.SortedFunc(maps.Keys(candidates), lexicalOrder) {
 		var edits, postEdits []analysis.TextEdit // postEdits are emitted last
 
-		// Check declaration of s has one of these forms:
-		//
-		//    s := expr
-		//    var s [string] [= expr]
-		//    var ( ...; s [string] [= expr] )			(s is last)
-		//
-		// and transform to one of:
-		//
-		//    var   s strings.Builder ; s.WriteString(expr)
-		//    var ( s strings.Builder); s.WriteString(expr)
-		//
+		// Check declaration of s has one of these forms:.
 		def, ok := index.Def(v)
 		if !ok {
 			continue
 		}
 
-		// To avoid semantic conflicts, do not offer a fix if its edit
-		// range (ignoring import edits) overlaps a previous fix.
-		// This fixes #76983 and is an ad-hoc mitigation of #76476.
+		// To avoid semantic conflicts, do not offer a fix if its edit range (ignoring import edits) overlaps a previous fix.
 		file := astutil.EnclosingFile(def)
 		if file == lastEditFile && v.Pos() < lastEditEnd {
 			continue
@@ -105,7 +90,6 @@ nextcand:
 		filename := pass.Fset.File(file.FileStart).Name()
 		// Suppress diagnostics in test files, where suggested fixes may increase
 		// verbosity, and performance doesn't matter as much.
-		// See https://go.dev/issue/78613
 		if strings.HasSuffix(filename, "_test.go") {
 			continue
 		}
@@ -113,13 +97,12 @@ nextcand:
 		ek := def.ParentEdgeKind()
 		if ek == edge.AssignStmt_Lhs &&
 			len(def.Parent().Node().(*ast.AssignStmt).Lhs) == 1 {
-			// Have: s := expr
-			// => var s strings.Builder; s.WriteString(expr)
+			// Have: s := expr => var s strings.Builder; s.WriteString(expr)
 
 			assign := def.Parent().Node().(*ast.AssignStmt)
 
 			// Reject "if s := f(); ..." since in that context
-			// we can't replace the assign with two statements.
+			// we can't replace the assign with statements.
 			switch def.Parent().Parent().Node().(type) {
 			case *ast.BlockStmt, *ast.CaseClause, *ast.CommClause:
 				// OK: these are the parts of syntax that
@@ -134,9 +117,7 @@ nextcand:
 			edits = append(edits, importEdits...)
 
 			if isEmptyString(info, assign.Rhs[0]) {
-				// s := ""
-				// ---------------------
-				// var s strings.Builder
+				// s := "" --------------------- var s strings.Builder
 				edits = append(edits, analysis.TextEdit{
 					Pos:     assign.Pos(),
 					End:     assign.End(),
@@ -144,9 +125,7 @@ nextcand:
 				})
 
 			} else {
-				// s :=                                 expr
-				// -------------------------------------    -
-				// var s strings.Builder; s.WriteString(expr)
+				// s := expr - var s strings.Builder; s.WriteString(expr)
 				edits = append(edits, []analysis.TextEdit{
 					{
 						Pos:     assign.Pos(),
@@ -165,18 +144,8 @@ nextcand:
 		} else if ek == edge.ValueSpec_Names &&
 			len(def.Parent().Node().(*ast.ValueSpec).Names) == 1 &&
 			first(def.Parent().Parent().LastChild()) == def.Parent() {
-			// Have: var   s [string] [= expr]
-			//   or: var ( s [string] [= expr] )
-			// => var s strings.Builder; s.WriteString(expr)
-			//
-			// The LastChild check rejects this case:
-			//   var ( s [string] [= expr]; others... )
-			// =>
-			//   var ( s strings.Builder; others... ); s.WriteString(expr)
-			// since it moves 'expr' across 'others', requiring
-			// reformatting of syntax, which in general is lossy
-			// of comments and vertical space.
-			// We expect this to be rare.
+			// Have: var s [string] [= expr] or: var ( s [string] [= expr] ) => var s
+			// strings.Builder.
 
 			// Add strings import.
 			prefix, importEdits := refactor.AddImport(
@@ -193,9 +162,7 @@ nextcand:
 
 			// Replace (possibly absent) type:
 			//
-			// var s [string]
-			//      ----------------
-			// var s strings.Builder
+			// var s [string] ---------------- var s strings.Builder
 			edits = append(edits, analysis.TextEdit{
 				Pos:     spec.Names[0].End(),
 				End:     init,
@@ -206,9 +173,7 @@ nextcand:
 				if decl.Rparen.IsValid() {
 					// var decl with explicit parens:
 					//
-					// var ( ...  =               expr )
-					//           -                     -
-					// var ( ... ); s.WriteString(expr)
+					// var ( ... = expr ) var ( ... ); s.WriteString(expr)
 					edits = append(edits, []analysis.TextEdit{
 						{
 							Pos:     init,
@@ -222,9 +187,7 @@ nextcand:
 					}...)
 				}
 
-				// =               expr
-				// ----------------    -
-				// ; s.WriteString(expr)
+				// = expr -; s.WriteString(expr)
 				edits = append(edits, []analysis.TextEdit{
 					{
 						Pos:     init,
@@ -250,31 +213,6 @@ nextcand:
 		}
 
 		// Check uses of s.
-		//
-		// - All uses of s except the final one must be of the form
-		//
-		//    s += expr
-		//
-		//   Each of these will become s.WriteString(expr).
-		//   At least one of them must be in an intervening loop
-		//   w.r.t. the declaration of s:
-		//
-		//    var s string
-		//    for ... { s += expr }
-		//
-		// - All uses of s after the last += must be rvalue uses (e.g. use(s), not &s).
-		//   Each of these will become s.String().
-		//
-		//   Perhaps surprisingly, it is fine for there to be an
-		//   intervening loop or lambda w.r.t. the declaration of s:
-		//
-		//    var s strings.Builder
-		//    for range kSmall { s.WriteString(expr) }
-		//    for range kLarge { use(s.String()) } // called repeatedly
-		//
-		//   Even though that might cause the s.String() operation to be
-		//   executed repeatedly, this is not a deoptimization because,
-		//   by design, (*strings.Builder).String does not allocate.
 		var (
 			numLoopAssigns int             // number of += assignments within a loop
 			loopAssign     *ast.AssignStmt // first += assignment within a loop
@@ -308,9 +246,8 @@ nextcand:
 				}
 				// Have: s += expr
 
-				// At least one of the += operations
-				// must appear within a loop.
-				// relative to the declaration of s.
+				// At least one of the += operations must appear within a loop. relative
+				// to the declaration of s.
 				if intervening((*ast.ForStmt)(nil), (*ast.RangeStmt)(nil)) {
 					numLoopAssigns++
 					if loopAssign == nil {
@@ -318,9 +255,7 @@ nextcand:
 					}
 				}
 
-				// s +=          expr
-				//  -------------    -
-				// s.WriteString(expr)
+				// s += expr - s.WriteString(expr)
 				edits = append(edits, analysis.TextEdit{
 					// replace " += " with ".WriteString("
 					Pos:     assign.Lhs[0].End(),
@@ -343,10 +278,7 @@ nextcand:
 				continue nextcand // s is used as an lvalue; reject
 
 			} else {
-				// The only possible l-value uses of a string variable
-				// are assignments (s=expr, s+=expr, etc) and &s.
-				// (For strings, we can ignore method calls s.m().)
-				// All other uses are r-values.
+				// The only possible l-value uses of a string variable are assignments (s=expr, s+=expr, etc) and &s.
 				seenRvalueUse = true
 
 				edits = append(edits, analysis.TextEdit{

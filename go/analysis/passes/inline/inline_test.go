@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -45,8 +44,6 @@ func TestAnalyzer(t *testing.T) {
 			"example.com/g",
 			"example.com/h",
 		}
-		// The following tests use errors.AsType, which was introduced in Go 1.26.
-		// This avoids the "build constraints exclude all Go files" testing error.
 		if testenv.Go1Point() >= 26 {
 			patterns = append(patterns, "example.com/e", "example.com/f")
 		}

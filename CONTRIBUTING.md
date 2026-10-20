@@ -6,32 +6,25 @@ It is the work of hundreds of contributors. We appreciate your help!
 
 ## Contributing code
 
-Please read the [Contribution Guidelines](https://golang.org/doc/contribute.html)
-before sending patches.
+Please read the [Contribution Guidelines](https://golang.org/doc/contribute.html) before sending patches.
 
-Unless otherwise noted, the Go source files are distributed under
-the BSD-style license found in the LICENSE file.
+Unless otherwise noted, the Go source files are distributed under the BSD-style license found in the LICENSE file.
 
 ### Contributing to gopls
 
-This repository has a multi-module structure: the root module
-(`golang.org/x/tools`) and the `gopls` module
-(`golang.org/x/tools/gopls`).
+This repository has a multi-module structure: the root module (`golang.org/x/tools`) and the `gopls` module (`golang.org/x/tools/gopls`).
 
-If you are contributing to `gopls`, please see the specific [gopls
-contribution guide](gopls/doc/contributing.md) for detailed instructions on
-workspace setup, building, testing, and debugging.
+If you contributs to `gopls`, please see the specific [gopls contribution guide](gopls/doc/contributing.md) for detailed instructions on workspace setup, building, testing, and debugging.
 
 ## Filing issues
 
-When [filing an issue](https://golang.org/issue/new), make sure to answer these five questions:
+When [filing an issue](https://golang.org/issue/new), make sure to answer these questions:
 
-1.  What version of Go are you using (`go version`)?
-2.  What operating system and processor architecture are you using?
-3.  What did you do?
-4.  What did you expect to see?
-5.  What did you see instead?
+1. What version of Go are you using (`go version`)?
+2. What operating system and processor architecture are you using?
+3. What did you do?
+4. What did you expect to see?
+5. What did you see instead?
 
-General questions should go to the [golang-nuts mailing list](https://groups.google.com/group/golang-nuts) instead of the issue tracker.
-The gophers there will answer or ask you to file an issue if you've tripped over a bug.
+General questions must go to the [golang-nuts mailing list](https://groups.google.com/group/golang-nuts) instead of the issue tracker. The gophers there will answer or ask you to file an issue if you tripped over a bug.
 

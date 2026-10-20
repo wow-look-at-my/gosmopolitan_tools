@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.23
 
@@ -11,32 +10,9 @@ import (
 	"iter"
 )
 
-// PreorderSeq returns an iterator that visits all the
-// nodes of the files supplied to [New] in depth-first order.
-// It visits each node n before n's children.
-// The complete traversal sequence is determined by ast.Inspect.
-//
-// The types argument, if non-empty, enables type-based filtering:
-// only nodes whose type matches an element of the types slice are
-// included in the sequence.
-//
-// Example:
-//
-//	for call := range in.PreorderSeq((*ast.CallExpr)(nil)) { ... }
-//
-// The [All] function is more convenient if there is exactly one node type:
-//
-//	for call := range All[*ast.CallExpr](in) { ... }
-//
-// See also the newer and more flexible [Cursor] API, which lets you
-// start the traversal at an arbitrary node, and reports each matching
-// node by its Cursor, enabling easier navigation.
-// The above example would be written thus:
-//
-//	for curCall := range in.Root().Preorder((*ast.CallExpr)(nil)) {
-//		call := curCall.Node().(*ast.CallExpr)
-//		...
-//	}
+// PreorderSeq returns an iterator that visits all the nodes of the files
+// supplied to [New] in depth-first order. It visits each node n before n's
+// children. The complete traversal sequence is determined by ast.Inspect.
 func (in *Inspector) PreorderSeq(types ...ast.Node) iter.Seq[ast.Node] {
 
 	// This implementation is identical to Preorder,
@@ -65,29 +41,14 @@ func (in *Inspector) PreorderSeq(types ...ast.Node) iter.Seq[ast.Node] {
 	}
 }
 
-// All[N] returns an iterator over all the nodes of type N.
-// N must be a pointer-to-struct type that implements ast.Node.
-//
-// Example:
-//
-//	for call := range All[*ast.CallExpr](in) { ... }
-//
-// See also the newer and more flexible [Cursor] API, which lets you
-// start the traversal at an arbitrary node, and reports each matching
-// node by its Cursor, enabling easier navigation.
-// The above example would be written thus:
-//
-//	for curCall := range in.Root().Preorder((*ast.CallExpr)(nil)) {
-//		call := curCall.Node().(*ast.CallExpr)
-//		...
-//	}
+// All[N] returns an iterator over all the nodes of type N. N must be a
+// pointer-to-struct type that implements ast.Node.
 func All[N interface {
 	*S
 	ast.Node
 }, S any](in *Inspector) iter.Seq[N] {
 
-	// To avoid additional dynamic call overheads,
-	// we duplicate rather than call the logic of PreorderSeq.
+	// To avoid additional dynamic call overheads, we duplicate rather than call the logic of PreorderSeq.
 
 	mask := typeOf((N)(nil))
 	return func(yield func(N) bool) {

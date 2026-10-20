@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package keys
 
@@ -45,9 +44,6 @@ func (k *Value) From(t label.Label) any { return t.UnpackValue() }
 func (k *Value) Of(value any) label.Label { return label.OfValue(k, value) }
 
 // Tag represents a key for tagging labels that have no value.
-// These are used when the existence of the label is the entire information it
-// carries, such as marking events to be of a specific kind, or from a specific
-// package.
 type Tag struct {
 	name        string
 	description string

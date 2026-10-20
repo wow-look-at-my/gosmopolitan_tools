@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package drivertest_test
 
@@ -49,8 +48,7 @@ package lib
 	}
 	dir := testfiles.CopyToTmp(t, fs)
 
-	// TODO(rfindley): on mac, this is required to fix symlink path mismatches.
-	// But why? Where is the symlink being evaluated in go/packages?
+	// TODO(rfindley): on mac, this is required to fix symlink path mismatches. But why?
 	dir, err = filepath.EvalSymlinks(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -113,11 +111,6 @@ package a
 			}
 
 			// Compare JSON-encoded packages with and without GOPACKAGESDRIVER.
-			//
-			// Note that this does not guarantee that the go/packages results
-			// themselves are equivalent, only that their encoded JSON is equivalent.
-			// Certain fields such as Module are intentionally omitted from external
-			// drivers, because they don't make sense for an arbitrary build system.
 			var jsons []string
 			for _, env := range [][]string{
 				{"GOPACKAGESDRIVER=off"},

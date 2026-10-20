@@ -1,24 +1,19 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package singlechecker defines the main function for an analysis
-// driver with only a single analysis.
-// This package makes it easy for a provider of an analysis package to
-// also provide a standalone tool that runs just that analysis.
-//
-// For example, if example.org/findbadness is an analysis package,
-// all that is needed to define a standalone tool is a file,
-// example.org/findbadness/cmd/findbadness/main.go, containing:
+// Package singlechecker defines the main function for an analysis driver with
+// only a single analysis. This package makes it easy for a provider of an
+// analysis package to also provide a standalone tool that runs that analysis.
+// For example, if example.org/findbadness is an analysis package, all that is
+// needed to define a standalone tool is a file.
+// Example.org/findbadness/cmd/findbadness/main.go, containing:
 //
 //	// The findbadness command runs an analysis.
 //	package main
-//
 //	import (
 //		"example.org/findbadness"
 //		"golang.org/x/tools/go/analysis/singlechecker"
 //	)
-//
 //	func main() { singlechecker.Main(findbadness.Analyzer) }
 package singlechecker
 

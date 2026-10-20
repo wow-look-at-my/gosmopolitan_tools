@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package fieldalignment defines an Analyzer that detects structs that would use less
 // memory if their fields were sorted.
@@ -71,9 +70,7 @@ func run(pass *analysis.Pass) (any, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	for curStruct := range inspect.Root().Preorder((*ast.StructType)(nil)) {
 		s := curStruct.Node().(*ast.StructType)
-		// For every named struct defined as "type Name struct { ... }",
-		// the *ast.StructType node has a parent *ast.TypeSpec,
-		// which contains the struct's name in its Name field.
+		// For every named struct defined as "type Name struct { ... }", the *ast.StructType node has a parent *ast.TypeSpec.
 		name := "struct" // (anonymous)
 		if spec, ok := curStruct.Parent().Node().(*ast.TypeSpec); ok {
 			name = spec.Name.Name
@@ -103,8 +100,7 @@ func fieldalignment(pass *analysis.Pass, node *ast.StructType, name string) {
 
 	var message strings.Builder
 	if actualSize != optimalSize {
-		// Struct could be smaller.
-		// TODO(adonovan): IMHO the criterion should be "significantly smaller".
+		// Struct could be smaller. TODO(adonovan): IMHO the criterion should be "significantly smaller".
 		fmt.Fprintf(&message, "%s has size %d", name, actualSize)
 		actualClass := classSize(actualSize)
 		if actualClass == -1 {
@@ -134,17 +130,12 @@ func fieldalignment(pass *analysis.Pass, node *ast.StructType, name string) {
 	}
 
 	// Analyzers borrow syntax tree; they do not own them and must modify them.
-	// This Clone operation is a quick fix to the data race introduced
-	// in CL 278872 by the clearing of the Comment and Doc fields below.
 	node = astutil.CloneNode(node)
 
-	// Flatten the ast node since it could have multiple field names per list item while
-	// *types.Struct only have one item per field.
-	// TODO: Preserve multi-named fields instead of flattening.
+	// Flatten the ast node since it could have multiple field names per list item while *types.Struct only have one item per field. TODO.
 	var flat []*ast.Field
 	for _, f := range node.Fields.List {
-		// TODO: Preserve comment, for now get rid of them.
-		//       See https://github.com/golang/go/issues/20744
+		// Com/golang/go/issues/20744
 		f.Comment = nil
 		f.Doc = nil
 		if len(f.Names) <= 1 {
@@ -240,11 +231,7 @@ func optimalOrder(str *types.Struct, sizes *gcSizes) (*types.Struct, []int) {
 		if !noptrsi {
 			// If both have pointers...
 
-			// ... then place objects with less trailing
-			// non-pointer bytes earlier. That is, place
-			// the field with the most trailing
-			// non-pointer bytes at the end of the
-			// pointerful section.
+			// ... then place objects with less trailing non-pointer bytes earlier.
 			traili := ei.sizeof - ei.ptrdata
 			trailj := ej.sizeof - ej.ptrdata
 			if traili != trailj {
@@ -283,13 +270,10 @@ func (s *gcSizes) alignof(T types.Type) int64 {
 	// of alignment of the elements and fields, respectively.
 	switch t := T.Underlying().(type) {
 	case *types.Array:
-		// spec: "For a variable x of array type: unsafe.Alignof(x)
-		// is the same as unsafe.Alignof(x[0]), but at least 1."
+		// spec: "For a variable x of array type: unsafe.Alignof(x) is the same as unsafe.Alignof(x[0]), but at least 1."
 		return s.alignof(t.Elem())
 	case *types.Struct:
-		// spec: "For a variable x of struct type: unsafe.Alignof(x)
-		// is the largest of the values unsafe.Alignof(x.f) for each
-		// field f of x, but at least 1."
+		// spec.
 		max := int64(1)
 		for i, nf := 0, t.NumFields(); i < nf; i++ {
 			if a := s.alignof(t.Field(i).Type()); a > max {
@@ -298,7 +282,7 @@ func (s *gcSizes) alignof(T types.Type) int64 {
 		}
 		return max
 	}
-	a := s.sizeof(T) // may be 0
+	a := s.sizeof(T)
 	// spec: "For a variable x of any type: unsafe.Alignof(x) is at least 1."
 	if a < 1 {
 		return 1
@@ -367,7 +351,6 @@ func (s *gcSizes) sizeof(T types.Type) int64 {
 	return s.wordSize // catch-all
 }
 
-// align returns the smallest y >= x such that y % a == 0.
 func align(x, a int64) int64 {
 	y := x + a - 1
 	return y - y%a
@@ -421,13 +404,11 @@ func (s *gcSizes) ptrdata(T types.Type) int64 {
 
 // Code below based on tools/gopls/internal/golang/hover.go
 
-// classSize reports the size class for a struct of the specified size, or -1 if unknown.
 // See GOROOT/src/runtime/msize.go for details.
 func classSize(size int64) int64 {
 	if size > 1<<15 {
 		return -1 // avoid allocation
 	}
-	// We assume that bytes.Clone doesn't trim,
-	// and reports the underlying size class
+	// We assume that bytes.Clone doesn't trim, and reports the underlying size class
 	return int64(cap(bytes.Clone(make([]byte, size))))
 }

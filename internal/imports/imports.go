@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package imports implements a Go pretty-printer (like package "go/format")
 // that also adds or removes import statements as necessary.
@@ -29,17 +28,15 @@ import (
 type Options struct {
 	Env *ProcessEnv // The environment to use. Note: this contains the cached module and filesystem state.
 
-	// LocalPrefix is a comma-separated string of import path prefixes, which, if
-	// set, instructs Process to sort the import paths with the given prefixes
-	// into another group after 3rd-party packages.
+	// LocalPrefix is a comma-separated string of import path prefixes, which, if set.
 	LocalPrefix string
 
 	Fragment  bool // Accept fragment of a source file (no package statement)
-	AllErrors bool // Report all errors (not just the first 10 on different lines)
+	AllErrors bool
 
 	Comments  bool // Print comments (true if nil *Options provided)
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
-	TabWidth  int  // Tab width (8 if nil *Options provided)
+	TabWidth  int
 
 	FormatOnly bool // Disable the insertion and deletion of imports
 }
@@ -67,12 +64,12 @@ func Process(filename string, src []byte, opt *Options) (formatted []byte, err e
 	return formatFile(fileSet, file, src, adjust, opt)
 }
 
-// FixImports returns a list of fixes to the imports that, when applied,
-// will leave the imports in the same state as Process. src and opt must
-// be specified.
+// FixImports returns a list of fixes to the imports that, when applied, will
+// leave the imports in the same state as Process. src and opt must be
+// specified.
 //
-// Note that filename's directory influences which imports can be chosen,
-// so it is important that filename be accurate.
+// Filename's directory influences which imports can be chosen, so it is
+// important that filename be accurate.
 func FixImports(ctx context.Context, filename string, src []byte, goroot string, logf func(string, ...any), source Source) (fixes []*ImportFix, err error) {
 	if source == nil {
 		// In case someone adds a defective call from a new place
@@ -82,8 +79,7 @@ func FixImports(ctx context.Context, filename string, src []byte, goroot string,
 	defer done()
 
 	fileSet := token.NewFileSet()
-	// TODO(rfindley): these default values for ParseComments and AllErrors were
-	// extracted from gopls, but are they even needed?
+	// TODO(rfindley): these default values for ParseComments and AllErrors
 	file, _, err := parse(fileSet, filename, src, parser.ParseComments|parser.AllErrors, true)
 	if err != nil {
 		return nil, err
@@ -96,8 +92,7 @@ func FixImports(ctx context.Context, filename string, src []byte, goroot string,
 // is added in when parsing the file. src and opts must be specified, but no
 // env is needed.
 func ApplyFixes(fixes []*ImportFix, filename string, src []byte, opt *Options, extraMode parser.Mode) (formatted []byte, err error) {
-	// Don't use parse() -- we don't care about fragments or statement lists
-	// here, and we need to work with unparsable files.
+	// Don't use parse() -- we don't care about fragments or statement lists here.
 	fileSet := token.NewFileSet()
 	parserMode := parser.SkipObjectResolution
 	if opt.Comments {
@@ -130,10 +125,7 @@ func formatFile(fset *token.FileSet, file *ast.File, src []byte, adjust func(ori
 	sortImports(opt.LocalPrefix, fset.File(file.FileStart), file)
 	var spacesBefore []string // import paths we need spaces before
 	for _, impSection := range astutil.Imports(fset, file) {
-		// Within each block of contiguous imports, see if any
-		// import lines are in different group numbers. If so,
-		// we'll need to put a space between them so it's
-		// compatible with gofmt.
+		// Within each block of contiguous imports, see if any import lines are in different group numbers.
 		lastGroup := -1
 		for _, importSpec := range impSection {
 			importPath, _ := strconv.Unquote(importSpec.Path.Value)
@@ -187,24 +179,18 @@ func parse(fset *token.FileSet, filename string, src []byte, parserMode parser.M
 	if err == nil {
 		return file, nil, nil
 	}
-	// If the error is that the source file didn't begin with a
-	// package line and we accept fragmented input, fall through to
-	// try as a source fragment.  Stop and return on any other error.
+	// If the error is that the source file did not begin with a package line and
+	// we accept fragmented input.
 	if !fragment || !strings.Contains(err.Error(), "expected 'package'") {
 		return nil, nil, err
 	}
 
-	// If this is a declaration list, make it a source file
-	// by inserting a package clause.
-	// Insert using a ;, not a newline, so that parse errors are on
-	// the correct line.
+	// If this is a declaration list, make it a source file by inserting a package clause.
 	const prefix = "package main;"
 	psrc := append([]byte(prefix), src...)
 	file, err = parser.ParseFile(fset, filename, psrc, parserMode)
 	if err == nil {
-		// Gofmt will turn the ; into a \n.
-		// Do that ourselves now and update the file contents,
-		// so that positions and line numbers are correct going forward.
+		// Gofmt will turn the; into a \n.
 		psrc[len(prefix)-1] = '\n'
 		fset.File(file.Package).SetLinesForContent(psrc)
 
@@ -221,28 +207,21 @@ func parse(fset *token.FileSet, filename string, src []byte, parserMode parser.M
 		}
 		return file, adjust, nil
 	}
-	// If the error is that the source file didn't begin with a
-	// declaration, fall through to try as a statement list.
-	// Stop and return on any other error.
+	// If the error is that the source file didn't begin with a declaration, fall
+	// through to try as a statement list.
 	if !strings.Contains(err.Error(), "expected declaration") {
 		return nil, nil, err
 	}
 
-	// If this is a statement list, make it a source file
-	// by inserting a package clause and turning the list
-	// into a function body.  This handles expressions too.
-	// Insert using a ;, not a newline, so that the line numbers
-	// in fsrc match the ones in src.
+	// If this is a statement list, make it a source file by inserting a package clause and turning the list into a function body.
 	fsrc := append(append([]byte("package p; func _() {"), src...), '}')
 	file, err = parser.ParseFile(fset, filename, fsrc, parserMode)
 	if err == nil {
 		adjust := func(orig, src []byte) []byte {
-			// Remove the wrapping.
-			// Gofmt has turned the ; into a \n\n.
+			// Remove the wrapping. Gofmt has turned the; into a \n\n.
 			src = src[len("package p\n\nfunc _() {"):]
 			src = src[:len(src)-len("}\n")]
-			// Gofmt has also indented the function body one level.
-			// Remove that indent.
+			// Gofmt has also indented the function body one level. Remove that indent.
 			src = bytes.ReplaceAll(src, []byte("\n\t"), []byte("\n"))
 			return matchSpace(orig, src)
 		}

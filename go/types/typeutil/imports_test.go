@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeutil_test
 
@@ -27,10 +26,7 @@ func TestDependencies(t *testing.T) {
 	}
 	fset := token.NewFileSet()
 
-	// All edges go to the right.
-	//  /--D--B--A
-	// F    \_C_/
-	//  \__E_/
+	// All edges go to the right. /--D--B--A F \_C_/ \__E_/
 	for i, content := range []string{
 		`package a`,
 		`package c; import (_ "a")`,

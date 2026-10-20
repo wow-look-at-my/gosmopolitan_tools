@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package versions_test
 
@@ -41,7 +40,7 @@ package p
 }
 
 func Test(t *testing.T) {
-	testenv.NeedsGo1Point(t, 23) // TODO(#69749): Allow on 1.22 if a fix for #69749 is submitted.
+	testenv.NeedsGo1Point(t, 23)
 
 	for _, item := range []struct {
 		goversion string
@@ -89,11 +88,7 @@ func Test(t *testing.T) {
 }
 
 func TestToolchain122(t *testing.T) {
-	// TestToolchain122 tests the 1.22 toolchain for the FileVersion it returns.
-	// These results are at the moment unique to 1.22. So test it with distinct
-	// expectations.
 
-	// TODO(#69749): Remove requirement if a fix for #69749 is submitted.
 	if testenv.Go1Point() != 22 {
 		t.Skip("Expectations are only for 1.22 toolchain")
 	}
@@ -173,7 +168,7 @@ func testFiles(t *testing.T, goversion string, pversion string, tests []fileTest
 }
 
 func TestTooNew(t *testing.T) {
-	testenv.NeedsGo1Point(t, 23) // TODO(#69749): Allow on 1.22 if a fix for #69749 is submitted.
+	testenv.NeedsGo1Point(t, 23)
 
 	const contents = `
 	//go:build go1.99

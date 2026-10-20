@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typesinternal
 
@@ -12,25 +11,19 @@ import (
 	"strings"
 )
 
-// ZeroString returns the string representation of the zero value for any type t.
-// The boolean result indicates whether the type is or contains an invalid type
-// or a non-basic (constraint) interface type.
-//
-// Even for invalid input types, ZeroString may return a partially correct
-// string representation. The caller should use the returned isValid boolean
-// to determine the validity of the expression.
-//
-// When assigning to a wider type (such as 'any'), it's the caller's
-// responsibility to handle any necessary type conversions.
-//
-// This string can be used on the right-hand side of an assignment where the
-// left-hand side has that explicit type.
-// References to named types are qualified by an appropriate (optional)
-// qualifier function.
-// Exception: This does not apply to tuples. Their string representation is
-// informational only and cannot be used in an assignment.
-//
-// See [ZeroExpr] for a variant that returns an [ast.Expr].
+// ZeroString returns the string representation of the zero value for any type
+// t. The boolean result indicates whether the type is or contains an invalid
+// type or a non-basic (constraint) interface type. Even for invalid input
+// types, ZeroString may return a partially correct string representation. The
+// caller should use the returned isValid boolean to determine the validity of
+// the expression. When assigning to a wider type (such as 'any'), it's the
+// caller's responsibility to handle any necessary type conversions. This
+// string can be used on the right-hand side of an assignment where the
+// left-hand side has that explicit type. References to named types are
+// qualified by an appropriate (optional) qualifier function. Exception: This
+// does not apply to tuples. Their string representation is informational only
+// and cannot be used in an assignment. See [ZeroExpr] for a variant that
+// returns an [ast.Expr].
 func ZeroString(t types.Type, qual types.Qualifier) (_ string, isValid bool) {
 	switch t := t.(type) {
 	case *types.Basic:
@@ -73,11 +66,7 @@ func ZeroString(t types.Type, qual types.Qualifier) (_ string, isValid bool) {
 		case *types.Struct, *types.Array:
 			return types.TypeString(t, qual) + "{}", true
 		default:
-			// A type parameter can have alias but alias type's underlying type
-			// can never be a type parameter.
-			// Use types.Unalias to preserve the info of type parameter instead
-			// of call Underlying() going right through and get the underlying
-			// type of the type parameter which is always an interface.
+			// A type parameter can have alias but alias type's underlying type can never be a type parameter.
 			return ZeroString(types.Unalias(t), qual)
 		}
 
@@ -89,8 +78,7 @@ func ZeroString(t types.Type, qual types.Qualifier) (_ string, isValid bool) {
 		return "*new(" + types.TypeString(t, qual) + ")", true
 
 	case *types.Tuple:
-		// Tuples are not normal values.
-		// We are currently format as "(t[0], ..., t[n])". Could be something else.
+		// Tuples are not normal values. We are format as "(t[0], ..., t[n])". Could be something else.
 		isValid := true
 		components := make([]string, t.Len())
 		for i := 0; i < t.Len(); i++ {
@@ -102,8 +90,7 @@ func ZeroString(t types.Type, qual types.Qualifier) (_ string, isValid bool) {
 		return "(" + strings.Join(components, ", ") + ")", isValid
 
 	case *types.Union:
-		// Variables of these types cannot be created, so it makes
-		// no sense to ask for their zero value.
+		// Variables of these types cannot be created, so it makes no sense to ask for their zero value.
 		panic(fmt.Sprintf("invalid type for a variable: %v", t))
 
 	default:
@@ -119,9 +106,9 @@ func ZeroString(t types.Type, qual types.Qualifier) (_ string, isValid bool) {
 // representation. The caller should use the returned isValid boolean to determine
 // the validity of the expression.
 //
-// This function is designed for types suitable for variables and should not be
-// used with Tuple or Union types.References to named types are qualified by an
-// appropriate (optional) qualifier function.
+// This function is designed for types suitable for variables. This function
+// should not be used with Tuple or Union types.References to named types are
+// qualified by an appropriate (optional) qualifier function.
 //
 // See [ZeroString] for a variant that returns a string.
 func ZeroExpr(t types.Type, qual types.Qualifier) (_ ast.Expr, isValid bool) {
@@ -190,13 +177,11 @@ func ZeroExpr(t types.Type, qual types.Qualifier) (_ ast.Expr, isValid bool) {
 		}, true
 
 	case *types.Tuple:
-		// Unlike ZeroString, there is no ast.Expr can express tuple by
-		// "(t[0], ..., t[n])".
+		// Unlike ZeroString, there is no ast.Expr can express tuple by "(t[0], ..., t[n])".
 		panic(fmt.Sprintf("invalid type for a variable: %v", t))
 
 	case *types.Union:
-		// Variables of these types cannot be created, so it makes
-		// no sense to ask for their zero value.
+		// Variables of these types cannot be created, so it makes no sense to ask for their zero value.
 		panic(fmt.Sprintf("invalid type for a variable: %v", t))
 
 	default:
@@ -298,9 +283,8 @@ func TypeExpr(t types.Type, qual types.Qualifier) ast.Expr {
 		}
 
 	// types.TypeParam also implements interface NamedOrAlias. To differentiate,
-	// case TypeParam need to be present before case NamedOrAlias.
-	// TODO(hxjiang): remove this comment once TypeArgs() is added to interface
-	// NamedOrAlias.
+	// case TypeParam need to be present before case NamedOrAlias. TODO(hxjiang):
+	// remove this comment once TypeArgs() is added to interface NamedOrAlias.
 	case NamedOrAlias:
 		var expr ast.Expr = ast.NewIdent(t.Obj().Name())
 		if pkgName := qual(t.Obj().Pkg()); pkgName != "." && pkgName != "" {
@@ -337,19 +321,7 @@ func TypeExpr(t types.Type, qual types.Qualifier) ast.Expr {
 		if t.Len() == 0 {
 			panic("Union type should have at least one term")
 		}
-		// Same as go/ast, the return expression will put last term in the
-		// Y field at topmost level of BinaryExpr.
-		// For union of type "float32 | float64 | int64", the structure looks
-		// similar to:
-		// {
-		// 	X: {
-		// 		X: float32,
-		// 		Op: |
-		// 		Y: float64,
-		// 	}
-		// 	Op: |,
-		// 	Y: int64,
-		// }
+		// Same as go/ast, the return expression will put last term in the Y field at topmost level of BinaryExpr.
 		var union ast.Expr
 		for i := range t.Len() {
 			term := t.Term(i)

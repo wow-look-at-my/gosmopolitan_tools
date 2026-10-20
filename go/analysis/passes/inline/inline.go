@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -113,8 +112,6 @@ func (a *analyzer) HandleAlias(spec *ast.TypeSpec) {
 	lhs := a.pass.TypesInfo.Defs[spec.Name].(*types.TypeName)
 	a.inlinableAliases[lhs] = typ
 	// Create a fact only if the LHS is exported and defined at top level.
-	// We create a fact even if the RHS is non-exported,
-	// so we can warn about uses in other packages.
 	if lhs.Exported() && typesinternal.IsPackageLevel(lhs) {
 		a.pass.ExportObjectFact(lhs, typ)
 	}
@@ -134,8 +131,6 @@ func (a *analyzer) HandleConst(nameIdent, rhsIdent *ast.Ident) {
 	}
 	a.inlinableConsts[lhs] = con
 	// Create a fact only if the LHS is exported and defined at top level.
-	// We create a fact even if the RHS is non-exported,
-	// so we can warn about uses in other packages.
 	if lhs.Exported() && typesinternal.IsPackageLevel(lhs) {
 		a.pass.ExportObjectFact(lhs, con)
 	}
@@ -181,24 +176,6 @@ func (a *analyzer) inlineCall(call *ast.CallExpr, cur inspector.Cursor) {
 		}
 
 		// Compute the edits.
-		//
-		// Ordinarily the analyzer reports a fix containing
-		// edits. However, the algorithm is somewhat expensive
-		// (unnecessarily so: see go.dev/issue/75773) so
-		// to reduce costs in gopls, we omit the edits,
-		// meaning that gopls must compute them on demand
-		// (based on the Diagnostic.Category) when they are
-		// requested via a code action.
-		//
-		// This does mean that the following categories of
-		// caller-dependent obstacles to inlining will be
-		// reported when the gopls user requests the fix,
-		// rather than by quietly suppressing the diagnostic:
-		// - shadowing problems
-		// - callee imports inaccessible "internal" packages
-		// - callee refers to nonexported symbols
-		// - callee uses too-new Go features
-		// - inlining call from a cgo file
 		var edits []analysis.TextEdit
 		if !lazyEdits {
 			// Inline the call.
@@ -219,21 +196,11 @@ func (a *analyzer) inlineCall(call *ast.CallExpr, cur inspector.Cursor) {
 			}
 
 			if res.Literalized {
-				// Users are not fond of inlinings that literalize
-				// f(x) to func() { ... }(), so avoid them.
-				//
-				// (Unfortunately the inliner is very timid,
-				// and often literalizes when it cannot prove that
-				// reducing the call is safe; the user of this tool
-				// has no indication of what the problem is.)
+				// Users are not fond of inlinings that literalize f(x) to func() { ... }(), so avoid them.
 				return
 			}
 			if res.BindingDecl && !allowBindingDecl {
-				// When applying fix en masse, users are similarly
-				// unenthusiastic about inlinings that cannot
-				// entirely eliminate the parameters and
-				// insert a 'var params = args' declaration.
-				// The flag allows them to decline such fixes.
+				// When applying fix en masse, users are similarly unenthusiastic about inlinings that cannot entirely eliminate the parameters and insert a 'var params = args' declaration.
 				return
 			}
 			edits = res.Edits
@@ -262,7 +229,6 @@ func (a *analyzer) withinTestOf(curUse inspector.Cursor, target types.Object) bo
 		return false // not a test file
 	}
 
-	// Suppress fixes for uses in x_test.go of target symbol defined in x.go (#79272).
 	if useFileBase == strings.TrimSuffix(a.pass.Fset.File(target.Pos()).Name(), ".go") {
 		return true
 	}
@@ -279,10 +245,7 @@ func (a *analyzer) withinTestOf(curUse inspector.Cursor, target types.Object) bo
 		return false // different package
 	}
 
-	// Computed expected SYMBOL portion of "ExampleSYMBOL_comment"
-	// for the target symbol. (Strictly, this convention applies
-	// only to Example functions.)
-	// TODO(adonovan): use a proper Test function parser.
+	// (Strictly, this convention applies only to Example functions.) TODO(adonovan): use a proper Test function parser.
 	symbol := target.Name()
 	if fn, ok := target.(*types.Func); ok {
 		if recv := fn.Signature().Recv(); recv != nil {
@@ -319,8 +282,7 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 	}
 
 	alias := tn.Type().(*types.Alias)
-	// Remember the names of the alias's type params. When we check for shadowing
-	// later, we'll ignore these because they won't appear in the replacement text.
+	// Remember the names of the alias's type params.
 	typeParamNames := map[*types.TypeName]bool{}
 	for tp := range alias.TypeParams().TypeParams() {
 		typeParamNames[tp.Obj()] = true
@@ -330,13 +292,7 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 	curFile := astutil.EnclosingFile(curId)
 	id := curId.Node().(*ast.Ident)
 
-	// Find the complete identifier, which may take any of these forms:
-	//       Id
-	//       Id[T]
-	//       Id[K, V]
-	//   pkg.Id
-	//   pkg.Id[T]
-	//   pkg.Id[K, V]
+	// Find the complete identifier, which may take any of these forms.
 	var expr ast.Expr = id
 	if curId.ParentEdgeKind() == edge.SelectorExpr_Sel {
 		curId = curId.Parent()
@@ -362,9 +318,7 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 			identicalName = alias.Obj().Name() == rhs.Obj().Name()
 		}
 		if !identicalName {
-			// Type is embedded, inlining the alias will cause
-			// the field name to be changed, which might break
-			// programs in terms of backwards compatibility.
+			// Type is embedded, inlining the alias will cause the field name to be changed.
 			return
 		}
 	}
@@ -372,19 +326,12 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 	t := a.pass.TypesInfo.TypeOf(expr).(*types.Alias) // type of entire identifier
 	if targs := t.TypeArgs(); targs.Len() > 0 {
 		// Instantiate the alias with the type args from this use.
-		// For example, given type A = M[K, V], compute the type of the use
-		// A[int, Foo] as M[int, Foo].
-		// Don't validate instantiation: it can't panic unless we have a bug,
-		// in which case seeing the stack trace via telemetry would be helpful.
 		instAlias, _ := types.Instantiate(nil, alias, slices.Collect(targs.Types()), false)
 		rhs = instAlias.(*types.Alias).Rhs()
 	}
 
 	// We have an identifier A here (n), possibly qualified by a package
 	// identifier (sel.n), and an inlinable "type A = rhs" elsewhere.
-	//
-	// We can replace A with rhs if no name in rhs is shadowed at n's position,
-	// and every package in rhs is importable by the current package.
 	var (
 		importPrefixes = map[string]string{curPath: ""} // from pkg path to prefix
 		edits          []analysis.TextEdit
@@ -400,9 +347,7 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 			pkgName = pkg.Name()
 		}
 		if pkgPath == "" || pkgPath == curPath {
-			// The name is in the current package or the universe scope, so no import
-			// is required. Check that it is not shadowed (that is, that the type
-			// it refers to in rhs is the same one it refers to at n).
+			// The name is in the current package or the universe scope, so no import is required.
 			scope := a.pass.TypesInfo.Scopes[curFile].Innermost(id.Pos()) // n's scope
 			_, obj := scope.LookupParent(tn.Name(), id.Pos())             // what qn.name means in n's scope
 			if obj != tn {
@@ -412,9 +357,7 @@ func (a *analyzer) inlineAlias(tn *types.TypeName, curId inspector.Cursor) {
 			// If this package can't see the package of this part of rhs, we can't inline.
 			return
 		} else if _, ok := importPrefixes[pkgPath]; !ok {
-			// Use AddImport to add pkgPath if it's not there already. Associate the prefix it assigns
-			// with the prefix it assigns
-			// with the package path for use by the TypeString qualifier below.
+			// Use AddImport to add pkgPath if it's not there already.
 			prefix, eds := refactor.AddImport(
 				a.pass.TypesInfo, curFile, pkgName, pkgPath, tn.Name(), id.Pos())
 			importPrefixes[pkgPath] = strings.TrimSuffix(prefix, ".")
@@ -476,10 +419,8 @@ func typenames(t types.Type) []*types.TypeName {
 				visit(field.Type())
 			}
 		case *types.Signature:
-			// Ignore the receiver: although it may be present, it has no meaning
-			// in a type expression.
-			// Ditto for receiver type params.
-			// Also, function type params cannot appear in a type expression.
+			// Ignore the receiver: although it may be present, it has no meaning in a
+			// type expression. Ditto for receiver type params.
 			if t.TypeParams() != nil {
 				panic("Signature.TypeParams in type expression")
 			}
@@ -534,18 +475,16 @@ func (a *analyzer) inlineConst(con *types.Const, cur inspector.Cursor) {
 	// where sel is the parent of n), // and an inlinable "const A = B" elsewhere (incon).
 	// Consider replacing A with B.
 
-	// Check that the expression we are inlining (B) means the same thing
-	// (refers to the same object) in n's scope as it does in A's scope.
-	// If the RHS is not in the current package, AddImport will handle
-	// shadowing, so we only need to worry about when both expressions
-	// are in the current package.
+	// Check that the expression we are inlining (B) means the same thing (refers
+	// to the same object) in n's scope as it does in A's scope. If the RHS is
+	// not in the current package, AddImport will handle shadowing. We only need
+	// to worry about when both expressions are in the current package.
 	if a.pass.Pkg.Path() == incon.RHSPkgPath {
 		// incon.rhsObj is the object referred to by B in the definition of A.
 		scope := a.pass.TypesInfo.Scopes[curFile].Innermost(n.Pos()) // n's scope
 		_, obj := scope.LookupParent(incon.RHSName, n.Pos())         // what "B" means in n's scope
 		if obj == nil {
-			// Should be impossible: if code at n can refer to the LHS,
-			// it can refer to the RHS.
+			// Should be impossible: if code at n can refer to the LHS, it can refer to the RHS.
 			panic(fmt.Sprintf("no object for inlinable const %s RHS %s", n.Name, incon.RHSName))
 		}
 		if obj != incon.rhsObj {
@@ -606,14 +545,13 @@ func (a *analyzer) readFile(node ast.Node) ([]byte, error) {
 }
 
 // A goFixInlineFuncFact is exported for each function marked "//go:fix inline".
-// It holds information about the callee to support inlining.
 type goFixInlineFuncFact struct{ Callee *inline.Callee }
 
 func (f *goFixInlineFuncFact) String() string { return "goFixInline " + f.Callee.String() }
 func (*goFixInlineFuncFact) AFact()           {}
 
-// A goFixInlineConstFact is exported for each constant marked "//go:fix inline".
-// It holds information about an inlinable constant. Gob-serializable.
+// A goFixInlineConstFact is exported for each constant marked "//go:fix
+// inline". It holds information about an inlinable constant.
 type goFixInlineConstFact struct {
 	// Information about "const LHSName = RHSName".
 	RHSName    string
@@ -629,7 +567,6 @@ func (c *goFixInlineConstFact) String() string {
 func (*goFixInlineConstFact) AFact() {}
 
 // A goFixInlineAliasFact is exported for each type alias marked "//go:fix inline".
-// It holds no information; its mere existence demonstrates that an alias is inlinable.
 type goFixInlineAliasFact struct{}
 
 func (c *goFixInlineAliasFact) String() string { return "goFixInline alias" }

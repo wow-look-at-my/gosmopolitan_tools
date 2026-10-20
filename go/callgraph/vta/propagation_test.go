@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -22,9 +21,8 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 )
 
-// val is a test data structure for creating ssa.Value
-// outside of the ssa package. Needed for manual creation
-// of vta graph nodes in testing.
+// val is a test data structure for creating ssa.Value outside of the ssa
+// package. Needed for manual creation of vta graph nodes in testing.
 type val struct {
 	name string
 	typ  types.Type
@@ -54,8 +52,7 @@ func (v val) Pos() token.Pos {
 	return token.NoPos
 }
 
-// newLocal creates a new local node with ssa.Value
-// named `name` and type `t`.
+// newLocal creates a new local node with ssa.Value named `name` and type `t`.
 func newLocal(name string, t types.Type) local {
 	return local{val: val{name: name, typ: t}}
 }
@@ -76,15 +73,14 @@ func sccString(sccs [][]idx, g *vtaGraph) []string {
 	return sccsStr
 }
 
-// nodeToTypeString is testing utility for stringifying results
-// of type propagation: propTypeMap `pMap` is converted to a map
-// from node strings to a string consisting of type stringifications
-// concatenated with `;`. We stringify reachable type information
-// that also has an accompanying function by the function name.
+// nodeToTypeString is testing utility. For stringifying results of type
+// propagation: propTypeMap `pMap` is converted to a map from node strings to
+// a string consisting of type stringifications. Those stringifications are
+// concatenated with `;`. We stringify reachable type information that also
+// has an accompanying function by the function name.
 func nodeToTypeString(pMap propTypeMap) map[string]string {
-	// Convert propType to a string. If propType has
-	// an attached function, return the function name.
-	// Otherwise, return the type name.
+	// Convert propType to a string. If propType has an attached function, return
+	// the function name. Otherwise, return the type name.
 	propTypeString := func(p propType) string {
 		if p.f != nil {
 			return p.f.Name()
@@ -107,7 +103,7 @@ func nodeToTypeString(pMap propTypeMap) map[string]string {
 	return nodeToTypeStr
 }
 
-// sccEqual compares two sets of SCC stringifications.
+// sccEqual compares sets of SCC stringifications.
 func sccEqual(sccs1 []string, sccs2 []string) bool {
 	if len(sccs1) != len(sccs2) {
 		return false
@@ -148,43 +144,8 @@ func sccMapsConsistent(sccs [][]idx, idxToSccID []int) bool {
 	return true
 }
 
-// testSuite produces a named set of graphs as follows, where
-// parentheses contain node types and F nodes stand for function
-// nodes whose content is function named F:
-//
-//	 no-cycles:
-//		t0 (A) -> t1 (B) -> t2 (C)
-//
-//	 trivial-cycle:
-//	     <--------    <--------
-//	     |       |    |       |
-//	     t0 (A) ->    t1 (B) ->
-//
-//	 circle-cycle:
-//		t0 (A) -> t1 (A) -> t2 (B)
-//	     |                   |
-//	     <--------------------
-//
-//	 fully-connected:
-//		t0 (A) <-> t1 (B)
-//	          \    /
-//	           t2(C)
-//
-//	 subsumed-scc:
-//		t0 (A) -> t1 (B) -> t2(B) -> t3 (A)
-//	     |          |         |        |
-//	     |          <---------         |
-//	     <-----------------------------
-//
-//	 more-realistic:
-//	     <--------
-//	     |        |
-//	     t0 (A) -->
-//	                           ---------->
-//	                          |           |
-//	     t1 (A) -> t2 (B) -> F1 -> F2 -> F3 -> F4
-//	      |        |          |           |
-//	       <-------           <------------
+// testSuite produces a named set of graphs as follows, where parentheses
+// contain node types.
 func testSuite(t *testing.T) map[string]*vtaGraph {
 	ar := txtar.Parse([]byte(`-- go.mod --
 module example.com
@@ -271,9 +232,9 @@ func TestSCC(t *testing.T) {
 		graph *vtaGraph
 		want  []string
 	}{
-		// No cycles results in three separate SCCs: {t0}	{t1}	{t2}
+		// No cycles results in separate SCCs: {t0} {t1} {t2}
 		{name: "no-cycles", graph: suite["no-cycles"], want: []string{"Local(t0)", "Local(t1)", "Local(t2)"}},
-		// The two trivial self-loop cycles results in: {t0}	{t1}
+		// Both trivial self-loop cycles results in: {t0} {t1}
 		{name: "trivial-cycle", graph: suite["trivial-cycle"], want: []string{"Local(t0)", "Local(t1)"}},
 		// The circle cycle produce a single SCC: {t0, t1, t2}
 		{name: "circle-cycle", graph: suite["circle-cycle"], want: []string{"Local(t0);Local(t1);Local(t2)"}},
@@ -281,7 +242,7 @@ func TestSCC(t *testing.T) {
 		{name: "fully-connected", graph: suite["fully-connected"], want: []string{"Local(t0);Local(t1);Local(t2)"}},
 		// Subsumed SCC also has a single SCC: {t0, t1, t2, t3}
 		{name: "subsumed-scc", graph: suite["subsumed-scc"], want: []string{"Local(t0);Local(t1);Local(t2);Local(t3)"}},
-		// The more realistic example has the following SCCs: {t0}	{t1, t2}	{F1, F2, F3}	{F4}
+		// The more realistic example has the following SCCs: {t0} {t1, t2} {F1, F2, F3} {F4}
 		{name: "more-realistic", graph: suite["more-realistic"], want: []string{"Local(t0)", "Local(t1);Local(t2)", "Function(F1);Function(F2);Function(F3)", "Function(F4)"}},
 	} {
 		sccs, idxToSccID := scc(test.graph)

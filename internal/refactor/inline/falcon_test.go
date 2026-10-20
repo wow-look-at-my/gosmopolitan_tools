@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline_test
 
@@ -110,9 +109,7 @@ func TestFalconMapKeys(t *testing.T) {
 		},
 		{
 			"Generic map keys",
-			// We have to use a named map type here, because the substituter tries to
-			// wrap the type expr in parens, which are not allowed around the type in
-			// composite literal expressions.
+			// We have to use a named map type here, because the substituter tries to wrap the type expr in parens.
 			`type Map map[int]bool; func f[M Map](x int) { _ = M{1: true, x: true} }`,
 			`func _() { f[Map](1) }`,
 			`func _() {
@@ -121,13 +118,13 @@ func TestFalconMapKeys(t *testing.T) {
 }`,
 		},
 		{
-			"Array keys", // not a map; shouldn't crash (golang/go#74393)
+			"Array keys",
 			`func f(x int) { _ = [2]int{1: 0} }`,
 			`func _() { f(0) }`,
 			`func _() { _ = [2]int{1: 0} }`,
 		},
 		{
-			"Slice keys", // not a map; shouldn't crash (golang/go#74393)
+			"Slice keys",
 			`func f(x int) { _ = []int{1: 0} }`,
 			`func _() { f(0) }`,
 			`func _() { _ = []int{1: 0} }`,
@@ -341,8 +338,7 @@ func TestFalconComplex(t *testing.T) {
 			"Complex arithmetic (good).",
 			`func f(re, im float64, z complex128) byte { return "x"[int(real(complex(re, im)*complex(re, -im)-z))] }`,
 			`func _() { f(1, 2, 5+0i) }`,
-			// The float64 conversions are excessively conservative here
-			// but in general may affect the type of complex produced.
+			// The float64 conversions are excessively conservative here but in general may affect the type of complex produced.
 			`func _() { _ = "x"[int(real(complex(float64(1), float64(2))*complex(float64(1), -2)-(5+0i)))] }`,
 		},
 		{

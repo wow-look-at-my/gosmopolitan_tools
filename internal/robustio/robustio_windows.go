@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package robustio
 
@@ -35,8 +34,8 @@ func getErrno(err error) (uintptr, bool) {
 }
 
 // Note: it may be convenient to have this helper return fs.FileInfo, but
-// implementing this is actually quite involved on Windows. Since we only
-// currently use mtime, keep it simple.
+// implementing this is involved on Windows. Since we only use mtime, keep it
+// simple.
 func getFileID(filename string) (FileID, time.Time, error) {
 	filename16, err := syscall.UTF16PtrFromString(filename)
 	if err != nil {

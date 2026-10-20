@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -128,8 +127,7 @@ func (g global) String() string {
 	return fmt.Sprintf("Global(%s)", g.val.Name())
 }
 
-// local node for VTA modeling local variables
-// and function/method parameters.
+// local node for VTA modeling local variables and function/method parameters.
 type local struct {
 	val ssa.Value
 }
@@ -171,9 +169,8 @@ func (f function) String() string {
 	return fmt.Sprintf("Function(%s)", f.f.Name())
 }
 
-// resultVar represents the result
-// variable of a function, whether
-// named or not.
+// resultVar represents the result variable of a function, whether named or
+// not.
 type resultVar struct {
 	f     *ssa.Function
 	index int // valid index into result var tuple
@@ -191,15 +188,8 @@ func (o resultVar) String() string {
 	return fmt.Sprintf("Return(%s[%d])", o.f.Name(), o.index)
 }
 
-// nestedPtrInterface node represents all references and dereferences
-// of locals and globals that have a nested pointer to interface type.
-// We merge such constructs into a single node for simplicity and without
-// much precision sacrifice as such variables are rare in practice. Both
-// a and b would be represented as the same PtrInterface(I) node in:
-//
-//	type I interface
-//	var a ***I
-//	var b **I
+// nestedPtrInterface node represents all references and dereferences of
+// locals and globals that have a nested pointer to interface type.
 type nestedPtrInterface struct {
 	typ types.Type
 }
@@ -213,13 +203,7 @@ func (l nestedPtrInterface) String() string {
 }
 
 // nestedPtrFunction node represents all references and dereferences of locals
-// and globals that have a nested pointer to function type. We merge such
-// constructs into a single node for simplicity and without much precision
-// sacrifice as such variables are rare in practice. Both a and b would be
-// represented as the same PtrFunction(func()) node in:
-//
-//	var a *func()
-//	var b **func()
+// and globals that have a nested pointer to function type.
 type nestedPtrFunction struct {
 	typ types.Type
 }
@@ -323,12 +307,6 @@ type builder struct {
 	callees calleesFunc // initial call graph for creating flows at unresolved call sites.
 
 	// Specialized type map for canonicalization of types.Type.
-	// Semantically equivalent types can have different implementations,
-	// i.e., they are different pointer values. The map allows us to
-	// have one unique representative. The keys are fixed and from the
-	// client perspective they are types. The values in our case are
-	// types too, in particular type representatives. Each value is a
-	// pointer so this map is not expected to take much memory.
 	canon typeutil.Map
 }
 
@@ -364,30 +342,10 @@ func (b *builder) instr(instr ssa.Instruction) {
 	case *ssa.Phi:
 		b.phi(i)
 	case *ssa.ChangeInterface:
-		// Although in change interface a := A(b) command a and b are
-		// the same object, the only interesting flow happens when A
-		// is an interface. We create flow b -> a, but omit a -> b.
-		// The latter flow is not needed: if a gets assigned concrete
-		// type later on, that cannot be propagated back to b as b
-		// is a separate variable. The a -> b flow can happen when
-		// A is a pointer to interface, but then the command is of
-		// type ChangeType, handled below.
+		// Although in change interface.
 		b.addInFlowEdge(b.nodeFromVal(i.X), b.nodeFromVal(i))
 	case *ssa.ChangeType:
-		// change type command a := A(b) results in a and b being the
-		// same value. For concrete type A, there is no interesting flow.
-		//
-		// When A is an interface, most interface casts are handled
-		// by the ChangeInterface instruction. The relevant case here is
-		// when converting a pointer to an interface type. This can happen
-		// when the underlying interfaces have the same method set.
-		//
-		//	type I interface{ foo() }
-		//	type J interface{ foo() }
-		//	var b *I
-		//	a := (*J)(b)
-		//
-		// When this happens we add flows between a <--> b.
+		// change type command a := A(b) results in a and b being the same value.
 		b.addInFlowAliasEdges(b.nodeFromVal(i), b.nodeFromVal(i.X))
 	case *ssa.TypeAssert:
 		b.tassert(i)
@@ -421,9 +379,6 @@ func (b *builder) instr(instr ssa.Instruction) {
 		*ssa.Alloc, *ssa.DebugRef, *ssa.Convert, *ssa.Jump, *ssa.If,
 		*ssa.Slice, *ssa.SliceToArrayPointer, *ssa.Range, *ssa.RunDefers:
 		// No interesting flow here.
-		// Notes on individual instructions:
-		// SliceToArrayPointer: t1 = slice to array pointer *[4]T <- []T (t0)
-		// No interesting flow as sliceArrayElem(t1) == sliceArrayElem(t0).
 		return
 	case *ssa.MultiConvert:
 		b.multiconvert(i)
@@ -441,7 +396,6 @@ func (b *builder) unop(u *ssa.UnOp) {
 		t := typeparams.CoreType(u.X.Type()).(*types.Chan).Elem()
 		b.addInFlowAliasEdges(b.nodeFromVal(u), channelElem{typ: t})
 	default:
-		// There is no interesting type flow otherwise.
 	}
 }
 
@@ -456,9 +410,7 @@ func (b *builder) tassert(a *ssa.TypeAssert) {
 		b.addInFlowEdge(b.nodeFromVal(a.X), b.nodeFromVal(a))
 		return
 	}
-	// The case where a is <a.AssertedType, bool> register so there
-	// is a flow from a.X to a[0]. Here, a[0] is represented as an
-	// indexedLocal: an entry into local tuple register a at index 0.
+	// The case where a is <a.AssertedType, bool> register so there is a flow from a.X to a[0].
 	tup := a.Type().(*types.Tuple)
 	t := tup.At(0).Type()
 
@@ -468,7 +420,7 @@ func (b *builder) tassert(a *ssa.TypeAssert) {
 
 // extract instruction t1 := t2[i] generates flows between t2[i]
 // and t1 where the source is indexed local representing a value
-// from tuple register t2 at index i and the target is t1.
+// from tuple register t2. At index i and the target is t1.
 func (b *builder) extract(e *ssa.Extract) {
 	tup := e.Tuple.Type().(*types.Tuple)
 	t := tup.At(e.Index).Type()
@@ -500,9 +452,9 @@ func (b *builder) send(s *ssa.Send) {
 //
 //	a = select blocking/nonblocking [c_1 <- t_1, c_2 <- t_2, ..., <- o_1, <- o_2, ...]
 //
-// between receiving channel registers c_i and corresponding input register t_i. Further,
-// flows are generated between o_i and a[2 + i]. Note that a is a tuple register of type
-// <int, bool, r_1, r_2, ...> where the type of r_i is the element type of channel o_i.
+// between receiving channel registers c_i and corresponding input register
+// t_i. a is a tuple register of type <int, bool, r_1, r_2, ...> where the
+// type of r_i is the element type of channel o_i.
 func (b *builder) selekt(s *ssa.Select) {
 	recvIndex := 0
 	for _, state := range s.States {
@@ -520,26 +472,23 @@ func (b *builder) selekt(s *ssa.Select) {
 }
 
 // index instruction a := b[c] on slices creates flows between a and
-// SliceElem(t) flow where t is an interface type of c. Arrays and
-// slice elements are both modeled as SliceElem.
+// SliceElem(t) flow where t is an interface type of c.
 func (b *builder) index(i *ssa.Index) {
 	et := sliceArrayElem(i.X.Type())
 	b.addInFlowAliasEdges(b.nodeFromVal(i), sliceElem{typ: et})
 }
 
-// indexAddr instruction a := &b[c] fetches address of a index
-// into the field so we create bidirectional flow a <-> SliceElem(t)
-// where t is an interface type of c. Arrays and slice elements are
-// both modeled as SliceElem.
+// indexAddr instruction a := &b[c] fetches address of a index into the field
+// so we create bidirectional flow. A <-> SliceElem(t) where t is an
+// interface type of c.
 func (b *builder) indexAddr(i *ssa.IndexAddr) {
 	et := sliceArrayElem(i.X.Type())
 	b.addInFlowEdge(sliceElem{typ: et}, b.nodeFromVal(i))
 	b.addInFlowEdge(b.nodeFromVal(i), sliceElem{typ: et})
 }
 
-// lookup handles map query commands a := m[b] where m is of type
-// map[...]V and V is an interface. It creates flows between `a`
-// and MapValue(V).
+// lookup handles map query commands a := m[b] where m is of type map[...]V
+// and V is an interface. It creates flows between `a` and MapValue(V).
 func (b *builder) lookup(l *ssa.Lookup) {
 	t, ok := l.X.Type().Underlying().(*types.Map)
 	if !ok {
@@ -569,9 +518,9 @@ func (b *builder) mapUpdate(u *ssa.MapUpdate) {
 	b.addInFlowAliasEdges(mapValue{typ: t.Elem()}, b.nodeFromVal(u.Value))
 }
 
-// next instruction <ok, key, value> := next r, where r
-// is a range over map or string generates flow between
-// key and MapKey as well value and MapValue nodes.
+// next instruction <ok, key, value> := next r. This is where r is a range
+// over map or string generates flow between key and MapKey as well value and
+// MapValue nodes.
 func (b *builder) next(n *ssa.Next) {
 	if n.IsString {
 		return
@@ -585,9 +534,7 @@ func (b *builder) next(n *ssa.Next) {
 }
 
 // addInFlowAliasEdges adds an edge r -> l to b.graph if l is a node that can
-// have an inflow, i.e., a node that represents an interface or an unresolved
-// function value. Similarly for the edge l -> r with an additional condition
-// of that l and r can potentially alias.
+// have an inflow, i.e., a node.
 func (b *builder) addInFlowAliasEdges(l, r node) {
 	b.addInFlowEdge(r, l)
 
@@ -606,13 +553,7 @@ func (b *builder) closure(c *ssa.MakeClosure) {
 }
 
 // panic creates a flow from arguments to panic instructions to return
-// registers of all recover statements in the program. Introduces a
-// global panic node Panic and
-//  1. for every panic statement p: add p -> Panic
-//  2. for every recover statement r: add Panic -> r (handled in call)
-//
-// TODO(zpavlinovic): improve precision by explicitly modeling how panic
-// values flow from callees to callers and into deferred recover instructions.
+// registers of all recover statements in the program.
 func (b *builder) panic(p *ssa.Panic) {
 	// Panics often have, for instance, strings as arguments which do
 	// not create interesting flows.
@@ -644,8 +585,7 @@ func (b *builder) call(c ssa.CallInstruction) {
 
 		results := f.Signature.Results()
 		if results.Len() == 1 {
-			// When there is only one return value, the destination register does not
-			// have a tuple type.
+			// When there is only one return value, the destination register does not have a tuple type.
 			b.addInFlowEdge(resultVar{f: f, index: 0}, b.nodeFromVal(site))
 		} else {
 			tup := site.Type().(*types.Tuple)
@@ -658,23 +598,13 @@ func (b *builder) call(c ssa.CallInstruction) {
 }
 
 func addArgumentFlows(b *builder, c ssa.CallInstruction, f *ssa.Function) {
-	// When f has no parameters (including receiver), there is no type
-	// flow here. Also, f's body and parameters might be missing, such
-	// as when vta is used within the golang.org/x/tools/go/analysis
-	// framework (see github.com/golang/go/issues/50670).
+	// When f has no parameters (including receiver), there is no type flow here.
 	if len(f.Params) == 0 {
 		return
 	}
 	cc := c.Common()
 	if cc.Method != nil {
-		// In principle we don't add interprocedural flows for receiver
-		// objects. At a call site, the receiver object is interface
-		// while the callee object is concrete. The flow from interface
-		// to concrete type in general does not make sense. The exception
-		// is when the concrete type is a named function type (see #57756).
-		//
-		// The flow other way around would bake in information from the
-		// initial call graph.
+		// In principle we don't add interprocedural flows for receiver objects.
 		if isFunction(f.Params[0].Type()) {
 			b.addInFlowEdge(b.nodeFromVal(cc.Value), b.nodeFromVal(f.Params[0]))
 		}
@@ -688,8 +618,6 @@ func addArgumentFlows(b *builder, c ssa.CallInstruction, f *ssa.Function) {
 		// Parameters of f might not be available, as in the case
 		// when vta is used within the golang.org/x/tools/go/analysis
 		// framework (see github.com/golang/go/issues/50670).
-		//
-		// TODO: investigate other cases of missing body and parameters
 		if len(f.Params) <= i+offset {
 			return
 		}
@@ -720,9 +648,7 @@ func (b *builder) multiconvert(c *ssa.MultiConvert) {
 		case *types.Interface:
 			terms, err = typeparams.InterfaceTermSet(typ)
 		default:
-			// Common case.
-			// Specializing the len=1 case to avoid a slice
-			// had no measurable space/time benefit.
+			// Common case. Specializing the len=1 case to avoid a slice had no measurable space/time benefit.
 			terms = []*types.Term{types.NewTerm(false, typ)}
 		}
 
@@ -731,9 +657,9 @@ func (b *builder) multiconvert(c *ssa.MultiConvert) {
 		}
 		return terms
 	}
-	// isValuePreserving returns true if a conversion from ut_src to
-	// ut_dst is value-preserving, i.e. just a change of type.
-	// Precondition: neither argument is a named or alias type.
+	// isValuePreserving returns true if a conversion from ut_src to ut_dst is
+	// value-preserving, i.e. a change of type. Precondition: neither argument is
+	// a named or alias type.
 	isValuePreserving := func(ut_src, ut_dst types.Type) bool {
 		// Identical underlying types?
 		if types.IdenticalIgnoreTags(ut_dst, ut_src) {
@@ -764,15 +690,12 @@ func (b *builder) multiconvert(c *ssa.MultiConvert) {
 				b.addInFlowAliasEdges(b.nodeFromVal(c), b.nodeFromVal(c.X))
 				return
 			}
-			// This is equivalent to either: SliceToArrayPointer,,
-			// SliceToArrayPointer+Deref, Size 0 Array constant, or a Convert.
 		}
 	}
 }
 
-// addInFlowEdge adds s -> d to g if d is node that can have an inflow, i.e., a node
-// that represents an interface or an unresolved function value. Otherwise, there
-// is no interesting type flow so the edge is omitted.
+// addInFlowEdge adds s -> d to g if d is node that can have an inflow, i.e.,
+// a node.
 func (b *builder) addInFlowEdge(s, d node) {
 	if hasInFlow(d) {
 		b.graph.addEdge(b.representative(s), b.representative(d))
@@ -802,8 +725,7 @@ func (b *builder) nodeFromVal(val ssa.Value) node {
 	case *ssa.Function:
 		return function{f: v}
 	case *ssa.Parameter, *ssa.FreeVar, ssa.Instruction:
-		// ssa.Param, ssa.FreeVar, and a specific set of "register" instructions,
-		// satisfying the ssa.Value interface, can serve as local variables.
+		// ssa.Param, ssa.FreeVar, and a specific set of "register" instructions, satisfying the ssa.Value interface.
 		return local{val: v}
 	default:
 		panic(fmt.Errorf("unsupported value %v in node creation", val))
@@ -815,8 +737,7 @@ func (b *builder) nodeFromVal(val ssa.Value) node {
 // this method guarantees the same implementation is always used.
 func (b *builder) representative(n node) node {
 	if n.Type() == nil {
-		// panicArg and recoverReturn do not have
-		// types and are unique by definition.
+		// panicArg and recoverReturn do not have types and are unique by definition.
 		return n
 	}
 	t := canonicalize(n.Type(), &b.canon)

@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package refactor_test
 
@@ -349,9 +348,7 @@ func _(io.Reader) {
 				Implicits: make(map[ast.Node]types.Object),
 			}
 			conf := &types.Config{
-				// We don't want to fail if there is an error during type checking:
-				// the error may be because we're missing an import, and adding imports
-				// is the whole point of AddImport.
+				// We don't want to fail if there is an error during type checking: the error may be because we're missing an import.
 				Error:    func(err error) { t.Log(err) },
 				Importer: importer.Default(),
 			}

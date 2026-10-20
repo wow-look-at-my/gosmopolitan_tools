@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package framepointer defines an Analyzer that reports assembly code
 // that clobbers the frame pointer before saving it.
@@ -58,9 +57,6 @@ var arches = map[string]arch{
 				return true
 			}
 			if hasAnyPrefix(s, "LDP", "LDAXP", "LDXP", "CASP") {
-				// Instructions which write to a pair of registers, e.g.
-				//	LDP 8(R0), (R26, R29)
-				//	CASPD (R2, R3), (R2), (R26, R29)
 				lp := strings.LastIndex(s, "(")
 				rp := strings.LastIndex(s, ")")
 				if lp > -1 && lp < rp {
@@ -71,7 +67,7 @@ var arches = map[string]arch{
 		},
 		isFPRead: re(`\bR29\b`).MatchString,
 		isUnconditionalBranch: func(s string) bool {
-			// Get just the instruction
+			// Get the instruction
 			if i := strings.IndexFunc(s, unicode.IsSpace); i > 0 {
 				s = s[:i]
 			}

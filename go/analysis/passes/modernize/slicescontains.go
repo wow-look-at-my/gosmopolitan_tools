@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -35,32 +34,8 @@ var SlicesContainsAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_slicescontains",
 }
 
-// The slicescontains pass identifies loops that can be replaced by a
-// call to slices.Contains{,Func}. For example:
-//
-//	for i, elem := range s {
-//		if elem == needle {
-//			...
-//			break
-//		}
-//	}
-//
-// =>
-//
-//	if slices.Contains(s, needle) { ... }
-//
-// Variants:
-//   - if the if-condition is f(elem), the replacement
-//     uses slices.ContainsFunc(s, f).
-//   - if the if-body is "return true" and the fallthrough
-//     statement is "return false" (or vice versa), the
-//     loop becomes "return [!]slices.Contains(...)".
-//   - if the if-body is "found = true" and the previous
-//     statement is "found = false" (or vice versa), the
-//     loop becomes "found = [!]slices.Contains(...)".
-//
-// It rejects candidates whose needle/predicate expression from the if-statement
-// has side effects to avoid changes in program behavior.
+// The slicescontains pass identifies loops that can be replaced by a call to
+// slices.Contains{,Func}.
 func slicescontains(pass *analysis.Pass) (any, error) {
 	// Skip the analyzer in packages where its
 	// fixes would create an import cycle.
@@ -95,7 +70,7 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 
 		// Examine the condition for one of these forms:
 		//
-		// - if elem or s[i] == needle  { ... } => Contains
+		// - if elem or s[i] == needle { ... } => Contains
 		// - if predicate(s[i] or elem) { ... } => ContainsFunc
 		var (
 			funcName string   // "Contains" or "ContainsFunc"
@@ -124,10 +99,7 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 						if !types.AssignableTo(tNeedle, tElem) {
 							return
 						}
-						// TODO(adonovan): relax this check to allow
-						//   slices.Contains([]error, error(any)),
-						// inserting an explicit widening conversion
-						// around the needle.
+						// TODO(adonovan).
 						return
 					}
 				}
@@ -187,12 +159,6 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 		}
 		if usesRangeVar(body) {
 			// Body uses range var "i" or "elem".
-			//
-			// (The check for "i" could be relaxed when we
-			// generalize this to support slices.Index;
-			// and the check for "elem" could be relaxed
-			// if "elem" can safely be replaced in the
-			// body by "needle".)
 			return
 		}
 		if usesRangeVar(arg2) {
@@ -220,19 +186,10 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 		}
 
 		// Last statement of body must return/break out of the loop.
-		//
-		// TODO(adonovan): opt:consider avoiding FindNode with new API of form:
-		//    curRange.Get(edge.RangeStmt_Body, -1).
-		//             Get(edge.BodyStmt_List, 0).
-		//             Get(edge.IfStmt_Body)
 		curBody, _ := curRange.FindNode(body)
 		curLastStmt, _ := curBody.LastChild()
 
-		// Reject if any statement in the body except the
-		// last has a free continuation (continue or break)
-		// that might affected by melting down the loop.
-		//
-		// TODO(adonovan): relax check by analyzing branch target.
+		// Reject if any statement in the body except the last has a free continuation.
 		numBodyStmts := 0
 		for curBodyStmt := range curBody.Children() {
 			numBodyStmts += 1
@@ -247,9 +204,8 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 		case *ast.ReturnStmt:
 			// Have: for ... range seq { if ... { stmts; return x } }
 
-			// Special case:
-			// body={ return true } next="return false"   (or negation)
-			// => return [!]slices.Contains(...)
+			// Special case: body={ return true } next="return false" (or negation) =>
+			// return [!]slices.Contains(...)
 			if curNext, ok := curRange.NextSibling(); ok {
 				nextStmt := curNext.Node().(ast.Stmt)
 				tval := isReturnTrueOrFalse(info, lastStmt)
@@ -276,8 +232,7 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 				}
 			}
 
-			// General case:
-			// => if slices.Contains(...) { stmts; return x }
+			// General case: => if slices.Contains(...) { stmts; return x }
 			report([]analysis.TextEdit{
 				// Replace "for ... { if ... " with "if slices.Contains(...)".
 				{
@@ -297,31 +252,17 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 			if lastStmt.Tok == token.BREAK && lastStmt.Label == nil { // unlabeled break
 				// Have: for ... { if ... { stmts; break } }
 				if numBodyStmts == 1 {
-					// If the only stmt in the body is an unlabeled "break" that
-					// will get deleted in the fix, don't suggest a fix, as it
-					// produces confusing code:
-					//    if slices.Contains(slice, f) {}
-					// Explicitly discarding the result isn't much better:
-					//    _ = slices.Contains(slice, f) // just for effects
-					// See https://go.dev/issue/77677.
+					// Don't suggest a fix, as it produces confusing code.
 					return
 				}
 				var prevStmt ast.Stmt // previous statement to range (if any)
 				if curPrev, ok := curRange.PrevSibling(); ok {
-					// If the RangeStmt's previous sibling is a Stmt,
-					// the RangeStmt must be among the Body list of
-					// a BlockStmt, CauseClause, or CommClause.
-					// In all cases, the prevStmt is the immediate
-					// predecessor of the RangeStmt during execution.
-					//
-					// (This is not true for Stmts in general;
-					// see [Cursor.Children] and #71074.)
+					// In all cases, the prevStmt is the immediate predecessor of the RangeStmt during execution.
 					prevStmt, _ = curPrev.Node().(ast.Stmt)
 				}
 
-				// Special case:
-				// prev="lhs = false" body={ lhs = true; break }
-				// => lhs = slices.Contains(...) (or its negation)
+				// Special case: prev="lhs = false" body={ lhs = true; break } => lhs =
+				// slices.Contains(...) (or its negation)
 				if assign, ok := body.List[0].(*ast.AssignStmt); ok &&
 					len(body.List) == 2 &&
 					assign.Tok == token.ASSIGN &&
@@ -337,15 +278,7 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 						astutil.EqualSyntax(prevAssign.Lhs[0], assign.Lhs[0]) &&
 						assignBool == -isTrueOrFalse(info, prevAssign.Rhs[0]) {
 
-						// Have:
-						//    lhs = false
-						//    for ... { if ... { lhs = true; break } }
-						//  =>
-						//    lhs = slices.Contains(...)
-						//
-						// TODO(adonovan):
-						// - support "var lhs bool = false" and variants.
-						// - allow the break to be omitted.
+						// Have: lhs = false for ... { if ... { lhs = true.
 						neg := cond(assignBool < 0, "!", "")
 						report([]analysis.TextEdit{
 							// Replace "rhs" of previous assignment by [!]slices.Contains(...)
@@ -364,9 +297,8 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 					}
 				}
 
-				// General case:
-				//    for ... { if ...        { stmts; break } }
-				// => if slices.Contains(...) { stmts        }
+				// General case: for ... { if ... { stmts; break } } => if
+				// slices.Contains(...) { stmts }
 				report([]analysis.TextEdit{
 					// Replace "for ... { if ... " with "if slices.Contains(...)".
 					{
@@ -409,7 +341,7 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 
 				// Have:
 				// - for _, elem := range s { S }
-				// - for i       := range s { S }
+				// - for i := range s { S }
 
 				if ifStmt, ok := rng.Body.List[0].(*ast.IfStmt); ok &&
 					ifStmt.Init == nil && ifStmt.Else == nil {
@@ -425,7 +357,6 @@ func slicescontains(pass *analysis.Pass) (any, error) {
 
 // -- helpers --
 
-// isReturnTrueOrFalse returns nonzero if stmt returns true (+1) or false (-1).
 func isReturnTrueOrFalse(info *types.Info, stmt ast.Stmt) int {
 	if ret, ok := stmt.(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
 		return isTrueOrFalse(info, ret.Results[0])
@@ -433,7 +364,6 @@ func isReturnTrueOrFalse(info *types.Info, stmt ast.Stmt) int {
 	return 0
 }
 
-// isTrueOrFalse returns nonzero if expr is literally true (+1) or false (-1).
 func isTrueOrFalse(info *types.Info, expr ast.Expr) int {
 	if id, ok := expr.(*ast.Ident); ok {
 		switch info.Uses[id] {

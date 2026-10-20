@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package satisfy_test
 
@@ -229,7 +228,7 @@ var _ I = new(C(123))
 
 // TestIssue79734 is a regression test for a crash caused by
 // inappropriate use of the obsolete CoreType operator on operands
-// that (legally) have no core type; see go.dev/issue/79734.
+// that (legally) have no core type. See go.dev/issue/79734.
 func TestIssue79734(t *testing.T) {
 	const src = `package p
 

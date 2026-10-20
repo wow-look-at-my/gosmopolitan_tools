@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package driverutil
 
@@ -42,10 +41,7 @@ func ValidateFixes(fset *token.FileSet, a *analysis.Analyzer, fixes []analysis.S
 // It updates fix so that fix.End.IsValid().
 func validateFix(fset *token.FileSet, fix *analysis.SuggestedFix) error {
 
-	// Stably sort edits by Pos. This ordering puts insertions
-	// (end = start) before deletions (end > start) at the same
-	// point, but uses a stable sort to preserve the order of
-	// multiple insertions at the same point.
+	// Stably sort edits by Pos.
 	slices.SortStableFunc(fix.TextEdits, func(x, y analysis.TextEdit) int {
 		if sign := cmp.Compare(x.Pos, y.Pos); sign != 0 {
 			return sign
@@ -70,15 +66,7 @@ func validateFix(fset *token.FileSet, fix *analysis.SuggestedFix) error {
 			}
 			endFile := fset.File(end)
 			if endFile != file && end < fileEnd+10 {
-				// Relax the checks below in the special case when the end position
-				// is only slightly beyond EOF, as happens when End is computed
-				// (as in ast.{Struct,Interface}Type) rather than based on
-				// actual token positions. In such cases, truncate end to EOF.
-				//
-				// This is a workaround for #71659; see:
-				// https://github.com/golang/go/issues/71659#issuecomment-2651606031
-				// A better fix would be more faithful recording of token
-				// positions (or their absence) in the AST.
+				// Relax the checks below in the special case when the end position is only slightly beyond EOF, as happens when End is computed.
 				edit.End = fileEnd
 				continue
 			}

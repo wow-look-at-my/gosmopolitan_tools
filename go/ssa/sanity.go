@@ -1,11 +1,10 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
 // An optional pass for sanity-checking invariants of the SSA representation.
-// Currently it checks CFG invariants but little at the instruction level.
+// it checks CFG invariants but little at the instruction level.
 
 import (
 	"bytes"
@@ -28,14 +27,9 @@ type sanity struct {
 	insane   bool
 }
 
-// sanityCheck performs integrity checking of the SSA representation
-// of the function fn (which must have been "built") and returns true
-// if it was valid. Diagnostics are written to reporter if non-nil,
-// os.Stderr otherwise. Some diagnostics are only warnings and do not
-// imply a negative result.
-//
-// Sanity-checking is intended to facilitate the debugging of code
-// transformation passes.
+// sanityCheck performs integrity checking of the SSA representation of the
+// function fn (which must have been "built") and returns true if it was
+// valid.
 func sanityCheck(fn *Function, reporter io.Writer) bool {
 	if reporter == nil {
 		reporter = os.Stderr
@@ -97,7 +91,7 @@ func (s *sanity) checkInstr(idx int, instr Instruction) {
 		s.errorf("control flow instruction not at end of block")
 	case *Phi:
 		if idx == 0 {
-			// It suffices to apply this check to just the first phi node.
+			// It suffices to apply this check to the first phi node.
 			if dup := findDuplicate(s.block.Preds); dup != nil {
 				s.errorf("phi node in block with duplicate predecessor %s", dup)
 			}
@@ -239,14 +233,6 @@ func (s *sanity) checkInstr(idx int, instr Instruction) {
 		s.checkReferrerList(v)
 	}
 
-	// Untyped constants are legal as instruction Operands(),
-	// for example:
-	//   _ = "foo"[0]
-	// or:
-	//   if wordsize==64 {...}
-
-	// All other non-Instruction Values can be found via their
-	// enclosing Function or Package.
 }
 
 func (s *sanity) checkFinalInstr(instr Instruction) {
@@ -297,15 +283,12 @@ func (s *sanity) checkBlock(b *BasicBlock, index int) {
 		s.errorf("block has incorrect parent %s", b.parent)
 	}
 
-	// Check all blocks are reachable.
-	// (The entry block is always implicitly reachable,
-	// as is the Recover block, if any.)
+	// Check all blocks are reachable. (The entry block is always implicitly
+	// reachable, as is the Recover block, if any.)
 	if (index > 0 && b != b.parent.Recover) && len(b.Preds) == 0 {
 		s.warnf("unreachable block")
 		if b.Instrs == nil {
-			// Since this block is about to be pruned,
-			// tolerating transient problems in it
-			// simplifies other optimizations.
+			// Since this block is about to be pruned, tolerating transient problems in it simplifies other optimizations.
 			return
 		}
 	}
@@ -386,8 +369,8 @@ func (s *sanity) checkBlock(b *BasicBlock, index int) {
 				}
 			}
 
-			// Check that each function-local operand of
-			// instr refers back to instr.  (NB: quadratic)
+			// Check that each function-local operand of instr refers back to instr.
+			// (NB: quadratic)
 			switch val := val.(type) {
 			case *Const, *Global, *Builtin:
 				continue // not local
@@ -528,18 +511,14 @@ func (s *sanity) checkFunction(fn *Function) bool {
 			strings.HasPrefix(fn.Synthetic, "instance ") ||
 			strings.HasPrefix(fn.Synthetic, "instantiation ") ||
 			fn.parent != nil && fn.parent.hasTypeArgs() /* anon fun in instance */ {
-			// ok
 		} else {
 			s.errorf("nil Pkg")
 		}
 	}
 	if src, syn := fn.Synthetic == "", fn.Syntax() != nil; src != syn {
 		if fn.hasTypeArgs() && fn.Prog.mode&InstantiateGenerics != 0 {
-			// ok (instantiation with InstantiateGenerics on)
 		} else if fn.hasTypeArgs() && fn.topLevelOrigin != nil {
-			// ok (we always have the syntax set for instantiation)
 		} else if _, rng := fn.syntax.(*ast.RangeStmt); rng && fn.Synthetic == "range-over-func yield" {
-			// ok (range-func-yields are both synthetic and keep syntax)
 		} else {
 			s.errorf("got fromSource=%t, hasSyntax=%t; want same values", src, syn)
 		}
@@ -591,8 +570,7 @@ func (s *sanity) checkFunction(fn *Function) bool {
 	}
 
 	if fn.Blocks != nil && len(fn.Blocks) == 0 {
-		// Function _had_ blocks (so it's not external) but
-		// they were "optimized" away, even the entry block.
+		// Function _had_ blocks (so it's not external) but they were "optimized" away, even the entry block.
 		s.errorf("Blocks slice is non-nil but empty")
 	}
 	for i, b := range fn.Blocks {
@@ -619,9 +597,9 @@ func (s *sanity) checkFunction(fn *Function) bool {
 	return !s.insane
 }
 
-// sanityCheckPackage checks invariants of packages upon creation.
-// It does not require that the package is built.
-// Unlike sanityCheck (for functions), it just panics at the first error.
+// sanityCheckPackage checks invariants of packages upon creation. It does not
+// require that the package is built. Unlike sanityCheck (for functions), it
+// panics at the first error.
 func sanityCheckPackage(pkg *Package) {
 	if pkg.Pkg == nil {
 		panic(fmt.Sprintf("Package %s has no Object", pkg))
@@ -648,18 +626,12 @@ func sanityCheckPackage(pkg *Package) {
 		}
 		obj := mem.Object()
 		if obj == nil {
-			// This check is sound because fields
-			// {Global,Function}.object have type
-			// types.Object.  (If they were declared as
-			// *types.{Var,Func}, we'd have a non-empty
-			// interface containing a nil pointer.)
+			// Object.
 
 			continue // not all members have typechecker objects
 		}
 		if obj.Name() != name {
 			if obj.Name() == "init" && strings.HasPrefix(mem.Name(), "init#") {
-				// Ok.  The name of a declared init function varies between
-				// its types.Func ("init") and its ssa.Function ("init#%d").
 			} else {
 				panic(fmt.Sprintf("%s: %T.Object().Name() = %s, want %s",
 					pkg.Pkg.Path(), mem, obj.Name(), name))

@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Incomplete std lib sources on Android.
 
@@ -34,7 +33,6 @@ func TestBuild(t *testing.T) {
 		eq := strings.Index(env, "=")
 		if eq == 0 {
 			// We sometimes see keys with a single leading "=" in the environment on Windows.
-			// TODO(#49886): What is the correct way to parse them in general?
 			eq = strings.Index(env[1:], "=") + 1
 		}
 		if eq < 0 {
@@ -82,8 +80,7 @@ func TestBuild(t *testing.T) {
 		return
 	}
 
-	// Log the complete graph before the errors, so that the errors are near the
-	// end of the log (where we expect them to be).
+	// Log the complete graph before the errors, so that the errors are near the end of the log.
 	nodePrinted := map[string]bool{}
 	printNode := func(direction string, from string) {
 		key := fmt.Sprintf("%s[%q]", direction, from)
@@ -119,9 +116,8 @@ func TestBuild(t *testing.T) {
 		printNode("reverse", this)
 	}
 
-	// Test direct edges.
-	// We throw in crypto/hmac to prove that external test files
-	// (such as this one) are inspected.
+	// Test direct edges. We throw in crypto/hmac to prove that external test
+	// files (such as this) are inspected.
 	for _, p := range []string{"go/build", "testing", "crypto/hmac"} {
 		if !forward[this][p] {
 			printNode("forward", this)
@@ -155,7 +151,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("irreflexive: reverse.Search(importgraph)[importgraph] not found")
 	}
 
-	// Test Search is transitive.  (There is no direct edge to these packages.)
+	// Test Search is transitive.
 	for _, p := range []string{"errors", "reflect", "unsafe"} {
 		if !forward.Search(this)[p] {
 			printNode("forward", this)
@@ -167,13 +163,12 @@ func TestBuild(t *testing.T) {
 		}
 	}
 
-	// Test strongly-connected components.  Because A's external
-	// test package can depend on B, and vice versa, most of the
-	// standard libraries are mutually dependent when their external
-	// tests are considered.
+	// Test strongly-connected components. Because A's external test package can
+	// depend on B, and vice versa, most of the standard libraries are mutually
+	// dependent. This holds when their external tests are considered.
 	//
-	// For any nodes x, y in the same SCC, y appears in the results
-	// of both forward and reverse searches starting from x
+	// For any nodes x, y in the same SCC, y appears in the results of both
+	// forward and reverse searches starting from x
 	if !forward.Search("fmt")["io"] ||
 		!forward.Search("io")["fmt"] ||
 		!reverse.Search("fmt")["io"] ||

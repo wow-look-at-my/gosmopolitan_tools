@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This file contains the implementation of the 'gomvpkg' command
 // whose main function is in golang.org/x/tools/cmd/gomvpkg.
@@ -9,7 +8,7 @@ package rename
 
 // TODO(matloob):
 // - think about what happens if the package is moving across version control systems.
-// - dot imports are not supported. Make sure it's clearly documented.
+// - dot imports are not supported. Make sure it's documented.
 
 import (
 	"bytes"
@@ -34,23 +33,21 @@ import (
 	"golang.org/x/tools/refactor/importgraph"
 )
 
-// Move, given a package path and a destination package path, will try
-// to move the given package to the new path. The Move function will
-// first check for any conflicts preventing the move, such as a
-// package already existing at the destination package path. If the
-// move can proceed, it builds an import graph to find all imports of
-// the packages whose paths need to be renamed. This includes uses of
-// the subpackages of the package to be moved as those packages will
-// also need to be moved. It then renames all imports to point to the
-// new paths, and then moves the packages to their new paths.
+// Move, given a package path and a destination package path, will try to move
+// the given package to the new path. The Move function will first check for
+// any conflicts preventing the move, such as a package already existing at
+// the destination package path. If the move can proceed, it builds an import
+// graph to find all imports of the packages whose paths need to be renamed.
+// This includes uses of the subpackages of the package to be moved as those
+// packages will also need to be moved. It then renames all imports to point
+// to the new paths, and then moves the packages to their new paths.
 func Move(ctxt *build.Context, from, to, moveTmpl string) error {
 	srcDir, err := srcDir(ctxt, from)
 	if err != nil {
 		return err
 	}
 
-	// This should be the only place in the program that constructs
-	// file paths.
+	// This should be the only place in the program that constructs file paths.
 	fromDir := buildutil.JoinPath(ctxt, srcDir, filepath.FromSlash(from))
 	toDir := buildutil.JoinPath(ctxt, srcDir, filepath.FromSlash(to))
 	toParent := filepath.Dir(toDir)
@@ -61,16 +58,14 @@ func Move(ctxt *build.Context, from, to, moveTmpl string) error {
 	// Build the import graph and figure out which packages to update.
 	_, rev, errors := importgraph.Build(ctxt)
 	if len(errors) > 0 {
-		// With a large GOPATH tree, errors are inevitable.
-		// Report them but proceed.
+		// With a large GOPATH tree, errors are inevitable. Report them but proceed.
 		fmt.Fprintf(os.Stderr, "While scanning Go workspace:\n")
 		for path, err := range errors {
 			fmt.Fprintf(os.Stderr, "Package %q: %s.\n", path, err)
 		}
 	}
 
-	// Determine the affected packages---the set of packages whose import
-	// statements need updating.
+	// Determine the affected packages---the set of packages whose import statements need updating.
 	affectedPackages := map[string]bool{from: true}
 	destinations := make(map[string]string) // maps old import path to new import path
 	for pkg := range subpackages(ctxt, srcDir, from) {
@@ -159,21 +154,16 @@ func subpackages(ctxt *build.Context, srcDir string, root string) map[string]boo
 }
 
 type mover struct {
-	// iprog contains all packages whose contents need to be updated
-	// with new package names or import paths.
+	// iprog contains all packages whose contents need to be updated with new package names or import paths.
 	iprog *loader.Program
 	ctxt  *build.Context
 	// rev is the reverse import graph.
 	rev importgraph.Graph
-	// from and to are the source and destination import
-	// paths. fromDir and toDir are the source and destination
-	// absolute paths that package source files will be moved between.
+	// from and to are the source and destination import paths.
 	from, to, fromDir, toDir string
-	// affectedPackages is the set of all packages whose contents need
-	// to be updated to reflect new package names or import paths.
+	// affectedPackages is the set of all packages whose contents need to be updated to reflect new package names or import paths.
 	affectedPackages map[string]bool
-	// destinations maps each subpackage to be moved to its
-	// destination path.
+	// destinations maps each subpackage to be moved to its destination path.
 	destinations map[string]string
 	// cmd, if not empty, will be executed to move fromDir to toDir.
 	cmd string
@@ -277,9 +267,8 @@ func (m *mover) move() error {
 		}
 	}
 
-	// Update imports of that package to use the new import name.
-	// None of the subpackages will change their name---only the from package
-	// itself will.
+	// Update imports of that package to use the new import name. None of the
+	// subpackages will change their name---only the from package itself will.
 	for p := range m.rev[m.from] {
 		if err := importName(m.iprog, m.iprog.Imported[p], m.from, path.Base(m.from), newName); err != nil {
 			return err
@@ -325,12 +314,11 @@ func (m *mover) move() error {
 		writeFile(tokenFile.Name(), buf.Bytes())
 	}
 
-	// Move the directories.
-	// If either the fromDir or toDir are contained under version control it is
-	// the user's responsibility to provide a custom move command that updates
-	// version control to reflect the move.
-	// TODO(matloob): If the parent directory of toDir does not exist, create it.
-	//      For now, it's required that it does exist.
+	// Move the directories. If either the fromDir or toDir are contained under
+	// version control it is the user's responsibility to provide a custom move
+	// command that updates version. Control to reflect the move. TODO(matloob):
+	// If the parent directory of toDir does not exist, create it. it's required
+	// that it does exist.
 
 	if m.cmd != "" {
 		// TODO(matloob): Verify that the windows and plan9 cases are correct.
@@ -355,7 +343,7 @@ func (m *mover) move() error {
 	return moveDirectory(m.fromDir, m.toDir)
 }
 
-// sameLine reports whether two positions in the same file are on the same line.
+// sameLine reports whether positions in the same file are on the same line.
 func sameLine(fset *token.FileSet, x, y token.Pos) bool {
 	return fset.Position(x).Line == fset.Position(y).Line
 }

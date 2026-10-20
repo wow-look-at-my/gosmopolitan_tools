@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package generator
 
@@ -113,12 +112,12 @@ func TestIsBuildable(t *testing.T) {
 }
 
 // TestExhaustive does a series of code generation runs, starting with
-// (relatively) simple code and then getting progressively more
-// complex (more params, deeper structs, turning on additional
-// features such as address-taken vars and reflect testing). The
-// intent here is mainly to insure that the tester still works if you
-// turn things on and off, e.g. that each feature is separately
-// controllable and not linked to other things.
+// (relatively) simple code and then getting progressively more complex (more
+// params, deeper structs, turning on additional features such as
+// address-taken vars and reflect testing). The intent here is mainly to
+// insure that the tester still works if you turn things. This holds on and
+// off, e.g. that each feature is separately controllable and not linked to
+// other things.
 func TestExhaustive(t *testing.T) {
 	testenv.NeedsTool(t, "go")
 	if runtime.GOOS == "android" {
@@ -214,7 +213,7 @@ func TestExhaustive(t *testing.T) {
 		},
 	}
 
-	// Loop over scenarios and make sure each one works properly.
+	// Loop over scenarios and make sure each works properly.
 	for i, s := range scenarios {
 		t.Logf("running %s\n", s.name)
 		s.adjuster()

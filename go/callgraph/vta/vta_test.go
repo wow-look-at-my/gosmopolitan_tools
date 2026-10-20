@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -71,8 +70,8 @@ func TestVTACallGraph(t *testing.T) {
 	}
 }
 
-// TestVTAProgVsFuncSet exemplifies and tests different possibilities
-// enabled by having an arbitrary function set as input to CallGraph
+// TestVTAProgVsFuncSet exemplifies and tests different possibilities enabled
+// by having an arbitrary function. That function is set as input to CallGraph
 // instead of the whole program (i.e., ssautil.AllFunctions(prog)).
 func TestVTAProgVsFuncSet(t *testing.T) {
 	prog, want, err := testProg(t, "testdata/src/callgraph_nested_ptr.go")
@@ -85,20 +84,13 @@ func TestVTAProgVsFuncSet(t *testing.T) {
 
 	allFuncs := ssautil.AllFunctions(prog)
 	g := CallGraph(allFuncs, cha.CallGraph(prog))
-	// VTA over the whole program will produce a call graph that
-	// includes Baz:(**i).Foo -> A.Foo, B.Foo.
+	// VTA over the whole program will produce a call graph that includes Baz:(**i).Foo -> A.Foo, B.Foo.
 	got := callGraphStr(g)
 	if diff := setdiff(want, got); len(diff) > 0 {
 		t.Errorf("computed callgraph %v should contain %v (diff: %v)", got, want, diff)
 	}
 
-	// Prune the set of program functions to exclude Bar(). This should
-	// yield a call graph that includes different set of callees for Baz
-	// Baz:(**i).Foo -> A.Foo
-	//
-	// Note that the exclusion of Bar can happen, for instance, if Baz is
-	// considered an entry point of some data flow analysis and Bar is
-	// provably (e.g., using CHA forward reachability) unreachable from Baz.
+	// Prune the set of program functions to exclude Bar().
 	noBarFuncs := make(map[*ssa.Function]bool)
 	for f, in := range allFuncs {
 		noBarFuncs[f] = in && (funcName(f) != "Bar")
@@ -111,10 +103,10 @@ func TestVTAProgVsFuncSet(t *testing.T) {
 	}
 }
 
-// TestVTAPanicMissingDefinitions tests if VTA gracefully handles the case
-// where VTA panics when a definition of a function or method is not
-// available, which can happen when using analysis package. A successful
-// test simply does not panic.
+// TestVTAPanicMissingDefinitions tests if VTA gracefully handles the case.
+// This happens where VTA panics when a definition of a function or method is
+// not available, which can happen when using analysis package. A successful
+// test does not panic.
 func TestVTAPanicMissingDefinitions(t *testing.T) {
 	run := func(pass *analysis.Pass) (any, error) {
 		s := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA)

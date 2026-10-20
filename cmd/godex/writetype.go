@@ -1,14 +1,8 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// This file implements writing of types. The functionality is lifted
-// directly from go/types, but now contains various modifications for
-// nicer output.
-//
-// TODO(gri) back-port once we have a fixed interface and once the
-// go/types API is not frozen anymore for the 1.3 release; and remove
-// this implementation if possible.
+// This file implements writing of types. The functionality is lifted directly
+// from go/types, but now contains various modifications for nicer output.
 
 package main
 
@@ -21,14 +15,12 @@ func (p *printer) writeType(this *types.Package, typ types.Type) {
 	p.writeTypeInternal(this, typ, make([]types.Type, 8))
 }
 
-// From go/types - leave for now to ease back-porting this code.
+// From go/types - leave to ease back-porting this code.
 const GcCompatibilityMode = false
 
 func (p *printer) writeTypeInternal(this *types.Package, typ types.Type, visited []types.Type) {
-	// Theoretically, this is a quadratic lookup algorithm, but in
-	// practice deeply nested composite types with unnamed component
-	// types are uncommon. This code is likely more efficient than
-	// using a map.
+	// Theoretically, this is a quadratic lookup algorithm, but in practice
+	// deeply nested composite types with unnamed component types are uncommon.
 	if slices.Contains(visited, typ) {
 		p.printf("○%T", typ) // cycle to typ
 		return
@@ -97,17 +89,7 @@ func (p *printer) writeTypeInternal(this *types.Package, typ types.Type, visited
 		p.writeSignatureInternal(this, t, visited)
 
 	case *types.Interface:
-		// We write the source-level methods and embedded types rather
-		// than the actual method set since resolved method signatures
-		// may have non-printable cycles if parameters have anonymous
-		// interface types that (directly or indirectly) embed the
-		// current interface. For instance, consider the result type
-		// of m:
-		//
-		//     type T interface{
-		//         m() interface{ T }
-		//     }
-		//
+		// We write the source-level methods and embedded types rather than the actual method set since resolved method signatures may have non-printable cycles.
 		n := t.NumMethods()
 		if n == 0 {
 			p.print("any")
@@ -186,9 +168,6 @@ func (p *printer) writeTypeInternal(this *types.Package, typ types.Type, visited
 					p.print(pkg.Path())
 					p.print(".")
 				}
-				// TODO(gri): function-local named types should be displayed
-				// differently from named types at package level to avoid
-				// ambiguity.
 			}
 			s = obj.Name()
 		}

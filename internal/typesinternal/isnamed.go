@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typesinternal
 
@@ -12,9 +11,6 @@ import (
 // IsTypeNamed reports whether t is (or is an alias for) a
 // package-level defined type with the given package path and one of
 // the given names. It returns false if t is nil.
-//
-// This function avoids allocating the concatenation of "pkg.Name",
-// which is important for the performance of syntax matching.
 func IsTypeNamed(t types.Type, pkgPath string, names ...string) bool {
 	if named, ok := types.Unalias(t).(*types.Named); ok {
 		tname := named.Obj()
@@ -28,7 +24,7 @@ func IsTypeNamed(t types.Type, pkgPath string, names ...string) bool {
 
 // IsPointerToNamed reports whether t is (or is an alias for) a pointer to a
 // package-level defined type with the given package path and one of the given
-// names. It returns false if t is not a pointer type.
+// names.
 func IsPointerToNamed(t types.Type, pkgPath string, names ...string) bool {
 	r := Unpointer(t)
 	if r == t {
@@ -40,9 +36,6 @@ func IsPointerToNamed(t types.Type, pkgPath string, names ...string) bool {
 // IsFunctionNamed reports whether obj is a package-level function
 // defined in the given package and has one of the given names.
 // It returns false if obj is nil.
-//
-// This function avoids allocating the concatenation of "pkg.Name",
-// which is important for the performance of syntax matching.
 func IsFunctionNamed(obj types.Object, pkgPath string, names ...string) bool {
 	f, ok := obj.(*types.Func)
 	return ok &&
@@ -52,12 +45,9 @@ func IsFunctionNamed(obj types.Object, pkgPath string, names ...string) bool {
 		slices.Contains(names, f.Name())
 }
 
-// IsMethodNamed reports whether obj is a method defined on a
-// package-level type with the given package and type name, and has
-// one of the given names. It returns false if obj is nil.
+// IsMethodNamed reports whether obj is a method defined on a package-level type with the given package and type name. It has one of the given names. It returns false if obj is nil.
 //
-// This function avoids allocating the concatenation of "pkg.TypeName.Name",
-// which is important for the performance of syntax matching.
+// This function avoids allocating the concatenation of "pkg.TypeName.Name", which is important for the performance of syntax matching.
 func IsMethodNamed(obj types.Object, pkgPath string, typeName string, names ...string) bool {
 	if fn, ok := obj.(*types.Func); ok {
 		if recv := fn.Signature().Recv(); recv != nil {

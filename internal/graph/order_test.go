@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package graph
 
@@ -33,9 +32,7 @@ func TestPostorder(t *testing.T) {
 				1: {2},
 				2: {3},
 			},
-			// DFS Walk:
-			// 1. Start at 0 -> visit 2 -> visit 3. Post-order: [3, 2, 0]
-			// 2. Start at 1 -> visit 2 (visited). Post-order: [3, 2, 0, 1]
+			// Start at a set value -> a later visit -> a later visit. Start at a set value -> a later visit (visited).
 			want: []int{3, 2, 0, 1},
 		},
 		{
@@ -45,9 +42,7 @@ func TestPostorder(t *testing.T) {
 				0: {1},
 				2: {3},
 			},
-			// DFS Walk:
-			// 1. Start at 0 -> visit 1. Post: [1, 0]
-			// 2. Start at 2 -> visit 3. Post: [1, 0, 3, 2]
+			// Start at a set value -> one visit. Start at a set value -> a later visit.
 			want: []int{1, 0, 3, 2},
 		},
 		{
@@ -58,8 +53,6 @@ func TestPostorder(t *testing.T) {
 				1: {2},
 				2: {0},
 			},
-			// Start 0 -> 1 -> 2 -> 0 (on stack, skip).
-			// Post: [2, 1, 0].
 			want: []int{2, 1, 0},
 		},
 		{
@@ -96,8 +89,6 @@ func TestPostorder_LargeChain(t *testing.T) {
 		if i < n-1 {
 			adj[int(i)] = []int{i + 1}
 		}
-		// Postorder of 0->1->2... is [n-1, n-2, ..., 0]
-		// Because we visit children fully before adding parent.
 	}
 	// Construct expected want:
 	for i := range n {
@@ -116,8 +107,6 @@ func TestReversePostorder(t *testing.T) {
 		0: {1, 2},
 		1: {2},
 	})
-	// Postorder: [2, 1, 0]
-	// ReversePostorder: [0, 1, 2]
 	want := []int{0, 1, 2}
 	got := ReversePostorder(g)
 	if !reflect.DeepEqual(got, want) {

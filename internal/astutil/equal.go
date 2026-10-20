@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -10,15 +9,8 @@ import (
 	"reflect"
 )
 
-// Equal reports whether two nodes are structurally equal,
-// ignoring fields of type [token.Pos], [ast.Object],
-// and [ast.Scope], and comments.
-//
-// The operands x and y may be nil.
-// A nil slice is not equal to an empty slice.
-//
-// The provided function determines whether two identifiers
-// should be considered identical.
+// Equal reports whether nodes are structurally equal, ignoring fields of
+// type [token.Pos], [ast.Object], and [ast.Scope], and comments.
 func Equal(x, y ast.Node, identical func(x, y *ast.Ident) bool) bool {
 	if x == nil || y == nil {
 		return x == y
@@ -26,9 +18,8 @@ func Equal(x, y ast.Node, identical func(x, y *ast.Ident) bool) bool {
 	return equal(reflect.ValueOf(x), reflect.ValueOf(y), identical)
 }
 
-// EqualSyntax reports whether x and y are equal.
-// Identifiers are considered equal if they are spelled the same.
-// Comments are ignored.
+// EqualSyntax reports whether x and y are equal. Identifiers are considered
+// equal if they are spelled the same. Comments are ignored.
 func EqualSyntax(x, y ast.Expr) bool {
 	sameName := func(x, y *ast.Ident) bool { return x.Name == y.Name }
 	return Equal(x, y, sameName)

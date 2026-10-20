@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package copylock defines an Analyzer that checks for locks
 // erroneously passed by value.
@@ -81,8 +80,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// checkCopyLocksAssign checks whether an assignment
-// copies a lock.
+// checkCopyLocksAssign checks whether an assignment copies a lock.
 func checkCopyLocksAssign(pass *analysis.Pass, assign *ast.AssignStmt, goversion string, parent ast.Node) {
 	lhs := assign.Lhs
 	for i, x := range assign.Rhs {
@@ -92,9 +90,8 @@ func checkCopyLocksAssign(pass *analysis.Pass, assign *ast.AssignStmt, goversion
 		}
 	}
 
-	// After GoVersion 1.22, loop variables are implicitly copied on each iteration.
-	// So a for statement may inadvertently copy a lock when any of the
-	// iteration variables contain locks.
+	// So a for statement may inadvertently copy a lock when any of the iteration
+	// variables contain locks.
 	if assign.Tok == token.DEFINE && versions.AtLeast(goversion, versions.Go1_22) {
 		if parent, _ := parent.(*ast.ForStmt); parent != nil && parent.Init == assign {
 			for _, l := range lhs {
@@ -159,9 +156,7 @@ func checkCopyLocksCallExpr(pass *analysis.Pass, ce *ast.CallExpr) {
 	if fun, ok := pass.TypesInfo.Uses[id].(*types.Builtin); ok {
 		switch fun.Name() {
 		case "len", "cap", "Sizeof", "Offsetof", "Alignof":
-			// The argument of this operation is used only
-			// for its type (e.g. len(array)), or the operation
-			// does not copy a lock (e.g. len(slice)).
+			// The argument of this operation is used only for its type (e.g. len(array)), or the operation does not copy a lock.
 			return
 		}
 	}
@@ -172,10 +167,9 @@ func checkCopyLocksCallExpr(pass *analysis.Pass, ce *ast.CallExpr) {
 	}
 }
 
-// checkCopyLocksFunc checks whether a function might
-// inadvertently copy a lock, by checking whether
-// its receiver, parameters, or return values
-// are locks.
+// checkCopyLocksFunc checks whether a function might inadvertently copy a
+// lock, by checking whether its receiver, parameters, or return values are
+// locks.
 func checkCopyLocksFunc(pass *analysis.Pass, name string, recv *ast.FieldList, typ *ast.FuncType) {
 	if recv != nil && len(recv.List) > 0 {
 		expr := recv.List[0].Type
@@ -193,15 +187,10 @@ func checkCopyLocksFunc(pass *analysis.Pass, name string, recv *ast.FieldList, t
 		}
 	}
 
-	// Don't check typ.Results. If T has a Lock field it's OK to write
-	//     return T{}
-	// because that is returning the zero value. Leave result checking
-	// to the return statement.
 }
 
-// checkCopyLocksRange checks whether a range statement
-// might inadvertently copy a lock by checking whether
-// any of the range variables are locks.
+// checkCopyLocksRange checks whether a range statement might inadvertently
+// copy a lock by checking whether any of the range variables are locks.
 func checkCopyLocksRange(pass *analysis.Pass, r *ast.RangeStmt) {
 	checkCopyLocksRangeVar(pass, r.Tok, r.Key)
 	checkCopyLocksRangeVar(pass, r.Tok, r.Value)
@@ -303,13 +292,8 @@ func lockPath(tpkg *types.Package, typ types.Type, seen map[types.Type]bool) typ
 					//
 					//  func _[Mutex interface{ ~sync.Mutex; M() }](m Mutex) {}
 					//
-					// Here the naive error message will be something like "passes lock
-					// by value: Mutex contains sync.Mutex". This is misleading because
-					// the local type parameter doesn't actually contain sync.Mutex,
-					// which lacks the M method.
-					//
-					// With tilde, it is clearer that the containment is via an
-					// approximation element.
+					// Here the naive error message will be something like "passes lock by
+					// value: Mutex contains sync.Mutex".
 					subpath[len(subpath)-1] = "~" + subpath[len(subpath)-1]
 				}
 				return append(subpath, typ.String())
@@ -337,23 +321,19 @@ func lockPath(tpkg *types.Package, typ types.Type, seen map[types.Type]bool) typ
 		return nil
 	}
 
-	// We're only interested in the case in which the underlying
-	// type is a struct. (Interfaces and pointers are safe to copy.)
+	// We're only interested in the case in which the underlying type is a struct.
 	styp, ok := typ.Underlying().(*types.Struct)
 	if !ok {
 		return nil
 	}
 
-	// We're looking for cases in which a pointer to this type
-	// is a sync.Locker, but a value is not. This differentiates
-	// embedded interfaces from embedded values.
+	// We're looking for cases in which a pointer to this type is a sync.Locker,
+	// but a value is not.
 	if types.Implements(types.NewPointer(typ), lockerType) && !types.Implements(typ, lockerType) {
 		return []string{typ.String()}
 	}
 
-	// In go1.10, sync.noCopy did not implement Locker.
-	// (The Unlock method was added only in CL 121876.)
-	// TODO(adonovan): remove workaround when we drop go1.10.
+	// NoCopy did not implement Locker.
 	if typesinternal.IsTypeNamed(typ, "sync", "noCopy") {
 		return []string{typ.String()}
 	}

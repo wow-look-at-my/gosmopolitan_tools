@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package checker_test
 
@@ -136,15 +135,8 @@ func NewT1() *T1 { return &T1{T} }
 		// parse/type errors
 		{name: "skip-error", pattern: []string{rderrFile}, analyzers: []*analysis.Analyzer{renameAnalyzer}, code: 1},
 		// RunDespiteErrors allows a driver to run an Analyzer even after parse/type errors.
-		//
-		// The noop analyzer doesn't use facts, so the driver loads only the root
-		// package from source. For the rest, it asks 'go list' for export data,
-		// which fails because the compiler encounters the type error.  Since the
-		// errors come from 'go list', the driver doesn't run the analyzer.
 		{name: "despite-error", pattern: []string{rderrFile}, analyzers: []*analysis.Analyzer{noop}, code: exitCodeFailed},
-		// The noopfact analyzer does use facts, so the driver loads source for
-		// all dependencies, does type checking itself, recognizes the error as a
-		// type error, and runs the analyzer.
+		// The noopfact analyzer does use facts, so the driver loads source for all dependencies, does type checking itself, recognizes the error as a type error.
 		{name: "despite-error-fact", pattern: []string{rderrFile}, analyzers: []*analysis.Analyzer{noopWithFact}, code: exitCodeFailed},
 		// combination of parse/type errors and no errors
 		{name: "despite-error-and-no-error", pattern: []string{rderrFile, "sort"}, analyzers: []*analysis.Analyzer{renameAnalyzer, noop}, code: exitCodeFailed},
@@ -160,7 +152,7 @@ func NewT1() *T1 { return &T1{T} }
 		{name: "no-errors", pattern: []string{"sort"}, analyzers: []*analysis.Analyzer{renameAnalyzer, noop}, code: exitCodeSuccess},
 		// duplicate list error with no findings
 		{name: "list-error", pattern: []string{cperrFile}, analyzers: []*analysis.Analyzer{noop}, code: exitCodeFailed},
-		// duplicate list errors with findings (issue #67790)
+		// duplicate list errors with findings
 		{name: "list-error-findings", pattern: []string{cperrFile}, analyzers: []*analysis.Analyzer{renameAnalyzer}, code: exitCodeDiagnostics},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -301,6 +293,4 @@ hello from other
 		t.Error("analyzer did not run")
 	}
 
-	// TODO(adonovan): test that fixes are applied to the
-	// pass.ReadFile virtual file tree.
 }

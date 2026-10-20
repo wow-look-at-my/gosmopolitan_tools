@@ -1,27 +1,18 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package intsets provides Sparse, a compact and fast representation
-// for sparse sets of int values.
+// Package intsets provides Sparse, a compact and fast representation for
+// sparse sets of int values.
 //
-// The time complexity of the operations Len, Insert, Remove and Has
-// is in O(n) but in practice those methods are faster and more
-// space-efficient than equivalent operations on sets based on the Go
-// map type.  The IsEmpty, Min, Max, Clear and TakeMin operations
-// require constant time.
+// The time complexity of the operations Len, Insert, Remove. Has is in O(n)
+// but in practice. Those methods are faster and more space-efficient than
+// equivalent operations on sets based on the Go map type. The IsEmpty, Min,
+// Max, Clear and TakeMin operations require constant time.
 package intsets // import "golang.org/x/tools/container/intsets"
 
 // TODO(adonovan):
-// - Add InsertAll(...int), RemoveAll(...int)
+
 // - Add 'bool changed' results for {Intersection,Difference}With too.
-//
-// TODO(adonovan): implement Dense, a dense bit vector with a similar API.
-// The space usage would be proportional to Max(), not Len(), and the
-// implementation would be based upon big.Int.
-//
-// TODO(adonovan): opt: make UnionWith and Difference faster.
-// These are the hot-spots for go/pointer.
 
 import (
 	"bytes"
@@ -31,19 +22,8 @@ import (
 
 // A Sparse is a set of int values.
 // Sparse operations (even queries) are not concurrency-safe.
-//
-// The zero value for Sparse is a valid empty set.
-//
-// Sparse sets must be copied using the Copy method, not by assigning
-// a Sparse value.
 type Sparse struct {
 	// An uninitialized Sparse represents an empty set.
-	// An empty set may also be represented by
-	//  root.next == root.prev == &root.
-	//
-	// The root is always the block with the smallest offset.
-	// It can be empty, but only if it is the only block; in that case, offset is
-	// MaxInt (which is not a valid offset).
 	root block
 }
 
@@ -94,15 +74,8 @@ func ntz(x word) int {
 
 // -- block ------------------------------------------------------------
 
-// A set is represented as a circular doubly-linked list of blocks,
-// each containing an offset and a bit array of fixed size
-// bitsPerBlock; the blocks are ordered by increasing offset.
-//
-// The set contains an element x iff the block whose offset is x - (x
-// mod bitsPerBlock) has the bit (x mod bitsPerBlock) set, where mod
-// is the Euclidean remainder.
-//
-// A block may only be empty transiently.
+// A set is represented as a circular doubly-linked list of blocks, each
+// containing an offset and a bit array of fixed size bitsPerBlock.
 type block struct {
 	offset     int                 // offset mod bitsPerBlock == 0
 	bits       [wordsPerBlock]word // contains at least one set bit
@@ -128,9 +101,8 @@ func (b *block) insert(i uint) bool {
 	return false
 }
 
-// remove clears the block's ith bit and
-// returns true if the bit was previously set.
-// NB: may leave the block empty.
+// remove clears the block's ith bit and returns true if the bit was set. NB:
+// may leave the block empty.
 func (b *block) remove(i uint) bool {
 	w, mask := wordMask(i)
 	if b.bits[w]&mask != 0 {
@@ -165,8 +137,7 @@ func (b *block) len() int {
 	return l
 }
 
-// max returns the maximum element of the block.
-// The block must not be empty.
+// max returns the maximum element of the block. The block must not be empty.
 func (b *block) max() int {
 	bi := b.offset + bitsPerBlock
 	// Decrement bi by number of high zeros in last.bits.
@@ -179,10 +150,9 @@ func (b *block) max() int {
 	panic("BUG: empty block")
 }
 
-// min returns the minimum element of the block,
-// and also removes it if take is set.
-// The block must not be initially empty.
-// NB: may leave the block empty.
+// min returns the minimum element of the block, and also removes it if take
+// is set. The block must not be initially empty. NB: may leave the block
+// empty.
 func (b *block) min(take bool) int {
 	for i, w := range b.bits {
 		if w != 0 {
@@ -244,13 +214,10 @@ func offsetAndBitIndex(x int) (int, uint) {
 
 // -- Sparse --------------------------------------------------------------
 
-// none is a shared, empty, sentinel block that indicates the end of a block
-// list.
+// none is a shared, empty, sentinel block that indicates the end of a block list.
 var none block
 
-// Dummy type used to generate an implicit panic. This must be defined at the
-// package level; if it is defined inside a function, it prevents the inlining
-// of that function.
+// Dummy type used to generate an implicit panic.
 type to_copy_a_sparse_you_must_call_its_Copy_method struct{}
 
 // init ensures s is properly initialized.
@@ -261,12 +228,7 @@ func (s *Sparse) init() {
 		root.next = root
 		root.prev = root
 	} else if root.next.prev != root {
-		// Copying a Sparse x leads to pernicious corruption: the
-		// new Sparse y shares the old linked list, but iteration
-		// on y will never encounter &y.root so it goes into a
-		// loop.  Fail fast before this occurs.
-		// We don't want to call panic here because it prevents the
-		// inlining of this function.
+		// Copying a Sparse x leads to pernicious corruption.
 		_ = (any(nil)).(to_copy_a_sparse_you_must_call_its_Copy_method)
 	}
 }
@@ -334,9 +296,8 @@ func (s *Sparse) LowerBound(x int) int {
 	return MaxInt
 }
 
-// block returns the block that would contain offset,
-// or nil if s contains no such block.
-// Precondition: offset is a multiple of bitsPerBlock.
+// block returns the block that would contain offset, or nil if s contains no
+// such block. Precondition: offset is a multiple of bitsPerBlock.
 func (s *Sparse) block(offset int) *block {
 	for b := s.first(); b != &none && b.offset <= offset; b = s.next(b) {
 		if b.offset == offset {
@@ -418,14 +379,8 @@ func (s *Sparse) Clear() {
 	}
 }
 
-// If set s is non-empty, TakeMin sets *p to the minimum element of
-// the set s, removes that element from the set and returns true.
-// Otherwise, it returns false and *p is undefined.
-//
-// This method may be used for iteration over a worklist like so:
-//
-//	var x int
-//	for worklist.TakeMin(&x) { use(x) }
+// TakeMin sets *p to the minimum element of the set s, removes that element
+// from the set and returns true. Do this if set s is non-empty.
 func (s *Sparse) TakeMin(p *int) bool {
 	if s.IsEmpty() {
 		return false
@@ -447,10 +402,6 @@ func (s *Sparse) Has(x int) bool {
 }
 
 // forEach applies function f to each element of the set s in order.
-//
-// f must not mutate s.  Consequently, forEach is not safe to expose
-// to clients.  In any case, using "range s.AppendTo()" allows more
-// natural control flow with continue/break/return.
 func (s *Sparse) forEach(f func(int)) {
 	for b := s.first(); b != &none; b = s.next(b) {
 		b.forEach(f)
@@ -489,8 +440,7 @@ func (s *Sparse) insertBlockBefore(next *block) *block {
 	}
 
 	if next == &s.root {
-		// Special case: we need to create a new block that will become the root
-		// block.The old root block becomes the second block.
+		// Special case.
 		second := s.root
 		s.root = block{
 			next: &second,
@@ -554,7 +504,6 @@ func (s *Sparse) IntersectionWith(x *Sparse) {
 			if sum != 0 {
 				sb = s.next(sb)
 			} else {
-				// sb will be overwritten or removed
 			}
 
 			xb = x.next(xb)
@@ -605,7 +554,6 @@ func (s *Sparse) Intersection(x, y *Sparse) {
 		if sum != 0 {
 			sb = s.next(sb)
 		} else {
-			// sb will be overwritten or removed
 		}
 
 		xb = x.next(xb)
@@ -799,7 +747,6 @@ func (s *Sparse) Difference(x, y *Sparse) {
 			if sum != 0 {
 				sb = s.next(sb)
 			} else {
-				// sb will be overwritten or removed
 			}
 
 			yb = y.next(yb)
@@ -1000,9 +947,8 @@ func (s *Sparse) String() string {
 	return buf.String()
 }
 
-// BitString returns the set as a string of 1s and 0s denoting the sum
-// of the i'th powers of 2, for each i in s.  A radix point, always
-// preceded by a digit, appears if the sum is non-integral.
+// A radix point, always preceded by a digit, appears if the sum is
+// non-integral.
 //
 // Examples:
 //
@@ -1042,8 +988,7 @@ func (s *Sparse) BitString() string {
 	return string(b)
 }
 
-// GoString returns a string showing the internal representation of
-// the set s.
+// GoString returns a string showing the internal representation of the set s.
 func (s *Sparse) GoString() string {
 	var buf bytes.Buffer
 	for b := s.first(); b != &none; b = s.next(b) {

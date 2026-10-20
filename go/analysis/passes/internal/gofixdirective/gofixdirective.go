@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package gofixdirective searches for and validates go:fix directives. The
 // go/analysis/passes/inline package uses findgofix to perform inlining.
@@ -30,8 +29,6 @@ type Handler interface {
 	HandleConst(name, rhs *ast.Ident)
 }
 
-// Find finds functions and constants annotated with an appropriate "//go:fix"
-// comment (the syntax proposed by #32816), and calls handler methods for each one.
 // h may be nil.
 func Find(pass *analysis.Pass, root inspector.Cursor, h Handler) {
 	for cur := range root.Preorder((*ast.FuncDecl)(nil), (*ast.GenDecl)(nil)) {
@@ -77,13 +74,6 @@ func findAlias(pass *analysis.Pass, spec *ast.TypeSpec, declInline bool, h Handl
 	}
 
 	// Disallow inlines of type expressions containing array types.
-	// Given an array type like [N]int where N is a named constant, go/types provides
-	// only the value of the constant as an int64. So inlining A in this code:
-	//
-	//    const N = 5
-	//    type A = [N]int
-	//
-	// would result in [5]int, breaking the connection with N.
 	for n := range ast.Preorder(spec.Type) {
 		if ar, ok := n.(*ast.ArrayType); ok && ar.Len != nil {
 			// Make an exception when the array length is a literal int.

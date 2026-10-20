@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -37,24 +36,8 @@ var AppendClippedAnalyzer = &analysis.Analyzer{
 // with a call to go1.21's slices.Concat(base, a, b, c), or simpler
 // replacements such as slices.Clone(a) in degenerate cases.
 //
-// We offer bytes.Clone in preference to slices.Clone where
-// appropriate, if the package already imports "bytes";
-// their behaviors are identical.
-//
-// The base expression must denote a clipped slice (see [isClipped]
-// for definition), otherwise the replacement might eliminate intended
-// side effects to the base slice's array.
-//
-// Examples:
-//
-//	append(append(append(x[:0:0], a...), b...), c...) -> slices.Concat(a, b, c)
-//	append(append(slices.Clip(a), b...)               -> slices.Concat(a, b)
-//	append([]T{}, a...)                               -> slices.Clone(a)
-//	append([]string(nil), os.Environ()...)            -> os.Environ()
-//	append(append([]T{}, slices.Clone(a)...), b...)   -> slices.Concat(a, b)
-//
-// The fix does not always preserve nilness the of base slice when the
-// addends (a, b, c) are all empty (see #73557).
+// We offer bytes.Clone in preference to slices.Clone where appropriate, if
+// the package already imports "bytes"; their behaviors are identical.
 func appendclipped(pass *analysis.Pass) (any, error) {
 	// Skip the analyzer in packages where its
 	// fixes would create an import cycle.
@@ -66,31 +49,21 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 
 	// sliceArgs is a non-empty (reversed) list of slices to be concatenated.
 	simplifyAppendEllipsis := func(file *ast.File, call *ast.CallExpr, base ast.Expr, sliceArgs []ast.Expr) {
-		// Only appends whose base is a clipped slice can be simplified:
-		// We must conservatively assume an append to an unclipped slice
-		// such as append(y[:0], x...) is intended to have effects on y.
+		// Only appends whose base is a clipped slice can be simplified.
 		clipped, empty := clippedSlice(info, base)
 		if clipped == nil {
 			return
 		}
 
-		// If any slice arg has a different type from the base
-		// (and thus the result) don't offer a fix, to avoid
-		// changing the return type, e.g:
-		//
+		// If any slice arg has a different type from the base (and thus the result)
+		// don't offer a fix, to avoid changing the return type, e.g:
 		//     type S []int
-		//   - x := append([]int(nil), S{}...) // x : []int
-		//   + x := slices.Clone(S{})          // x : S
-		//
-		// We could do better by inserting an explicit generic
-		// instantiation:
-		//
+		//   - x := append([]int(nil), S{}...) // x: []int
+		//   + x := slices.Clone(S{}) // x: S
+		// We could do better by inserting an explicit generic instantiation:
 		//   x := slices.Clone[[]int](S{})
-		//
-		// but this is often unnecessary and unwanted, such as
-		// when the value is used an in assignment context that
-		// provides an explicit type:
-		//
+		// but this is often unnecessary and unwanted, such as when the value is
+		// used an in assignment context that provides an explicit type:
 		//   var x []int = slices.Clone(S{})
 		baseType := info.TypeOf(base)
 		for _, arg := range sliceArgs {
@@ -100,31 +73,23 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 		}
 
 		// If the (clipped) base is empty, it may be safely ignored.
-		// Otherwise treat it (or its unclipped subexpression, if possible)
-		// as just another arg (the first) to Concat.
-		//
-		// TODO(adonovan): not so fast! If all the operands
-		// are empty, then the nilness of base matters, because
-		// append preserves nilness whereas Concat does not (#73557).
 		if !empty {
 			sliceArgs = append(sliceArgs, clipped)
 		}
 		slices.Reverse(sliceArgs)
 
-		// The replacement (slices.Concat, or slices.Clone in the
-		// sole-operand degenerate case below) allocates a new slice,
-		// so a slices.Clone or bytes.Clone wrapping any operand is
-		// redundant and can be unwrapped:
+		// The replacement (slices.Concat, or slices.Clone in the sole-operand
+		// degenerate case below) allocates a new slice, so a slices.Clone or
+		// bytes.Clone wrapping any operand is redundant and can be unwrapped:
 		//
 		//	append(append([]T{}, slices.Clone(x)...), y...) -> slices.Concat(x, y)
 		//	append([]T{}, slices.Clone(x)...)               -> slices.Clone(x)
 		for i, arg := range sliceArgs {
 			if argCall, ok := ast.Unparen(arg).(*ast.CallExpr); ok {
 				obj := typeutil.Callee(info, argCall)
-				// The type check guards against bytes.Clone, whose
-				// result ([]byte) may differ from its argument's
-				// type (e.g. a named []byte type); unwrapping it
-				// would then change the type of the whole expression.
+				// The type check guards against bytes.Clone, whose result ([]byte) may
+				// differ from its argument's type (e.g. a named []byte type). Unwrapping
+				// it would then change the type of the whole expression.
 				if (typesinternal.IsFunctionNamed(obj, "slices", "Clone") ||
 					typesinternal.IsFunctionNamed(obj, "bytes", "Clone")) &&
 					types.Identical(info.TypeOf(argCall.Args[0]), baseType) {
@@ -159,10 +124,9 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 				}
 			}
 
-			// If the slice type is []byte, and the file imports
-			// "bytes" but not "slices", prefer the (behaviorally
-			// identical) bytes.Clone for local consistency.
-			// https://go.dev/issue/70815#issuecomment-2671572984
+			// If the slice type is []byte, and the file imports "bytes" but not
+			// "slices", prefer the (behaviorally identical) bytes.Clone for local
+			// consistency.
 			fileImports := func(path string) bool {
 				return slices.ContainsFunc(file.Imports, func(spec *ast.ImportSpec) bool {
 					return first(strconv.Unquote(spec.Path.Value)) == path
@@ -174,10 +138,7 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 				"bytes",
 				"slices")
 
-			// append(zerocap, s...) -> slices.Clone(s) or bytes.Clone(s)
-			//
-			// This is unsound if s is empty and its nilness
-			// differs from zerocap (#73557).
+			// append(zerocap, s...) -> slices.Clone(s) or bytes.Clone(s).
 			prefix, importEdits := refactor.AddImport(info, file, clonepkg, clonepkg, "Clone", call.Pos())
 			message := fmt.Sprintf("Replace append with %s.Clone", clonepkg)
 			pass.Report(analysis.Diagnostic{
@@ -197,8 +158,6 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 		}
 
 		// append(append(append(base, a...), b..., c...) -> slices.Concat(base, a, b, c)
-		//
-		// This is unsound if all slices are empty and base is non-nil (#73557).
 		prefix, importEdits := refactor.AddImport(info, file, "slices", "slices", "Concat", call.Pos())
 		pass.Report(analysis.Diagnostic{
 			Pos:     call.Pos(),
@@ -228,9 +187,7 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			// Recursively unwrap ellipsis calls to append, so
-			//   append(append(append(base, a...), b..., c...)
-			// yields (base, [c b a]).
+			// Recursively unwrap ellipsis calls to append.
 			base, slices := ast.Expr(call), []ast.Expr(nil) // base case: (call, nil)
 		again:
 			if call, ok := base.(*ast.CallExpr); ok {
@@ -254,22 +211,13 @@ func appendclipped(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// clippedSlice returns res != nil if e denotes a slice that is
-// definitely clipped, that is, its len(s)==cap(s).
+// clippedSlice returns res != nil if e denotes a slice that is definitely
+// clipped, that is, with len(s)==cap(s). The value of res is either e or a
+// subexpression of e that denotes the same slice without the clipping
+// operation. It also reports whether the slice is definitely empty.
 //
-// The value of res is either the same as e or is a subexpression of e
-// that denotes the same slice but without the clipping operation.
-//
-// In addition, it reports whether the slice is definitely empty.
-//
-// Examples of clipped slices:
-//
-//	x[:0:0]				(empty)
-//	[]T(nil)			(empty)
-//	Slice{}				(empty)
-//	x[:len(x):len(x)]		(nonempty)  res=x
-//	x[:k:k]	 	         	(nonempty)
-//	slices.Clip(x)			(nonempty)  res=x
+//	x[:0:0]  []T(nil)  Slice{}                  (empty)
+//	x[:len(x):len(x)]  x[:k:k]  slices.Clip(x)  (nonempty)
 //
 // TODO(adonovan): Add a check that the expression x has no side effects in
 // case x[:len(x):len(x)] -> x. Now the program behavior may change.

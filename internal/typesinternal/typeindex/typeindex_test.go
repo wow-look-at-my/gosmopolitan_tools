@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeindex_test
 
@@ -47,7 +46,6 @@ func TestIndex(t *testing.T) {
 			}
 		}
 	}
-	// sanity check (expect about 60 of each)
 	if wantUses == nil || wantCalls == nil {
 		t.Fatalf("no calls or uses of fmt.Sprintf in net/http")
 	}
@@ -83,13 +81,6 @@ func loadNetHTTP(tb testing.TB) *packages.Package {
 func BenchmarkIndex(b *testing.B) {
 	testenv.NeedsGoPackages(b)
 	// Load net/http, a large package, and find calls to net.Dial.
-	//
-	// There is currently exactly one, which provides an extreme
-	// demonstration of the performance advantage of the Index.
-	//
-	// Index construction costs approximately 7x the cursor
-	// traversal, so it breaks even when it replaces 7 passes.
-	// The cost of index lookup is approximately zero.
 	pkg := loadNetHTTP(b)
 
 	// Build the Inspector (~2.8ms).

@@ -1,18 +1,12 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package difftest supplies a set of tests that will operate on any
 // implementation of a diff algorithm as exposed by
 // "golang.org/x/tools/internal/diff"
 package difftest
 
-// There are two kinds of tests, semantic tests, and 'golden data' tests.
-// The semantic tests check that the computed diffs transform the input to
-// the output, and that 'patch' accepts the computed unified diffs.
-// The other tests just check that Edits and LineEdits haven't changed
-// unexpectedly. These fields may need to be changed when the diff algorithm
-// changes.
+// There are kinds of tests, semantic tests, and 'golden data' tests.
 
 import (
 	"testing"
@@ -122,7 +116,7 @@ var TestCases = []struct {
 }, {
 	Name: "delete_empty",
 	In:   "meow",
-	Out:  "", // GNU diff -u special case: +0,0
+	Out:  "",
 	Unified: UnifiedPrefix + `
 @@ -1 +0,0 @@
 -meow
@@ -132,7 +126,7 @@ var TestCases = []struct {
 	LineEdits: []diff.Edit{{Start: 0, End: 4, New: ""}},
 }, {
 	Name: "append_empty",
-	In:   "", // GNU diff -u special case: -0,0
+	In:   "",
 	Out:  "AB\nC",
 	Unified: UnifiedPrefix + `
 @@ -0,0 +1,2 @@
@@ -143,22 +137,8 @@ var TestCases = []struct {
 	Edits:     []diff.Edit{{Start: 0, End: 0, New: "AB\nC"}},
 	LineEdits: []diff.Edit{{Start: 0, End: 0, New: "AB\nC"}},
 },
-	// TODO(adonovan): fix this test: GNU diff -u prints "+1,2", Unifies prints "+1,3".
-	// 	{
-	// 		Name: "add_start",
-	// 		In:   "A",
-	// 		Out:  "B\nCA",
-	// 		Unified: UnifiedPrefix + `
-	// @@ -1 +1,2 @@
-	// -A
-	// \ No newline at end of file
-	// +B
-	// +CA
-	// \ No newline at end of file
-	// `[1:],
-	// 		Edits:     []diff.TextEdit{{Span: newSpan(0, 0), NewText: "B\nC"}},
-	// 		LineEdits: []diff.TextEdit{{Span: newSpan(0, 0), NewText: "B\nC"}},
-	// 	},
+	// TODO(adonovan): fix this test: GNU diff -u prints "+1,2", Unifies prints
+	// "+1,3". { Name.
 	{
 		Name: "add_end",
 		In:   "A",

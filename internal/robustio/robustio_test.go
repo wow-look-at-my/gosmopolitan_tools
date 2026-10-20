@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package robustio_test
 
@@ -82,7 +81,6 @@ func TestFileInfo(t *testing.T) {
 		}
 	})
 
-	// Two hard-linked files have the same ID.
 	t.Run("hardlink", func(t *testing.T) {
 		hardlink := filepath.Join(t.TempDir(), "hardlink")
 		checkOSLink(t, os.Link(real, hardlink))

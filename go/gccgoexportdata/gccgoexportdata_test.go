@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gccgoexportdata_test
 
@@ -12,11 +11,8 @@ import (
 	"golang.org/x/tools/go/gccgoexportdata"
 )
 
-// Test ensures this package can read gccgo export data from the
-// .go_export from a standalone ELF file or such a file in an archive
-// library.
-//
-// The testdata/{short,long}.a ELF archive files were produced by:
+// Test ensures this package can read gccgo export data from the .go_export
+// from a standalone ELF. File or such a file in an archive library.
 //
 //	$ echo 'package foo; func F()' > foo.go
 //	$ gccgo -c -fgo-pkgpath blah foo.go
@@ -25,10 +21,8 @@ import (
 //	$ objcopy -j .go_export foo.o name-longer-than-16-bytes.gox
 //	$ ar q long.a name-longer-than-16-bytes.gox
 //
-// The file long.a contains an archive string table.
-//
-// The errors.gox file (an ELF object file) comes from the toolchain's
-// standard library.
+// The file long.a contains an archive string table. The errors.gox file (an
+// ELF object file) comes from the toolchain's standard library.
 func Test(t *testing.T) {
 	for _, test := range []struct {
 		filename, path, member, wantType string

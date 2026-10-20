@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package buildutil
 
@@ -26,8 +25,6 @@ import (
 //
 // The displayPath function, if provided, is used to transform the
 // filename that will be attached to the ASTs.
-//
-// TODO(adonovan): call this from go/loader.parseFiles when the tree thaws.
 func ParseFile(fset *token.FileSet, ctxt *build.Context, displayPath func(string) string, dir string, file string, mode parser.Mode) (*ast.File, error) {
 	if !IsAbsPath(ctxt, file) {
 		file = JoinPath(ctxt, dir, file)
@@ -55,13 +52,7 @@ func ContainingPackage(ctxt *build.Context, dir, filename string) (*build.Packag
 		filename = JoinPath(ctxt, dir, filename)
 	}
 
-	// We must not assume the file tree uses
-	// "/" always,
-	// `\` always,
-	// or os.PathSeparator (which varies by platform),
-	// but to make any progress, we are forced to assume that
-	// paths will not use `\` unless the PathSeparator
-	// is also `\`, thus we can rely on filepath.ToSlash for some sanity.
+	// We must not assume the file tree uses "/" always, `\` always, or os.PathSeparator (which varies by platform), but to make any progress.
 
 	dirSlash := path.Dir(filepath.ToSlash(filename)) + "/"
 
@@ -92,9 +83,7 @@ func HasSubdir(ctxt *build.Context, root, dir string) (rel string, ok bool) {
 		return
 	}
 
-	// Try expanding symlinks and comparing
-	// expanded against unexpanded and
-	// expanded against expanded.
+	// Try expanding symlinks and comparing expanded against unexpanded and expanded against expanded.
 	rootSym, _ := filepath.EvalSymlinks(root)
 	dirSym, _ := filepath.EvalSymlinks(dir)
 

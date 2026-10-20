@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline_test
 
@@ -26,27 +25,12 @@ import (
 
 var packagesFlag = flag.String("packages", "", "set of packages for TestEverything")
 
-// TestEverything invokes the inliner on every single call site in a
-// given package. and checks that it produces either a reasonable
-// error, or output that parses and type-checks.
+// TestEverything invokes the inliner on every call site in a given package.
+// and checks that it produces either a reasonable error, or output that
+// parses and type-checks.
 //
-// It does nothing during ordinary testing, but may be used to find
-// inlining bugs in large corpora.
-//
-// Use this command to inline everything in golang.org/x/tools:
-//
-// $ go test ./internal/refactor/inline/ -run=Everything -packages=../../../
-//
-// And these commands to inline everything in the kubernetes repository:
-//
-// $ go test -c -o /tmp/everything ./internal/refactor/inline/
-// $ (cd kubernetes && /tmp/everything -test.run=Everything -packages=./...)
-//
-// TODO(adonovan):
-//   - report counters (number of attempts, failed AnalyzeCallee, failed
-//     Inline, etc.)
-//   - Make a pretty log of the entire output so that we can peruse it
-//     for opportunities for systematic improvement.
+// It does nothing during ordinary testing, but may be used to find inlining
+// bugs in large corpora.
 func TestEverything(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 	if testing.Short() {
@@ -68,8 +52,7 @@ func TestEverything(t *testing.T) {
 	if err != nil {
 		t.Errorf("Load: %v", err)
 	}
-	// Report parse/type errors.
-	// Also, build transitive dependency mapping.
+	// Report parse/type errors. Also, build transitive dependency mapping.
 	deps := make(map[string]*packages.Package) // key is PkgPath
 	packages.Visit(pkgs, nil, func(pkg *packages.Package) {
 		deps[pkg.Types.Path()] = pkg
@@ -210,11 +193,7 @@ func TestEverything(t *testing.T) {
 							typeErrors = append(typeErrors, err.Error())
 						},
 						Importer: importerFunc(func(importPath string) (*types.Package, error) {
-							// Note: deps is properly keyed by package path,
-							// not import path, but we can't assume
-							// Package.Imports[importPath] exists in the
-							// case of newly added imports of indirect
-							// dependencies. Seems not to matter to this test.
+							// Note: deps is properly keyed by package path, not import path.
 							dep, ok := deps[importPath]
 							if ok {
 								return dep.Types, nil

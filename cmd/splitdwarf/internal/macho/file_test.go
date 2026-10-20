@@ -1,6 +1,5 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package macho
 
@@ -235,11 +234,9 @@ func TestOpen(t *testing.T) {
 			t.Errorf("open %s:\n\thave %#v\n\twant %#v\n", tt.file, f.FileHeader, tt.hdr)
 			continue
 		}
-		// for i, l := range f.Loads {
-		// 	if len(l.Raw()) < 8 {
-		// 		t.Errorf("open %s, command %d:\n\tload command %T don't have enough data\n", tt.file, i, l)
-		// 	}
-		// }
+		// for i, l := range f.Loads { if len(l.Raw()) < 8 { t.Errorf("open %s,
+		// command %d:\n\tload command %T don't have enough data\n", tt.file, i, l)
+		// } }
 		if tt.loads != nil {
 			for i, l := range f.Loads {
 				if i >= len(tt.loads) {
@@ -258,17 +255,11 @@ func TestOpen(t *testing.T) {
 						t.Errorf("open %s, command %d:\n\thave %s\n\twant %s\n", tt.file, i, have.String(), want.(*SegmentHeader).String())
 					}
 				case *Dylib:
-					// have := l
-					// have.LoadBytes = nil
-					// if !reflect.DeepEqual(have, want) {
-					// 	t.Errorf("open %s, command %d:\n\thave %#v\n\twant %#v\n", tt.file, i, have, want)
-					// }
+					// have := l have.LoadBytes = nil if !reflect.DeepEqual(have, want) { t.Errorf("open %s, command %d:\n\thave %#v\n\twant %#v\n", tt.file, i, have, want) }
 				case *Rpath:
-					// have := l
-					// have.LoadBytes = nil
-					// if !reflect.DeepEqual(have, want) {
-					// 	t.Errorf("open %s, command %d:\n\thave %#v\n\twant %#v\n", tt.file, i, have, want)
-					// }
+					// have := l have.LoadBytes = nil if !reflect.DeepEqual(have, want) {
+					// t.Errorf("open %s, command %d:\n\thave %#v\n\twant %#v\n", tt.file, i,
+					// have, want) }
 				default:
 					t.Errorf("open %s, command %d: unknown load command\n\thave %#v\n\twant %#v\n", tt.file, i, l, want)
 				}

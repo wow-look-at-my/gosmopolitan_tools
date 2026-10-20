@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -37,9 +36,7 @@ func Test(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Each file in testdata is a txtar file with the command to run,
-	// the contents of modules to initialize in a fake proxy,
-	// the expected stdout and stderr, and the expected file contents.
+	// Each file in testdata is a txtar file with the command to run, the contents of modules to initialize in a fake proxy.
 	files, err := filepath.Glob("testdata/*.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -56,9 +53,7 @@ func Test(t *testing.T) {
 			}
 			ar := txtar.Parse(data)
 
-			// If the command begins with ! it means it should fail.
-			// After the optional ! the first argument must be 'gonew'
-			// followed by the arguments to gonew.
+			// If the command begins with! it means it should fail.
 			args := strings.Fields(string(ar.Comment))
 			wantFail := false
 			if len(args) > 0 && args[0] == "!" {
@@ -106,11 +101,10 @@ func Test(t *testing.T) {
 				}
 			}
 
-			// Check stdout and stderr.
-			// Change \ to / so Windows output looks like Unix output.
+			// Check stdout and stderr. Change \ to / so Windows output looks like Unix output.
 			stdoutBuf := bytes.ReplaceAll(stdout.Bytes(), []byte(`\`), []byte("/"))
 			stderrBuf := bytes.ReplaceAll(stderr.Bytes(), []byte(`\`), []byte("/"))
-			// Note that stdout and stderr can be omitted from the archive if empty.
+			// Stdout and stderr can be omitted from the archive if empty.
 			if !bytes.Equal(stdoutBuf, want["stdout"].Data) {
 				t.Errorf("wrong stdout: %s", diffp.Diff("want", want["stdout"].Data, "have", stdoutBuf))
 			}
@@ -160,9 +154,9 @@ type Zip struct {
 	w   *zip.Writer
 }
 
-// writeProxyFiles collects all the module content from ar and writes
-// files in the format of the proxy URL space, so that the 'proxy' directory
-// can be used in a GOPROXY=file:/// URL.
+// writeProxyFiles collects all the module content from ar. It writes files
+// in the format of the proxy URL space, so that the 'proxy' directory can
+// be used in a GOPROXY=file:/// URL.
 func writeProxyFiles(t *testing.T, proxy string, ar *txtar.Archive) {
 	zips := make(map[string]*Zip)
 	others := make(map[string]string)

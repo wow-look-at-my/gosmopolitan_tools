@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -14,8 +13,8 @@ import (
 	"golang.org/x/tools/internal/gopathwalk"
 )
 
-// ProcessEnvSource implements the [Source] interface using the legacy
-// [ProcessEnv] abstraction.
+// ProcessEnvSource implements the [Source] interface using the [ProcessEnv]
+// abstraction.
 type ProcessEnvSource struct {
 	env      *ProcessEnv
 	srcDir   string
@@ -63,8 +62,7 @@ func (s *ProcessEnvSource) ResolveReferences(ctx context.Context, filename strin
 				return false
 			}
 			if pkg.dir == s.srcDir && s.pkgName == pkg.packageName {
-				// The candidate is in the same directory and has the
-				// same package name. Don't try to import ourselves.
+				// The candidate is in the same directory and has the same package name. Don't try to import ourselves.
 				return false
 			}
 			if !CanUse(filename, pkg.dir) {

@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -54,8 +53,7 @@ func reflecttypeassert(pass *analysis.Pass) (any, error) {
 			continue
 		}
 
-		// The call must be the operand of a type assertion
-		// (not a type switch, whose Type field is nil).
+		// The call must be the operand of a type assertion (not a type switch, whose Type field is nil).
 		curOperand := astutil.UnparenEnclosingCursor(curCall)
 		if curOperand.ParentEdgeKind() != edge.TypeAssertExpr_X {
 			continue
@@ -66,10 +64,7 @@ func reflecttypeassert(pass *analysis.Pass) (any, error) {
 			continue // type switch
 		}
 
-		// The assertion must be the sole RHS of a two-valued
-		// assignment, x, ok := v.Interface().(T), so that the
-		// rewrite preserves the "commaOK" semantics; a single-valued
-		// assertion panics on failure whereas TypeAssert does not.
+		// The assertion must be the sole RHS of a two-valued assignment, x, ok := v.Interface().(T).
 		curRhs := astutil.UnparenEnclosingCursor(curAssert)
 		if curRhs.ParentEdgeKind() != edge.AssignStmt_Rhs {
 			continue
@@ -93,11 +88,10 @@ func reflecttypeassert(pass *analysis.Pass) (any, error) {
 			End:     assert.End(),
 			Message: "Interface().(" + tstr + ") can be simplified using reflect.TypeAssert",
 			SuggestedFixes: []analysis.SuggestedFix{{
-				// v.Interface().(T)  ->  reflect.TypeAssert[T](v)
+				// v.Interface().(T) -> reflect.TypeAssert[T](v)
 				Message: "Replace Interface().(" + tstr + ") by reflect.TypeAssert[" + tstr + "]",
-				// Edit around sel.X instead of reformatting it, so its
-				// comments and spacing are preserved; only the type,
-				// which must move, is reformatted.
+				// Edit around sel.X instead of reformatting it, so its comments and
+				// spacing are preserved; only the type, which must move, is reformatted.
 				TextEdits: append(importEdits,
 					analysis.TextEdit{
 						Pos:     assert.Pos(),

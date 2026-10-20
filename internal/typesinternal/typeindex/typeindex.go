@@ -1,11 +1,10 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package typeindex provides an [Index] of type information for a
-// package, allowing efficient lookup of, say, whether a given symbol
-// is referenced and, if so, where from; or of the [inspector.Cursor] for
-// the declaration of a particular [types.Object] symbol.
+// Package typeindex provides an [Index] of type information for a package.
+// That typeindex is allowing efficient lookup of, say. Whether a given symbol
+// is referenced and, if so, where from, or of the [inspector.Cursor] for the
+// declaration of a particular [types.Object] symbol.
 package typeindex
 
 import (
@@ -74,8 +73,7 @@ func New(inspect *inspector.Inspector, pkg *types.Package, info *types.Info) *In
 					us.code = binary.AppendUvarint(us.code, uint64(delta))
 					us.last = cur.Index()
 
-					// If n is a selection of a field or method of an instantiated
-					// type, also record a use of the generic field or method.
+					// If n is a selection of a field or method of an instantiated type, also record a use of the generic field or method.
 					obj, ok = objectOrigin(obj)
 					if !ok {
 						break
@@ -87,14 +85,8 @@ func New(inspect *inspector.Inspector, pkg *types.Package, info *types.Info) *In
 	return ix
 }
 
-// objectOrigin returns the generic object for obj if it is a field or
-// method of an instantied type; zero otherwise.
-//
-// (This operation is appropriate only for selections.
-// Lexically resolved references always resolve to the generic.
-// Although Named and Alias types also use Origin to express
-// an instance/generic distinction, that's in the domain
-// of Types; their TypeName objects always refer to the generic.)
+// objectOrigin returns the generic object for obj if it is a field or method
+// of an instantied type; zero otherwise.
 func objectOrigin(obj types.Object) (types.Object, bool) {
 	var origin types.Object
 	switch obj := obj.(type) {
@@ -104,7 +96,7 @@ func objectOrigin(obj types.Object) (types.Object, bool) {
 		}
 	case *types.Var:
 		if obj.IsField() {
-			origin = obj.Origin() // G[int].field  -> G[T].field
+			origin = obj.Origin() // G[int].field -> G[T].field
 		}
 	}
 	if origin != nil && origin != obj {
@@ -124,16 +116,6 @@ type Index struct {
 }
 
 // A uses holds the list of Cursors of Idents that use a given symbol.
-//
-// The Uses map of [types.Info] is substantial, so it pays to compress
-// its inverse mapping here, both in space and in CPU due to reduced
-// allocation. A Cursor is 2 words; a Cursor.Index is 4 bytes; but
-// since Cursors are naturally delivered in ascending order, we can
-// use varint-encoded deltas at a cost of only ~1.7-2.2 bytes per use.
-//
-// Many variables have only one or two uses, so their encoded uses may
-// fit in the 4 bytes of initial, saving further CPU and space
-// essentially for free since the struct's size class is 4 words.
 type uses struct {
 	code    []byte  // varint-encoded deltas of successive Cursor.Index values
 	last    int32   // most recent Cursor.Index value; used during encoding
@@ -164,10 +146,6 @@ func (ix *Index) Uses(obj types.Object) iter.Seq[inspector.Cursor] {
 
 // Used reports whether any of the specified objects are used, in
 // other words, obj != nil && Uses(obj) is non-empty for some obj in objs.
-//
-// (This treatment of nil allows Used to be called directly on the
-// result of [Index.Object] so that analyzers can conveniently skip
-// packages that don't use a symbol of interest.)
 func (ix *Index) Used(objs ...types.Object) bool {
 	for _, obj := range objs {
 		if obj != nil && ix.uses[obj] != nil {
@@ -190,9 +168,7 @@ func (ix *Index) Package(path string) *types.Package {
 	return ix.packages[path]
 }
 
-// Object returns the package-level symbol name within the package of
-// the specified path, or nil if the package or symbol does not exist
-// or is not visible from this package.
+// Object returns the package-level symbol name.
 func (ix *Index) Object(path, name string) types.Object {
 	if pkg := ix.Package(path); pkg != nil {
 		return pkg.Scope().Lookup(name)
@@ -218,15 +194,7 @@ func (ix *Index) Selection(path, typename, name string) types.Object {
 func (ix *Index) Calls(callee types.Object) iter.Seq[inspector.Cursor] {
 	return func(yield func(inspector.Cursor) bool) {
 		for cur := range ix.Uses(callee) {
-			// The call may be of the form f() or x.f(),
-			// optionally with parens; ascend from f to call.
-			// See logic in [typesinternal.UsedIdent], to which this is dual.
-			//
-			// It is tempting but wrong to use the first
-			// CallExpr ancestor: we have to make sure the
-			// ident is in the CallExpr.Fun position, otherwise
-			// f(f, f) would have two spurious matches.
-			// Avoiding Enclosing is also significantly faster.
+			// The call may be of the form f() or x.f(), optionally with parens; ascend from f to call.
 
 			// inverse unparen: f -> (f)
 			cur = astutil.UnparenEnclosingCursor(cur)

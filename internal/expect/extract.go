@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package expect
 
@@ -26,13 +25,11 @@ const commentStartLen = len(commentStart)
 // Identifier is the type for an identifier in a Note argument list.
 type Identifier string
 
-// Parse collects all the notes present in a file.
-// If content is nil, the filename specified is read and parsed, otherwise the
-// content is used and the filename is used for positions and error messages.
-// Each comment whose text starts with @ is parsed as a comma-separated
-// sequence of notes.
-// See the package documentation for details about the syntax of those
-// notes.
+// Parse collects all the notes present in a file. If content is nil, the
+// filename specified is read and parsed, otherwise the content is used. The
+// filename is used for positions and error messages. Each comment whose
+// text starts with @ is parsed as a comma-separated sequence of notes. See
+// the package documentation for details about the syntax of those notes.
 func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error) {
 	if content == nil {
 		data, err := os.ReadFile(filename)
@@ -44,9 +41,7 @@ func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error
 
 	switch filepath.Ext(filename) {
 	case ".s":
-		// The assembler uses a custom scanner,
-		// but the go/scanner package is close
-		// enough: we only want the comments.
+		// The assembler uses a custom scanner, but the go/scanner package is close enough: we only want the comments.
 		file := fset.AddFile(filename, -1, len(content))
 		var scan goscanner.Scanner
 		scan.Init(file, content, nil, goscanner.ScanComments)
@@ -73,9 +68,6 @@ func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error
 
 	case ".go":
 		// TODO: We should write this in terms of the scanner, like the .s case above.
-		// there are ways you can break the parser such that it will not add all the
-		// comments to the ast, which may result in files where the tests are silently
-		// not run.
 		file, err := parser.ParseFile(fset, filename, content, parser.ParseComments|parser.AllErrors|parser.SkipObjectResolution)
 		if file == nil {
 			return nil, err
@@ -102,14 +94,13 @@ func Parse(fset *token.FileSet, filename string, content []byte) ([]*Note, error
 	return nil, nil
 }
 
-// extractMod collects all the notes present in a go.mod file, by way of
-// the modfile.Expr statement node.
+// extractMod collects all the notes present in a go.mod file, by way of the
+// modfile.Expr statement node.
 //
 // Each comment whose text starts with @ is parsed as a comma-separated
-// sequence of notes.
-// See the package documentation for details about the syntax of those
-// notes.
-// Only allow notes to appear with the following format: "//@mark()" or // @mark()
+// sequence of notes. See the package documentation for details about the
+// syntax of those notes. Only allow notes to appear with the following
+// format: "//@mark()" or // @mark()
 func extractMod(fset *token.FileSet, exprs []modfile.Expr) ([]*Note, error) {
 	var notes []*Note
 	for _, stmt := range exprs {
@@ -136,11 +127,9 @@ func extractMod(fset *token.FileSet, exprs []modfile.Expr) ([]*Note, error) {
 	return notes, nil
 }
 
-// ExtractGo collects all the notes present in an AST.
-// Each comment whose text starts with @ is parsed as a comma-separated
-// sequence of notes.
-// See the package documentation for details about the syntax of those
-// notes.
+// ExtractGo collects all the notes present in an AST. Each comment whose text
+// starts with @ is parsed as a comma-separated sequence of notes. See the
+// package documentation for details about the syntax of those notes.
 func ExtractGo(tokFile *token.File, file *ast.File) ([]*Note, error) {
 	var notes []*Note
 	for _, g := range file.Comments {
@@ -165,11 +154,7 @@ func getAdjustedNote(text string) (string, int) {
 	}
 	text = text[2:] // remove "//" or "/*" prefix
 
-	// Allow notes to appear within comments.
-	// For example:
-	// "// //@mark()" is valid.
-	// "// @mark()" is not valid.
-	// "// /*@mark()*/" is not valid.
+	// Allow notes to appear within comments. For example: "// //@mark()" is valid. "// @mark()" is not valid.
 	var adjust int
 	if i := strings.Index(text, commentStart); i > 2 {
 		// Get the text before the commentStart.

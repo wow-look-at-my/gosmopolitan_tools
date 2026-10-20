@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modindex
 
@@ -62,17 +61,15 @@ var modCacheRegexp = regexp.MustCompile(`(.*)@([^/\\]*)(.*)`)
 // from a GOMODCACHE-relative directory name.
 func dirToImportPathVersion(dir string) (string, string, error) {
 	m := modCacheRegexp.FindStringSubmatch(string(dir))
-	// m[1] is the module path
-	// m[2] is the version major.minor.patch(-<pre release identifier)
-	// m[3] is the rest of the package path
+	// m[1] is the module path m[2] is the version major.minor.patch(-<pre
+	// release identifier) m[3] is the rest of the package path
 	if len(m) != 4 {
 		return "", "", fmt.Errorf("bad dir %s", dir)
 	}
 	if !semver.IsValid(m[2]) {
 		return "", "", fmt.Errorf("bad semantic version %s", m[2])
 	}
-	// ToSlash is required to convert Windows file paths
-	// into Go package import paths.
+	// ToSlash is required to convert Windows file paths into Go package import paths.
 	return filepath.ToSlash(m[1] + m[3]), m[2], nil
 }
 
@@ -117,14 +114,11 @@ func findDirs(root string, start, end time.Time) []string {
 		return false
 	}
 
-	// TODO(adonovan): parallelize this. Even with a hot buffer cache,
-	//   find $(go env GOMODCACHE) -type d
-	// can easily take up a minute.
+	// TODO(adonovan): parallelize this.
 	roots := []gopathwalk.Root{{Path: root, Type: gopathwalk.RootModuleCache}}
 	gopathwalk.WalkSkip(roots, addDir, skipDir, gopathwalk.Options{
 		ModulesEnabled: true,
 		Concurrency:    1, // TODO(pjw): adjust concurrency
-		// Logf: log.Printf,
 	})
 
 	return res

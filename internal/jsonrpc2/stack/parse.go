@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stack
 
@@ -143,9 +142,6 @@ func parseFrame(scanner *Scanner) (Frame, bool) {
 		Function: fun,
 	}
 	frame.Position, ok = parsePosition(scanner)
-	// if ok is false, then this is a broken state.
-	// we got the func but not the file that must follow
-	// the consumed line can be recovered from the frame
 	//TODO: push back the fun raw
 	return frame, ok
 }

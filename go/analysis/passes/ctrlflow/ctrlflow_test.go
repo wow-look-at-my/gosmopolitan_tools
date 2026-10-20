@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ctrlflow_test
 
@@ -16,8 +15,7 @@ func Test(t *testing.T) {
 	testdata := analysistest.TestData()
 	results := analysistest.Run(t, testdata, ctrlflow.Analyzer, "a", "typeparams")
 
-	// Perform a minimal smoke test on
-	// the result (CFG) computed by ctrlflow.
+	// Perform a minimal smoke test on the result (CFG) computed by ctrlflow.
 	for _, result := range results {
 		cfgs := result.Result.(*ctrlflow.CFGs)
 

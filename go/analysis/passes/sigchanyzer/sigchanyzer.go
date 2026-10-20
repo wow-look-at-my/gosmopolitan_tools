@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package sigchanyzer defines an Analyzer that detects
 // misuse of unbuffered signal as argument to signal.Notify.
@@ -57,8 +56,6 @@ func run(pass *analysis.Pass) (any, error) {
 				chanDecl = decl
 			}
 		case *ast.CallExpr:
-			// Only signal.Notify(make(chan os.Signal), os.Interrupt) is safe,
-			// conservatively treat others as not safe, see golang/go#45043
 			if isBuiltinMake(pass.TypesInfo, arg) {
 				return
 			}
@@ -68,8 +65,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// Make a copy of the channel's declaration to avoid
-		// mutating the AST. See https://golang.org/issue/46129.
+		// Make a copy of the channel's declaration to avoid mutating the AST. See https://golang.org/issue/46129.
 		chanDeclCopy := &ast.CallExpr{}
 		*chanDeclCopy = *chanDecl
 		chanDeclCopy.Args = slices.Clone(chanDecl.Args)

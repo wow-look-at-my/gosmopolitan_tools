@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package lcs
 
@@ -8,8 +7,6 @@ import (
 	"fmt"
 )
 
-// For each D, vec[D] has length D+1,
-// and the label for (D, k) is stored in vec[D][(D+k)/2].
 type label struct {
 	vec [][]int
 }

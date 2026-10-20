@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package event
 
@@ -12,13 +11,10 @@ import (
 	"golang.org/x/tools/internal/event/label"
 )
 
-// Exporter is a function that handles events.
-// It may return a modified context and event.
+// Exporter is a function that handles events. It may return a modified context and event.
 type Exporter func(context.Context, core.Event, label.Map) context.Context
 
 // SetExporter sets the global exporter function that handles all events.
-// The exporter is called synchronously from the event call site, so it should
-// return quickly so as not to hold up user code.
 func SetExporter(e Exporter) {
 	core.SetExporter(core.Exporter(e))
 }
@@ -32,8 +28,6 @@ func Log(ctx context.Context, message string, labels ...label.Label) {
 }
 
 // IsLog returns true if the event was built by the Log function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsLog(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Msg
 }
@@ -49,8 +43,6 @@ func Error(ctx context.Context, message string, err error, labels ...label.Label
 }
 
 // IsError returns true if the event was built by the Error function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsError(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Msg &&
 		ev.Label(1).Key() == keys.Err
@@ -64,8 +56,6 @@ func Metric(ctx context.Context, labels ...label.Label) {
 }
 
 // IsMetric returns true if the event was built by the Metric function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsMetric(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Metric
 }
@@ -78,8 +68,6 @@ func Label(ctx context.Context, labels ...label.Label) context.Context {
 }
 
 // IsLabel returns true if the event was built by the Label function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsLabel(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Label
 }
@@ -98,15 +86,11 @@ func Start(ctx context.Context, name string, labels ...label.Label) (context.Con
 }
 
 // IsStart returns true if the event was built by the Start function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsStart(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Start
 }
 
 // IsEnd returns true if the event was built by the End function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsEnd(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.End
 }
@@ -120,8 +104,6 @@ func Detach(ctx context.Context) context.Context {
 }
 
 // IsDetach returns true if the event was built by the Detach function.
-// It is intended to be used in exporters to identify the semantics of the
-// event when deciding what to do with it.
 func IsDetach(ev core.Event) bool {
 	return ev.Label(0).Key() == keys.Detach
 }

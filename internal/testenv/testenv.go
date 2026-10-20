@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package testenv contains helper functions for skipping tests
 // based on which tools are present in the environment.
@@ -33,14 +32,11 @@ import (
 func packageMainIsDevel() bool {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
-		// Most test binaries currently lack build info, but this should become more
-		// permissive once https://golang.org/issue/33976 is fixed.
+		// Most test binaries lack build info.
 		return true
 	}
 
-	// Note: info.Main.Version describes the version of the module containing
-	// package main, not the version of “the main module”.
-	// See https://golang.org/issue/33975.
+	// Note: info.Main.Version describes the version of the module containing package main.
 	return info.Main.Version == "(devel)"
 }
 
@@ -86,10 +82,7 @@ func HasTool(tool string) error {
 	case "go":
 		checkGoBuild.once.Do(func() {
 			if runtime.GOROOT() != "" {
-				// Ensure that the 'go' command found by exec.LookPath is from the correct
-				// GOROOT. Otherwise, 'some/path/go test ./...' will test against some
-				// version of the 'go' binary other than 'some/path/go', which is almost
-				// certainly not what the user intended.
+				// Ensure that the 'go' command found by exec.LookPath is from the correct GOROOT.
 				out, err := exec.Command(tool, "env", "GOROOT").Output()
 				if err != nil {
 					if exit, ok := err.(*exec.ExitError); ok && len(exit.Stderr) > 0 {
@@ -132,8 +125,7 @@ func HasTool(tool string) error {
 		}
 
 	case "diff":
-		// Check that diff is the GNU or Apple version, needed for the -u argument and
-		// to report missing newlines at the end of files.
+		// Check that diff is the GNU or Apple version.
 		out, err := exec.Command(tool, "-version").Output()
 		if err != nil {
 			out, _ = exec.Command(tool, "--version").Output()
@@ -199,10 +191,7 @@ func allowMissingTool(tool string) bool {
 		}
 	}
 
-	// If a developer is actively working on this test, we expect them to have all
-	// of its dependencies installed. However, if it's just a dependency of some
-	// other module (for example, being run via 'go test all'), we should be more
-	// tolerant of unusual environments.
+	// If a developer is actively working on this test, we expect them to have all of its dependencies installed.
 	return !packageMainIsDevel()
 }
 
@@ -216,12 +205,7 @@ func NeedsTool(t testing.TB, tool string) {
 
 	t.Helper()
 	if allowMissingTool(tool) {
-		// TODO(adonovan): if we skip because of (e.g.)
-		// mismatched go env GOROOT and runtime.GOROOT, don't
-		// we risk some users not getting the coverage they expect?
-		// bcmills notes: this shouldn't be a concern as of CL 404134 (Go 1.19).
-		// We could probably safely get rid of that GOPATH consistency
-		// check entirely at this point.
+		// TODO(adonovan).
 		t.Skipf("skipping because %s tool not available: %v", tool, err)
 	} else {
 		t.Fatalf("%s tool not available: %v", tool, err)
@@ -269,15 +253,10 @@ func NeedsGoPackagesEnv(t testing.TB, env []string) {
 	NeedsGoPackages(t)
 }
 
-// NeedsGoBuild skips t if the current system can't build programs with “go build”
-// and then run them with os.StartProcess or exec.Command.
-// Android doesn't have the userspace go build needs to run,
-// and js/wasm doesn't support running subprocesses.
+// NeedsGoBuild skips t if the current system can't build programs with “go
+// build” and then run them with os.StartProcess or exec.Command.
 func NeedsGoBuild(t testing.TB) {
 	t.Helper()
-
-	// This logic was derived from internal/testing.HasGoBuild and
-	// may need to be updated as that function evolves.
 
 	NeedsTool(t, "go")
 }
@@ -286,9 +265,7 @@ func NeedsGoBuild(t testing.TB) {
 // returned by [go/importer.Default].
 func NeedsDefaultImporter(t testing.TB) {
 	t.Helper()
-	// The default importer may call `go list`
-	// (in src/internal/exportdata/exportdata.go:lookupGorootExport),
-	// so check for the go tool.
+	// The default importer may call `go list` (in src/internal/exportdata/exportdata.go:lookupGorootExport).
 	NeedsTool(t, "go")
 }
 
@@ -299,24 +276,18 @@ func NeedsDefaultImporter(t testing.TB) {
 func ExitIfSmallMachine() {
 	switch b := os.Getenv("GO_BUILDER_NAME"); b {
 	case "linux-arm-scaleway":
-		// "linux-arm" was renamed to "linux-arm-scaleway" in CL 303230.
+		// "linux-arm" was renamed to "linux-arm-scaleway" in a later CL.
 		fmt.Fprintln(os.Stderr, "skipping test: linux-arm-scaleway builder lacks sufficient memory (https://golang.org/issue/32834)")
 	case "plan9-arm":
 		fmt.Fprintln(os.Stderr, "skipping test: plan9-arm builder lacks sufficient memory (https://golang.org/issue/38772)")
 	case "netbsd-arm-bsiegert", "netbsd-arm64-bsiegert":
-		// As of 2021-06-02, these builders are running with GO_TEST_TIMEOUT_SCALE=10,
-		// and there is only one of each. We shouldn't waste those scarce resources
-		// running very slow tests.
+		// These builders are running with GO_TEST_TIMEOUT_SCALE=10, and there is only one of each.
 		fmt.Fprintf(os.Stderr, "skipping test: %s builder is very slow\n", b)
 	case "dragonfly-amd64":
-		// As of 2021-11-02, this builder is running with GO_TEST_TIMEOUT_SCALE=2,
-		// and seems to have unusually slow disk performance.
+		// This builder is running with GO_TEST_TIMEOUT_SCALE=2, and seems to have unusually slow disk performance.
 		fmt.Fprintln(os.Stderr, "skipping test: dragonfly-amd64 has slow disk (https://golang.org/issue/45216)")
 	case "linux-riscv64-unmatched":
-		// As of 2021-11-03, this builder is empirically not fast enough to run
-		// gopls tests. Ideally we should make the tests faster in short mode
-		// and/or fix them to not assume arbitrary deadlines.
-		// For now, we'll skip them instead.
+		// This builder is empirically not fast enough to run gopls tests.
 		fmt.Fprintf(os.Stderr, "skipping test: %s builder is too slow (https://golang.org/issue/49321)\n", b)
 	default:
 		switch runtime.GOOS {
@@ -415,8 +386,6 @@ func NeedsLocalhostNet(t testing.TB) {
 	}
 }
 
-// Deadline returns the deadline of t, if known,
-// using the Deadline method added in Go 1.15.
 func Deadline(t testing.TB) (time.Time, bool) {
 	td, ok := t.(interface {
 		Deadline() (time.Time, bool)
@@ -437,9 +406,7 @@ func findGOROOT() (string, error) {
 	gorootOnce.Do(func() {
 		gorootPath = runtime.GOROOT()
 		if gorootPath != "" {
-			// If runtime.GOROOT() is non-empty, assume that it is valid. (It might
-			// not be: for example, the user may have explicitly set GOROOT
-			// to the wrong directory.)
+			// If runtime.GOROOT() is non-empty, assume that it is valid.
 			return
 		}
 
@@ -455,11 +422,7 @@ func findGOROOT() (string, error) {
 }
 
 // GOROOT reports the path to the directory containing the root of the Go
-// project source tree. This is normally equivalent to runtime.GOROOT, but
-// works even if the test binary was built with -trimpath.
-//
-// If GOROOT cannot be found, GOROOT skips t if t is non-nil,
-// or panics otherwise.
+// project source tree.
 func GOROOT(t testing.TB) string {
 	path, err := findGOROOT()
 	if err != nil {
@@ -494,8 +457,7 @@ func NeedsLocalXTools(t testing.TB) {
 		return
 	}
 
-	// We found the directory where x/tools would exist if we're in a clone of the
-	// repo. Is it there? (If not, we're probably in the module cache instead.)
+	// We found the directory where x/tools would exist if we're in a clone of the repo. Is it there?
 	modFilePath := filepath.Join(dir, "go.mod")
 	b, err := os.ReadFile(modFilePath)
 	if err != nil {
@@ -540,8 +502,6 @@ func NeedsGoExperiment(t testing.TB, flag string) {
 // NeedsGOROOTDir skips the test if GOROOT/dir does not exist, and GOROOT is a
 // released version of Go (=has a VERSION file). Some GOROOT directories are
 // removed by cmd/distpack.
-//
-// See also golang/go#70081.
 func NeedsGOROOTDir(t *testing.T, dir string) {
 	gorootTest := filepath.Join(GOROOT(t), dir)
 	if _, err := os.Stat(gorootTest); os.IsNotExist(err) {
@@ -557,8 +517,7 @@ func NeedsGOROOTDir(t *testing.T, dir string) {
 func RedirectStderr(t testing.TB) {
 	t.Setenv("RedirectStderr", "") // side effect: assert t.Parallel wasn't called
 
-	// TODO(adonovan): if https://go.dev/issue/59928 is accepted,
-	// simply set w = t.Output() and dispense with the pipe.
+	// TODO(adonovan): if https://go.dev/issue/59928 is accepted, set w = t.Output() and dispense with the pipe.
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("pipe: %v", err)

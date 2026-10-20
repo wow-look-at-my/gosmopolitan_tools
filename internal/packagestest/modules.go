@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packagestest
 
@@ -19,28 +18,6 @@ import (
 )
 
 // Modules is the exporter that produces module layouts.
-// Each "repository" is put in its own module, and the module file generated
-// will have replace directives for all other modules.
-// Given the two files
-//
-//	golang.org/repoa#a/a.go
-//	golang.org/repob#b/b.go
-//
-// You would get the directory layout
-//
-//	/sometemporarydirectory
-//	├── repoa
-//	│   ├── a
-//	│   │   └── a.go
-//	│   └── go.mod
-//	└── repob
-//	    ├── b
-//	    │   └── b.go
-//	    └── go.mod
-//
-// and the working directory would be
-//
-//	/sometemporarydirectory/repoa
 var Modules = modules{}
 
 type modules struct{}
@@ -62,9 +39,7 @@ func (modules) Filename(exported *Exported, module, fragment string) string {
 }
 
 func (modules) Finalize(exported *Exported) error {
-	// Write out the primary module. This module can use symlinks and
-	// other weird stuff, and will be the working dir for the go command.
-	// It depends on all the other modules.
+	// Write out the primary module.
 	primaryDir := primaryDir(exported)
 	if err := os.MkdirAll(primaryDir, 0755); err != nil {
 		return err
@@ -74,8 +49,7 @@ func (modules) Finalize(exported *Exported) error {
 		exported.written[exported.primary] = make(map[string]string)
 	}
 
-	// Create a map of modulepath -> {module, version} for modulepaths
-	// that are of the form `repoa/mod1@v1.1.0`.
+	// Create a map of modulepath -> {module, version} for modulepaths that are of the form `repoa/mod1@v1.1.0`.
 	versions := make(map[string]moduleAtVersion)
 	for module := range exported.written {
 		if splt := strings.Split(module, "@"); len(splt) > 1 {
@@ -86,8 +60,9 @@ func (modules) Finalize(exported *Exported) error {
 		}
 	}
 
-	// If the primary module already has a go.mod, write the contents to a temp
-	// go.mod for now and then we will reset it when we are getting all the markers.
+	// Write the contents to a temp go.mod and then we will reset it when we
+	// are getting all the markers. Do this if the primary module already has a
+	// go.mod.
 	if gomod := exported.written[exported.primary]["go.mod"]; gomod != "" {
 		contents, err := os.ReadFile(gomod)
 		if err != nil {

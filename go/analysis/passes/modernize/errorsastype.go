@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -38,33 +37,10 @@ var ErrorsAsTypeAnalyzer = &analysis.Analyzer{
 //	var myerr *MyErr
 //	if errors.As(err, &myerr) { ... }
 //
-// =>
-//
 //	if myerr, ok := errors.AsType[*MyErr](err); ok  { ... }
 //
-// (In principle several of these can then be chained using if/else,
-// but we don't attempt that.)
-//
-// We offer the fix only within an if statement, but not within a
-// switch case such as:
-//
-//	var myerr *MyErr
-//	switch {
-//	case errors.As(err, &myerr):
-//	}
-//
-// because the transformation in that case would be ungainly.
-//
-// For the negated case (!errors.As), we use !ok instead.
-//
-// Note that the cmd/vet suite includes the "errorsas" analyzer, which
-// detects actual mistakes in the use of errors.As. This logic does
-// not belong in errorsas because the problems it fixes are merely
-// stylistic.
-//
-// TODO(adonovan): support more cases:
-// - if myerr := new(E); errors.As(err, myerr); { ... }
-// - if errors.As(err, myerr) && othercond { ... }
+// (In principle several of these can then be chained using if/else, but we
+// don't attempt that.)
 func errorsastype(pass *analysis.Pass) (any, error) {
 	var (
 		index = pass.ResultOf[typeindexanalyzer.Analyzer].(*typeindex.Index)
@@ -99,38 +75,22 @@ func errorsastype(pass *analysis.Pass) (any, error) {
 		}
 
 		// Format the type as valid Go syntax.
-		// TODO(adonovan): fix: FileQualifier needs to respect
-		// visibility at the current point, and either fail
-		// or edit the imports as needed.
-		// TODO(adonovan): fix: TypeString is not a sound way
-		// to print types as Go syntax as it does not respect
-		// symbol visibility, etc. We need something loosely
-		// integrated with FileQualifier that accumulates
-		// import edits, and may fail (e.g. for unexported
-		// type or field names from other packages).
-		// See https://go.dev/issues/75604.
 		qual := typesinternal.FileQualifier(file, pass.Pkg)
 		errtype := types.TypeString(v.Type(), qual)
 
 		// Choose a name for the "ok" variable.
-		// We generate a new name only if 'ok' is already declared at
-		// curCall and it also used within the if-statement.
 		ifScope := info.Scopes[curIfStmt.Node().(*ast.IfStmt)]
 		negated := curCall.ParentEdgeKind() == edge.UnaryExpr_X // bool => Tok==NOT
 		okName := freshName(info, index, ifScope, v.Pos(), curCall, curIfStmt, token.NoPos, "ok")
-		// Because we reject any use of v outside the if statement, any use besides
-		// the argument in errors.As must lie inside the if statement.
+		// Because we reject any use of v outside the if statement, any use besides the argument in errors.As must lie inside the if statement.
 		usesV := moreiters.Len(index.Uses(v)) > 1
 
 		edits := append(
 			// delete "var myerr *MyErr"
 			refactor.DeleteStmt(pass.Fset.File(call.Fun.Pos()), curDeclStmt),
-			// if              errors.As            (err, &myerr)     { ... }
-			//    -------------       --------------    -------- ----
-			// if myerr, ok := errors.AsType[*MyErr](err        ); ok { ... }
+			// As (err, &myerr) { ... AsType[*MyErr](err ); ok { ...
 			analysis.TextEdit{
-				// Insert "myerr, ok := " if myerr is used inside the if statement.
-				// Otherwise insert "_, ok := ".
+				// Insert "myerr, ok := " if myerr is used inside the if statement. Otherwise insert "_, ok := ".
 				Pos:     call.Pos(),
 				End:     call.Pos(),
 				NewText: fmt.Appendf(nil, "%s, %s := ", cond(usesV, v.Name(), "_"), okName),
@@ -196,7 +156,7 @@ func canUseErrorsAsType(info *types.Info, index *typeindex.Index, curCall inspec
 	}
 	unary, ok := curCall.Node().(*ast.CallExpr).Args[1].(*ast.UnaryExpr)
 	if !ok || unary.Op != token.AND {
-		return // 2nd arg is not &var
+		return
 	}
 	id, ok := unary.X.(*ast.Ident)
 	if !ok {
@@ -237,10 +197,6 @@ func canUseErrorsAsType(info *types.Info, index *typeindex.Index, curCall inspec
 		return
 	}
 
-	// Have:
-	//   var v *MyErr
-	//   ...
-	//   if errors.As(err, &v) { ... }
-	// with no uses of v outside the IfStmt.
+	// Have: var v *MyErr ... if errors.As(err, &v) { ... } with no uses of v outside the IfStmt.
 	return v, curDecl.Parent(), curIfStmt
 }

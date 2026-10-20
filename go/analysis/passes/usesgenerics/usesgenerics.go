@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package usesgenerics
 
@@ -38,10 +37,7 @@ const (
 	FuncInstantiation = genericfeatures.FuncInstantiation
 )
 
-// Result is the usesgenerics analyzer result type. The Direct field records
-// features used directly by the package being analyzed (i.e. contained in the
-// package source code). The Transitive field records any features used by the
-// package or any of its transitive imports.
+// Result is the usesgenerics analyzer result type.
 type Result struct {
 	Direct, Transitive Features
 }

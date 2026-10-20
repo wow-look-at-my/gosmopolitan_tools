@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package flow
 
@@ -18,7 +17,7 @@ import (
 // predecessors). For each edge, it calls transfer(fact, edge), where fact is
 // the analysis state on entry to edge.Pred. The transfer function must return
 // the outgoing analysis state of the edge (which may be fact, if the edge has
-// no effect on the  analysis state).
+// no effect on the analysis state).
 func Forward[L Semilattice[Fact], Fact any, NodeID comparable](g graph.Graph[NodeID], entry map[NodeID]Fact, transfer func(from, to NodeID, fact Fact) Fact) *Analysis[Fact, NodeID] {
 	cg, nodeMap := graph.Compact(g)
 
@@ -37,13 +36,6 @@ func Forward[L Semilattice[Fact], Fact any, NodeID comparable](g graph.Graph[Nod
 		b := &fb.blocks[ni]
 
 		// Construct back-edges.
-		//
-		// I experimented with making Graph support iterating over in-edges, but
-		// in practice that just meant each Graph implementation had a copy of
-		// this logic. So instead we keep Graph as simple as possible and
-		// compute the auxiliary data in the algorithm. One drawback of this is
-		// that, for the [Transpose] graph, this information is redundant with
-		// the underlying graph. We could potentially special-case that.
 		outs := 0
 		for succID := range cg.Out(ni) {
 			succ := &fb.blocks[succID]
@@ -61,11 +53,6 @@ func Forward[L Semilattice[Fact], Fact any, NodeID comparable](g graph.Graph[Nod
 		b.out = slices.Repeat([]Fact{fb.l.Ident()}, outs)
 
 		// Enqueue block.
-		//
-		// It's tempting to enqueue only the entry blocks, but this is wrong.
-		// The entry map may be empty if there are no interesting entry states,
-		// but the transfer function may still introduce interesting states
-		// anywhere.
 		b.dirty = true
 		fb.queue.enqueue(ni)
 	}
@@ -186,8 +173,7 @@ func (fb *fwdBuilder[L, Fact, NodeID]) propagate() {
 			pred := &fb.blocks[edge.node]
 			var edgeFact Fact
 			if pred.dirty {
-				// We haven't visited this predecessor yet, so it doesn't have
-				// meaningful out facts.
+				// We haven't visited this predecessor yet, so it doesn't have meaningful out facts.
 				edgeFact = fb.l.Ident()
 			} else {
 				edgeFact = pred.out[edge.i]
@@ -214,8 +200,8 @@ func (fb *fwdBuilder[L, Fact, NodeID]) propagate() {
 		}
 
 		if !block.dirty && fb.l.Equals(in, block.in) {
-			// No change to block input, which means the transfer function
-			// results also won't change from the last time we ran it.
+			// No change to block input, which means the transfer function results also
+			// won't change from the last time.
 			if debug {
 				log.Printf("  initial state unchanged: %v", in)
 			}

@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package directive defines an Analyzer that checks known Go toolchain directives.
 package directive
@@ -84,8 +83,7 @@ func checkGoFile(pass *analysis.Pass, f *ast.File) {
 }
 
 func checkOtherFile(pass *analysis.Pass, filename string) error {
-	// We cannot use the Go parser, since is not a Go source file.
-	// Read the raw bytes instead.
+	// We cannot use the Go parser, since is not a Go source file. Read the raw bytes instead.
 	content, tf, err := analyzerutil.ReadFile(pass, filename)
 	if err != nil {
 		return err
@@ -146,12 +144,6 @@ func (check *checker) nonGoFile(pos token.Pos, fullText string) {
 		}
 		if line != "" {
 			// Found non-comment non-blank line.
-			// Ends space for valid //go:build comments,
-			// but also ends the fraction of the file we can
-			// reliably parse. From this point on we might
-			// incorrectly flag "comments" inside multiline
-			// string constants or anything else (this might
-			// not even be a Go program). So stop.
 			break
 		}
 	}
@@ -178,8 +170,6 @@ func (check *checker) comment(pos token.Pos, line string) {
 	switch verb {
 	default:
 		// TODO: Use the go language version for the file.
-		// If that version is not newer than us, then we can
-		// report unknown directives.
 
 	case "//go:build":
 		// Ignore. The buildtag analyzer reports misplaced comments.

@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package macho
 
@@ -35,20 +34,18 @@ type FatArch struct {
 }
 
 // NewFatFile creates a new FatFile for accessing all the Mach-O images in a
-// universal binary. The Mach-O binary is expected to start at position 0 in
-// the ReaderAt.
+// universal binary. The Mach-O binary is expected to start at the first
+// position in the ReaderAt.
 func NewFatFile(r io.ReaderAt) (*FatFile, error) {
 	var ff FatFile
 	sr := io.NewSectionReader(r, 0, 1<<63-1)
 
-	// Read the fat_header struct, which is always in big endian.
-	// Start with the magic number.
+	// Read the fat_header struct, which is always in big endian. Start with the magic number.
 	err := binary.Read(sr, binary.BigEndian, &ff.Magic)
 	if err != nil {
 		return nil, formatError(0, "error reading magic number, %v", err)
 	} else if ff.Magic != MagicFat {
-		// See if this is a Mach-O file via its magic number. The magic
-		// must be converted to little endian first though.
+		// See if this is a Mach-O file via its magic number. The magic must be converted to little endian first though.
 		var buf [4]byte
 		binary.BigEndian.PutUint32(buf[:], ff.Magic)
 		leMagic := binary.LittleEndian.Uint32(buf[:])
@@ -60,7 +57,6 @@ func NewFatFile(r io.ReaderAt) (*FatFile, error) {
 	}
 	offset := int64(4)
 
-	// Read the number of FatArchHeaders that come after the fat_header.
 	var narch uint32
 	err = binary.Read(sr, binary.BigEndian, &narch)
 	if err != nil {
@@ -72,14 +68,12 @@ func NewFatFile(r io.ReaderAt) (*FatFile, error) {
 		return nil, formatError(offset, "file contains no images, narch=%d", narch)
 	}
 
-	// Combine the Cpu and SubCpu (both uint32) into a uint64 to make sure
-	// there are not duplicate architectures.
+	// Combine the Cpu and SubCpu (both uint32) into a uint64 to make sure there are not duplicate architectures.
 	seenArches := make(map[uint64]bool, narch)
 	// Make sure that all images are for the same MH_ type.
 	var machoType HdrType
 
-	// Following the fat_header comes narch fat_arch structs that index
-	// Mach-O images further in the file.
+	// Following the fat_header comes narch fat_arch structs that index Mach-O images further in the file.
 	ff.Arches = make([]FatArch, narch)
 	for i := uint32(0); i < narch; i++ {
 		fa := &ff.Arches[i]

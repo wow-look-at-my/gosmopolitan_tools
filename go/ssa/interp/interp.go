@@ -1,47 +1,19 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package ssa/interp defines an interpreter for the SSA
-// representation of Go programs.
+// Package ssa/interp defines an interpreter for the SSA representation of Go
+// programs.
 //
-// This interpreter is provided as an adjunct for testing the SSA
-// construction algorithm.  Its purpose is to provide a minimal
-// metacircular implementation of the dynamic semantics of each SSA
-// instruction.  It is not, and will never be, a production-quality Go
-// interpreter.
+// This interpreter is provided as an adjunct for testing the SSA construction
+// algorithm. Its purpose is to provide a minimal metacircular implementation
+// of the dynamic semantics of each SSA instruction. It is not, and will never
+// be, a production-quality Go interpreter.
 //
-// The following is a partial list of Go features that are currently
-// unsupported or incomplete in the interpreter.
+// The following is a partial list of Go features that are unsupported or
+// incomplete in the interpreter.
 //
-// * Unsafe operations, including all uses of unsafe.Pointer, are
-// impossible to support given the "boxed" value representation we
-// have chosen.
-//
-// * The reflect package is only partially implemented.
-//
-// * The "testing" package is no longer supported because it
-// depends on low-level details that change too often.
-//
-// * "sync/atomic" operations are not atomic due to the "boxed" value
-// representation: it is not possible to read, modify and write an
-// interface value atomically. As a consequence, Mutexes are currently
-// broken.
-//
-// * recover is only partially implemented.  Also, the interpreter
-// makes no attempt to distinguish target panics from interpreter
-// crashes.
-//
-// * the sizes of the int, uint and uintptr types in the target
-// program are assumed to be the same as those of the interpreter
-// itself.
-//
-// * all values occupy space, even those of types defined by the spec
-// to have zero size, e.g. struct{}.  This can cause asymptotic
-// performance degradation.
-//
-// * os.Exit is implemented using panic, causing deferred functions to
-// run.
+// * Unsafe operations, including all uses of unsafe.Pointer, are impossible
+// to support given the "boxed" value representation we have chosen.
 package interp // import "golang.org/x/tools/go/ssa/interp"
 
 import (
@@ -116,8 +88,7 @@ type frame struct {
 func (fr *frame) get(key ssa.Value) value {
 	switch key := key.(type) {
 	case nil:
-		// Hack; simplifies handling of optional attributes
-		// such as ssa.Slice.{Low,High}.
+		// Hack; simplifies handling of optional attributes such as ssa.Slice.{Low,High}.
 		return nil
 	case *ssa.Function, *ssa.Builtin:
 		return key
@@ -154,16 +125,6 @@ func (fr *frame) runDefer(d *deferred) {
 }
 
 // runDefers executes fr's deferred function calls in LIFO order.
-//
-// On entry, fr.panicking indicates a state of panic; if
-// true, fr.panic contains the panic value.
-//
-// On completion, if a deferred call started a panic, or if no
-// deferred call recovered from a previous state of panic, then
-// runDefers itself panics after the last deferred call has run.
-//
-// If there was no initial state of panic, or it was recovered from,
-// runDefers returns normally.
 func (fr *frame) runDefers() {
 	for d := fr.defers; d != nil; d = d.tail {
 		fr.runDefer(d)
@@ -186,9 +147,9 @@ func lookupMethod(i *interpreter, typ types.Type, meth *types.Func) *ssa.Functio
 	return i.prog.LookupMethod(typ, meth.Pkg(), meth.Name())
 }
 
-// visitInstr interprets a single ssa.Instruction within the activation
-// record frame.  It returns a continuation value indicating where to
-// read the next instruction from.
+// visitInstr interprets a single ssa.Instruction within the activation record
+// frame. It returns a continuation value indicating where to read the next
+// instruction from.
 func visitInstr(fr *frame, instr ssa.Instruction) continuation {
 	switch instr := instr.(type) {
 	case *ssa.DebugRef:
@@ -410,7 +371,7 @@ func visitInstr(fr *frame, instr ssa.Instruction) continuation {
 		}
 		chosen, recv, recvOk := reflect.Select(cases)
 		if !instr.Blocking {
-			chosen-- // default case should have index -1.
+			chosen--
 		}
 		r := tuple{chosen, recvOk}
 		for i, st := range instr.States {
@@ -431,9 +392,7 @@ func visitInstr(fr *frame, instr ssa.Instruction) continuation {
 		panic(fmt.Sprintf("unexpected instruction: %T", instr))
 	}
 
-	// if val, ok := instr.(ssa.Value); ok {
-	// 	fmt.Println(toString(fr.env[val])) // debugging
-	// }
+	// if val, ok := instr.(ssa.Value); ok { fmt.Println(toString(fr.env[val])) // debugging }
 
 	return kNext
 }
@@ -551,21 +510,19 @@ func callSSA(i *interpreter, caller *frame, callpos token.Pos, fn *ssa.Function,
 	return fr.result
 }
 
-// runFrame executes SSA instructions starting at fr.block and
-// continuing until a return, a panic, or a recovered panic.
+// runFrame executes SSA instructions starting at fr.block and continuing
+// until a return, a panic, or a recovered panic.
 //
 // After a panic, runFrame panics.
 //
-// After a normal return, fr.result contains the result of the call
-// and fr.block is nil.
+// After a normal return, fr.result contains the result of the call and
+// fr.block is nil.
 //
-// A recovered panic in a function without named return parameters
-// (NRPs) becomes a normal return of the zero value of the function's
-// result type.
+// A recovered panic in a function without named return parameters (NRPs)
+// becomes a normal return of the zero value of the function's result type.
 //
-// After a recovered panic in a function with NRPs, fr.result is
-// undefined and fr.block contains the block at which to resume
-// control.
+// After a recovered panic in a function with NRPs, fr.result is undefined and
+// fr.block contains the block at which to resume control.
 func runFrame(fr *frame) {
 	defer func() {
 		if fr.block == nil {
@@ -600,7 +557,6 @@ func runFrame(fr *frame) {
 			if visitInstr(fr, instr) == kReturn {
 				return
 			}
-			// Inv: kNext (continue) or kJump (last instr)
 		}
 	}
 }
@@ -615,15 +571,11 @@ func executePhis(fr *frame) []ssa.Instruction {
 			break
 		}
 	}
-	// Inv: 0 <= firstNonPhi; every block contains a non-phi.
 
 	nonPhis := fr.block.Instrs[firstNonPhi:]
 	if firstNonPhi > 0 {
 		phis := fr.block.Instrs[:firstNonPhi]
 		// Execute parallel assignment of phis.
-		//
-		// See "the swap problem" in Briggs et al's "Practical Improvements
-		// to the Construction and Destruction of SSA Form" for discussion.
 		predIndex := slices.Index(fr.block.Preds, fr.prevBlock)
 		fr.phitemps = fr.phitemps[:0]
 		for _, phi := range phis {
@@ -642,10 +594,9 @@ func executePhis(fr *frame) []ssa.Instruction {
 
 // doRecover implements the recover() built-in.
 func doRecover(caller *frame) value {
-	// recover() must be exactly one level beneath the deferred
-	// function (two levels beneath the panicking function) to
-	// have any effect.  Thus we ignore both "defer recover()" and
-	// "defer f() -> g() -> recover()".
+	// recover() must be exactly one level beneath the deferred function (a
+	// couple of levels beneath the panicking function) to have any effect. Thus
+	// we ignore both "defer recover()" and "defer f() -> g() -> recover()".
 	if caller.i.mode&DisableRecover == 0 &&
 		caller != nil && !caller.panicking &&
 		caller.caller != nil && caller.caller.panicking {
@@ -671,18 +622,15 @@ func doRecover(caller *frame) value {
 	return iface{}
 }
 
-// Interpret interprets the Go program whose main package is mainpkg.
-// mode specifies various interpreter options.  filename and args are
-// the initial values of os.Args for the target program.  sizes is the
-// effective type-sizing function for this program.
-//
-// Interpret returns the exit code of the program: 2 for panic (like
-// gc does), or the argument to os.Exit for normal termination.
+// Interpret interprets the Go program whose main package is mainpkg. mode
+// specifies various interpreter options. filename and args are the initial
+// values of os.Args for the target program. sizes is the effective
+// type-sizing function for this program.
 //
 // The SSA program must include the "runtime" package.
 //
-// Type parameterized functions must have been built with
-// InstantiateGenerics in the ssa.BuilderMode to be interpreted.
+// Type parameterized functions must have been built with InstantiateGenerics
+// in the ssa.BuilderMode to be interpreted.
 func Interpret(mainpkg *ssa.Package, mode Mode, sizes types.Sizes, filename string, args []string) (exitCode int) {
 	i := &interpreter{
 		prog:       mainpkg.Prog,
@@ -734,11 +682,6 @@ func Interpret(mainpkg *ssa.Package, mode Mode, sizes types.Sizes, filename stri
 			fmt.Fprintf(os.Stderr, "panic: unexpected type: %T: %v\n", p, p)
 		}
 
-		// TODO(adonovan): dump panicking interpreter goroutine?
-		// buf := make([]byte, 0x10000)
-		// runtime.Stack(buf, false)
-		// fmt.Fprintln(os.Stderr, string(buf))
-		// (Or dump panicking target goroutine?)
 	}()
 
 	// Run!

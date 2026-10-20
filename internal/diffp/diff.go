@@ -1,10 +1,9 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package diffp implements a basic diff algorithm equivalent to patience diff.
 // It is a copy of internal/diff from the main Go repo, renamed to diffp to avoid
-// conflict with the existing golang.org/x/tools/internal/diff.
+// conflict. This holds with the existing golang.org/x/tools/internal/diff.
 package diffp
 
 import (
@@ -14,38 +13,18 @@ import (
 	"strings"
 )
 
-// A pair is a pair of values tracked for both the x and y side of a diff.
-// It is typically a pair of line indexes.
+// A pair is a pair of values tracked for both the x and y side of a diff. It is typically a pair of line indexes.
 type pair struct{ x, y int }
 
-// Diff returns an anchored diff of the two texts old and new
-// in the “unified diff” format. If old and new are identical,
-// Diff returns a nil slice (no output).
+// Diff returns an anchored diff of the texts old and new in the “unified
+// diff” format. If old and new are identical, Diff returns a nil slice (no
+// output).
 //
-// Unix diff implementations typically look for a diff with
-// the smallest number of lines inserted and removed,
-// which can in the worst case take time quadratic in the
-// number of lines in the texts. As a result, many implementations
-// either can be made to run for a long time or cut off the search
-// after a predetermined amount of work.
-//
-// In contrast, this implementation looks for a diff with the
-// smallest number of “unique” lines inserted and removed,
-// where unique means a line that appears just once in both old and new.
-// We call this an “anchored diff” because the unique lines anchor
-// the chosen matching regions. An anchored diff is usually clearer
-// than a standard diff, because the algorithm does not try to
-// reuse unrelated blank lines or closing braces.
-// The algorithm also guarantees to run in O(n log n) time
-// instead of the standard O(n²) time.
-//
-// Some systems call this approach a “patience diff,” named for
-// the “patience sorting” algorithm, itself named for a solitaire card game.
-// We avoid that name for two reasons. First, the name has been used
-// for a few different variants of the algorithm, so it is imprecise.
-// Second, the name is frequently interpreted as meaning that you have
-// to wait longer (to be patient) for the diff, meaning that it is a slower algorithm,
-// when in fact the algorithm is faster than the standard one.
+// Unix diff implementations typically look for a diff with the smallest
+// number of lines inserted and removed. This can in the worst case take time
+// quadratic in the number of lines in the texts. As a result, many
+// implementations either can be made to run for a long time or cut off the
+// search. This happens after a predetermined amount of work.
 func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 	if bytes.Equal(old, new) {
 		return nil
@@ -59,12 +38,8 @@ func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 	fmt.Fprintf(&out, "--- %s\n", oldName)
 	fmt.Fprintf(&out, "+++ %s\n", newName)
 
-	// Loop over matches to consider,
-	// expanding each match to include surrounding lines,
-	// and then printing diff chunks.
-	// To avoid setup/teardown cases outside the loop,
-	// tgs returns a leading {0,0} and trailing {len(x), len(y)} pair
-	// in the sequence of matches.
+	// Loop over matches to consider, expanding each match to include surrounding
+	// lines, and then printing diff chunks.
 	var (
 		done  pair     // printed up to x[:done.x] and y[:done.y]
 		chunk pair     // start lines of current chunk
@@ -77,10 +52,9 @@ func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 			continue
 		}
 
-		// Expand matching lines as far possible,
-		// establishing that x[start.x:end.x] == y[start.y:end.y].
-		// Note that on the first (or last) iteration we may (or definitey do)
-		// have an empty match: start.x==end.x and start.y==end.y.
+		// Expand matching lines as far possible, establishing that x[start.x:end.x]
+		// == y[start.y:end.y]. on the first (or last) iteration we may (or
+		// definitey do) have an empty match: start.x==end.x and start.y==end.y.
 		start := m
 		for start.x > done.x && start.y > done.y && x[start.x-1] == y[start.y-1] {
 			start.x--
@@ -93,7 +67,6 @@ func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 		}
 
 		// Emit the mismatched lines before start into this chunk.
-		// (No effect on first sentinel iteration, when start = {0,0}.)
 		for _, s := range x[done.x:start.x] {
 			ctext = append(ctext, "-"+s)
 			count.x++
@@ -103,8 +76,7 @@ func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 			count.y++
 		}
 
-		// If we're not at EOF and have too few common lines,
-		// the chunk includes all the common lines and continues.
+		// If we're not at EOF and have too few common lines, the chunk includes all the common lines and continues.
 		const C = 3 // number of context lines
 		if (end.x < len(x) || end.y < len(y)) &&
 			(end.x-start.x < C || (len(ctext) > 0 && end.x-start.x < 2*C)) {
@@ -127,9 +99,7 @@ func Diff(oldName string, old []byte, newName string, new []byte) []byte {
 			}
 			done = pair{start.x + n, start.y + n}
 
-			// Format and emit chunk.
-			// Convert line numbers to 1-indexed.
-			// Special case: empty file shows up as 0,0 not 1,0.
+			// Format and emit chunk. Convert line numbers to 1-indexed.
 			if count.x > 0 {
 				chunk.x++
 			}
@@ -171,26 +141,19 @@ func lines(x []byte) []string {
 	if l[len(l)-1] == "" {
 		l = l[:len(l)-1]
 	} else {
-		// Treat last line as having a message about the missing newline attached,
-		// using the same text as BSD/GNU diff (including the leading backslash).
+		// Treat last line as having a message about the missing newline attached, using the same text as BSD/GNU diff (including the leading backslash).
 		l[len(l)-1] += "\n\\ No newline at end of file\n"
 	}
 	return l
 }
 
-// tgs returns the pairs of indexes of the longest common subsequence
-// of unique lines in x and y, where a unique line is one that appears
-// once in x and once in y.
+// tgs returns the pairs of indexes of the longest common subsequence of
+// unique lines in x and y, where a unique line is one. That appears once in x
+// and once in y.
 //
-// The longest common subsequence algorithm is as described in
-// Thomas G. Szymanski, “A Special Case of the Maximal Common
-// Subsequence Problem,” Princeton TR #170 (January 1975),
-// available at https://research.swtch.com/tgs170.pdf.
+// The longest common subsequence algorithm is as described in Thomas G.
 func tgs(x, y []string) []pair {
 	// Count the number of times each string appears in a and b.
-	// We only care about 0, 1, many, counted as 0, -1, -2
-	// for the x side and 0, -4, -8 for the y side.
-	// Using negative numbers now lets us distinguish positive line numbers later.
 	m := make(map[string]int)
 	for _, s := range x {
 		if c := m[s]; c > -2 {
@@ -203,12 +166,6 @@ func tgs(x, y []string) []pair {
 		}
 	}
 
-	// Now unique strings can be identified by m[s] = -1+-4.
-	//
-	// Gather the indexes of those strings in x and y, building:
-	//	xi[i] = increasing indexes of unique strings in x.
-	//	yi[i] = increasing indexes of unique strings in y.
-	//	inv[i] = index j such that x[xi[i]] = y[yi[j]].
 	var xi, yi, inv []int
 	for i, s := range y {
 		if m[s] == -1+-4 {
@@ -224,9 +181,6 @@ func tgs(x, y []string) []pair {
 	}
 
 	// Apply Algorithm A from Szymanski's paper.
-	// In those terms, A = J = inv and B = [0, n).
-	// We add sentinel pairs {0,0}, and {len(x),len(y)}
-	// to the returned sequence, to help the processing loop.
 	J := inv
 	n := len(xi)
 	T := make([]int, n)

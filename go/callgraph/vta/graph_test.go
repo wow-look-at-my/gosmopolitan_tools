@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -103,12 +102,7 @@ func TestVtaGraph(t *testing.T) {
 	n3 := mapKey{typ: types.NewMap(bint, bint)}
 	n4 := mapValue{typ: types.NewMap(bint, bint)}
 
-	// Create graph
-	//   n1   n2
-	//    \  / /
-	//     n3 /
-	//     | /
-	//     n4
+	// Create graph n1 n2 \ / / n3 / | / n4
 	var g vtaGraph
 	g.addEdge(n1, n3)
 	g.addEdge(n2, n3)
@@ -156,10 +150,9 @@ func TestVtaGraph(t *testing.T) {
 	}
 }
 
-// vtaGraphStr stringifies vtaGraph into a list of strings
-// where each string represents an edge set of the format
-// node -> succ_1, ..., succ_n. succ_1, ..., succ_n are
-// sorted in alphabetical order.
+// vtaGraphStr stringifies vtaGraph into a list of strings where each string
+// represents an edge set of the format node -> succ_1, ..., succ_n. succ_1,
+// ..., succ_n are sorted in alphabetical order.
 func vtaGraphStr(g *vtaGraph) []string {
 	var vgs []string
 	for n := 0; n < g.numNodes(); n++ {

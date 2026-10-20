@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages_test
 
@@ -164,9 +163,9 @@ func TestOverlayXTests(t *testing.T) {
 	testAllOrModulesParallel(t, testOverlayXTests)
 }
 
-// This test checks the behavior of go/packages.Load with an overlaid
-// x test. The source of truth is the go/packages.Load results for the
-// exact same package, just on-disk.
+// This test checks the behavior of go/packages.Load with an overlaid x test.
+// The source of truth is the go/packages.Load results for the exact same
+// package, on-disk.
 func testOverlayXTests(t *testing.T, exporter packagestest.Exporter) {
 	const aFile = `package a; const C = "C"; func Hello() {}`
 	const aTestVariant = `package a
@@ -443,8 +442,7 @@ func testNewPackagesInOverlay(t *testing.T, exporter packagestest.Exporter) {
 			exported.Config.Mode = packages.LoadAllSyntax
 			exported.Config.Logf = t.Logf
 
-			// With an overlay, we don't know the expected import path,
-			// so load with the absolute path of the directory.
+			// With an overlay, we don't know the expected import path, so load with the absolute path of the directory.
 			initial, err := packages.Load(exported.Config, filepath.Join(dir, "e"))
 			if err != nil {
 				t.Fatal(err)
@@ -497,8 +495,7 @@ func TestAdHocOverlays(t *testing.T) {
 	t.Parallel()
 	testenv.NeedsTool(t, "go")
 
-	// This test doesn't use packagestest because we are testing ad-hoc packages,
-	// which are outside of $GOPATH and outside of a module.
+	// This test doesn't use packagestest because we are testing ad-hoc packages.
 	tmp, err := os.MkdirTemp("", "testAdHocOverlays")
 	if err != nil {
 		t.Fatal(err)
@@ -553,7 +550,6 @@ func TestOverlayModFileChanges(t *testing.T) {
 	t.Parallel()
 	testenv.NeedsTool(t, "go")
 
-	// Create two unrelated modules in a temporary directory.
 	tmp, err := os.MkdirTemp("", "tmp")
 	if err != nil {
 		t.Fatal(err)
@@ -732,7 +728,6 @@ func testInvalidFilesBeforeOverlay(t *testing.T, exporter packagestest.Exporter)
 	exported.Config.Tests = true
 
 	// First, check that all packages returned have files associated with them.
-	// Tests the work-around for golang/go#39986.
 	t.Run("no overlay", func(t *testing.T) {
 		initial, err := packages.Load(exported.Config, fmt.Sprintf("%s/...", dir))
 		if err != nil {
@@ -747,7 +742,6 @@ func testInvalidFilesBeforeOverlay(t *testing.T, exporter packagestest.Exporter)
 
 }
 
-// Tests golang/go#35973, fixed in Go 1.14.
 func TestInvalidFilesBeforeOverlayContains(t *testing.T) {
 	testAllOrModulesParallel(t, testInvalidFilesBeforeOverlayContains)
 }
@@ -882,7 +876,6 @@ func testInvalidXTestInGOPATH(t *testing.T, exporter packagestest.Exporter) {
 	}
 }
 
-// Reproduces golang/go#40685.
 func TestAddImportInOverlay(t *testing.T) {
 	testAllOrModulesParallel(t, testAddImportInOverlay)
 }
@@ -1015,8 +1008,7 @@ func Hi() {
 		})
 	}
 
-	// Now, load "golang.org/fake/b" and confirm that "golang.org/fake/a" is
-	// not returned as a root.
+	// Now, load "golang.org/fake/b" and confirm that "golang.org/fake/a" is not returned as a root.
 	initial, err := packages.Load(exported.Config, "golang.org/fake/b")
 	if err != nil {
 		t.Fatal(err)
@@ -1033,15 +1025,14 @@ func Hi() {
 	}
 }
 
-// Tests that overlays are applied for a replaced module.
-// This does not use go/packagestest because it needs to write a replace
+// Tests that overlays are applied for a replaced module. This does not
+// use go/packagestest. This is because it needs to write a replace
 // directive with an absolute path in one of the module's go.mod files.
 func TestOverlaysInReplace(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 	t.Parallel()
 
-	// Create module b.com in a temporary directory. Do not add any Go files
-	// on disk.
+	// Create module b.com in a temporary directory. Do not add any Go files on disk.
 	tmpPkgs, err := os.MkdirTemp("", "modules")
 	if err != nil {
 		t.Fatal(err)

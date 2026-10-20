@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package refactor
 
@@ -16,24 +15,17 @@ import (
 	"golang.org/x/tools/internal/packagepath"
 )
 
-// AddImport returns the prefix (either "pkg." or "") that should be
-// used to qualify references to the desired symbol (member) imported
-// from the specified package, plus any necessary edits to the file's
-// import declaration to add a new import.
-//
-// If the import already exists, and is accessible at pos, AddImport
-// returns the existing name and no edits. (If the existing import is
-// a dot import, the prefix is "".)
-//
-// Otherwise, it adds a new import, using a local name derived from
-// the preferred name. To request a blank import, use a preferredName
-// of "_", and discard the prefix result; member is ignored in this
-// case.
-//
-// AddImport accepts the caller's implicit claim that the imported
-// package declares member.
-//
-// AddImport does not mutate its arguments.
+// AddImport returns the prefix (either "pkg." or "") that should be used to
+// qualify references to the desired symbol (member) imported from the
+// specified package. Plus any necessary edits to the file's import
+// declaration to add a new import. If the import already exists, and is
+// accessible at pos, AddImport returns the existing name and no edits. (If
+// the existing import is a dot import, the prefix is "".) Otherwise, it adds
+// a new import, using a local name derived from the preferred name. To
+// request a blank import, use a preferredName of "_", and discard the prefix
+// result; member is ignored in this case. AddImport accepts the caller's
+// implicit claim that the imported package declares member. AddImport does
+// not mutate its arguments.
 func AddImport(info *types.Info, file *ast.File, preferredName, pkgpath, member string, pos token.Pos) (prefix string, edits []Edit) {
 	// Find innermost enclosing lexical block.
 	scope := info.Scopes[file].Innermost(pos)
@@ -71,9 +63,8 @@ func AddImport(info *types.Info, file *ast.File, preferredName, pkgpath, member 
 		prefix = newName + "."
 	}
 
-	// Use a renaming import whenever the preferred name is not
-	// available, or the chosen name does not match the last
-	// segment of its path.
+	// Use a renaming import whenever the preferred name is not available, or the
+	// chosen name does not match the last segment of its path.
 	if newName == preferredName && newName == pathpkg.Base(pkgpath) {
 		newName = ""
 	}
@@ -87,8 +78,8 @@ func AddImport(info *types.Info, file *ast.File, preferredName, pkgpath, member 
 //
 // A sequence of calls to AddImportEdits that each add the file's
 // first import (or in a file that does not have a grouped import) may
-// result in multiple import declarations, rather than a single one
-// with multiple ImportSpecs. However, a subsequent run of
+// result in multiple import declarations. It is not a single one with
+// multiple ImportSpecs. However, a subsequent run of
 // x/tools/cmd/goimports ([imports.Process]) will combine them.
 //
 // AddImportEdits does not mutate the AST.
@@ -99,9 +90,7 @@ func AddImportEdits(file *ast.File, name, pkgpath string) []Edit {
 	}
 
 	// Create a new import declaration either before the first existing
-	// declaration (if it exists), including its comments; or at the end of the
-	// file (if there are no decls); or inside the declaration, if it is an
-	// import group.
+	// declaration (if it exists).
 	var (
 		before token.Pos
 		decl0  ast.Decl
@@ -126,9 +115,7 @@ func AddImportEdits(file *ast.File, name, pkgpath string) []Edit {
 	if gd, ok := decl0.(*ast.GenDecl); ok && gd.Tok == token.IMPORT && gd.Rparen.IsValid() {
 		// Have existing grouped import ( ... ) decl.
 		if packagepath.MaybeStdPackage(pkgpath) && len(gd.Specs) > 0 {
-			// Add spec for a std package before
-			// first existing spec, followed by
-			// a blank line if the next one is non-std.
+			// Add spec for a std package before first existing spec, followed by a blank line if the next one is non-std.
 			first := gd.Specs[0].(*ast.ImportSpec)
 			pos = first.Pos()
 			if !packagepath.MaybeStdPackage(first.Path.Value) {
@@ -141,12 +128,7 @@ func AddImportEdits(file *ast.File, name, pkgpath string) []Edit {
 			newText = "\t" + newText + "\n"
 		}
 	} else {
-		// No import decl, or non-grouped import.
-		// Add a new import decl before first decl.
-		// (gofmt will merge multiple import decls.)
-		//
-		// TODO(adonovan): do better here; plunder the
-		// mergeImports logic from [imports.Process].
+		// No import decl, or non-grouped import. Add a new import decl before first decl.
 		pos = before
 		newText = "import " + newText + "\n\n"
 	}

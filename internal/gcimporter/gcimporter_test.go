@@ -1,9 +1,9 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This file is a copy of $GOROOT/src/go/internal/gcimporter/gcimporter_test.go,
-// adjusted to make it build with code from (std lib) internal/testenv copied.
+// adjusted to make it build with code from (std lib) internal/testenv. That
+// internal/testenv is copied.
 
 package gcimporter_test
 
@@ -36,8 +36,6 @@ func TestMain(m *testing.M) {
 	testenv.ExitIfSmallMachine()
 	os.Exit(m.Run())
 }
-
-// ----------------------------------------------------------------------------
 
 func needsCompiler(t *testing.T, compiler string) {
 	if runtime.Compiler == compiler {
@@ -137,15 +135,7 @@ func TestImportTestdata(t *testing.T) {
 	// filename should end with ".go"
 	filename := testfile[:len(testfile)-3]
 	if pkg := testPath(t, "./testdata/"+filename, tmpdir); pkg != nil {
-		// The package's Imports list must include all packages
-		// explicitly imported by testfile, plus all packages
-		// referenced indirectly via exported objects in testfile.
-		// With the textual export format (when run against Go1.6),
-		// the list may also include additional packages that are
-		// not strictly required for import processing alone (they
-		// are exported to err "on the safe side").
-		// For now, we just test the presence of a few packages
-		// that we know are there for sure.
+		// The package's Imports list must include all packages explicitly imported by testfile.
 		got := fmt.Sprint(pkg.Imports())
 		wants := []string{"go/ast", "go/token", "go/ast"}
 		for _, want := range wants {
@@ -172,8 +162,7 @@ func TestImportTypeparamTests(t *testing.T) {
 	tmpdir := mktmpdir(t)
 	defer os.RemoveAll(tmpdir)
 
-	// Check go files in test/typeparam, except those that fail for a known
-	// reason.
+	// Check go files in test/typeparam, except those that fail for a known reason.
 	rootDir := filepath.Join(runtime.GOROOT(), "test", "typeparam")
 	list, err := os.ReadDir(rootDir)
 	if err != nil {
@@ -182,7 +171,7 @@ func TestImportTypeparamTests(t *testing.T) {
 
 	for _, entry := range list {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
-			// For now, only consider standalone go files.
+			// Only consider standalone go files.
 			continue
 		}
 
@@ -193,14 +182,11 @@ func TestImportTypeparamTests(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.HasPrefix(src, []byte("// run")) && !bytes.HasPrefix(src, []byte("// compile")) {
-				// We're bypassing the logic of run.go here, so be conservative about
-				// the files we consider in an attempt to make this test more robust to
-				// changes in test/typeparams.
+				// We are bypassing the logic of run.go here.
 				t.Skipf("not detected as a run test")
 			}
 
-			// Compile and import, and compare the resulting package with the package
-			// that was type-checked directly.
+			// Compile and import, and compare the resulting package with the package that was type-checked directly.
 			pkgFiles, err := goroot.PkgfileMap()
 			if err != nil {
 				t.Fatal(err)
@@ -295,20 +281,17 @@ func TestVersionHandling(t *testing.T) {
 			continue
 		}
 
-		// create file with corrupted export data
-		// 1) read file
+		// create file with corrupted export one data) read file.
 		data, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
 			t.Fatal(err)
 		}
-		// 2) find export data
-		// Index is an incorrect but 'good enough for tests' way to find the end of the export data.
+		// 2) find export data Index is an incorrect but 'good enough for tests' way to find the end of the export data.
 		i := bytes.Index(data, []byte("\n$$B\n")) + 5
 		j := bytes.Index(data[i:], []byte("\n$$\n")) + i
 		if i < 0 || j < 0 || i > j {
 			t.Fatalf("export data section not found (i = %d, j = %d)", i, j)
 		}
-		// 3) corrupt the data (increment every 7th byte)
 		for k := j - 13; k >= i; k -= 7 {
 			data[k]++
 		}
@@ -353,7 +336,7 @@ func TestImportStdLib(t *testing.T) {
 			}
 		})
 	}
-	const minPkgs = 225 // 'GOOS=plan9 go1.18 list std | wc -l' reports 228; most other platforms have more.
+	const minPkgs = 225
 	if len(pkgs) < minPkgs {
 		t.Fatalf("too few packages (%d) were imported", nimports)
 	}
@@ -548,9 +531,7 @@ func TestIssue13566(t *testing.T) {
 	defer os.RemoveAll(tmpdir)
 	testoutdir := filepath.Join(tmpdir, "testdata")
 
-	// b.go needs to be compiled from the output directory so that the compiler can
-	// find the compiled package a. We pass the full path to compile() so that we
-	// don't have to copy the file to that directory.
+	// b.go needs to be compiled from the output directory so that the compiler can find the compiled package a.
 	bpath, err := filepath.Abs(filepath.Join("testdata", "b.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -629,17 +610,6 @@ func TestIssue15517(t *testing.T) {
 	compile(t, "testdata", "p.go", filepath.Join(tmpdir, "testdata"), nil)
 
 	// Multiple imports of p must succeed without redeclaration errors.
-	// We use an import path that's not cleaned up so that the eventual
-	// file path for the package is different from the package path; this
-	// will expose the error if it is present.
-	//
-	// (Issue: Both the textual and the binary importer used the file path
-	// of the package to be imported as key into the shared packages map.
-	// However, the binary importer then used the package path to identify
-	// the imported package to mark it as complete; effectively marking the
-	// wrong package as complete. By using an "unclean" package path, the
-	// file and package path are different, exposing the problem if present.
-	// The same issue occurs with vendoring.)
 	imports := make(map[string]*types.Package)
 	for range 3 {
 		if _, err := gcimporter.Import(token.NewFileSet(), imports, "./././testdata/p", tmpdir, nil); err != nil {
@@ -687,9 +657,7 @@ func TestIssue51836(t *testing.T) {
 	testoutdir := filepath.Join(tmpdir, "testdata")
 
 	dir := filepath.Join("testdata", "issue51836")
-	// Following the pattern of TestIssue13898, aa.go needs to be compiled from
-	// the output directory. We pass the full path to compile() so that we don't
-	// have to copy the file to that directory.
+	// Following the pattern of TestIssue13898, aa.go needs to be compiled from the output directory.
 	aapath, err := filepath.Abs(filepath.Join(dir, "aa.go"))
 	if err != nil {
 		t.Fatal(err)
@@ -718,8 +686,7 @@ type K = StillBad[string]
 	fset := token.NewFileSet()
 	f, err := goparser.ParseFile(fset, "p.go", src, 0)
 	if f == nil {
-		// Some test cases may have parse errors, but we must always have a
-		// file.
+		// Some test cases may have parse errors, but we must always have a file.
 		t.Fatalf("ParseFile returned nil file. Err: %v", err)
 	}
 
@@ -744,11 +711,6 @@ type K = StillBad[string]
 
 	insts := []types.Type{
 		pkg2.Scope().Lookup("J").Type(),
-		// This test is still racy, because the incomplete interface is contained
-		// within a nested type expression.
-		//
-		// Uncomment this once golang/go#61561 is fixed.
-		// pkg2.Scope().Lookup("K").Type().Underlying().(*types.Pointer).Elem(),
 	}
 
 	// Use the interface instances concurrently.
@@ -775,7 +737,8 @@ func TestIssue57015(t *testing.T) {
 // containing type errors.
 //
 // Though the issues and tests are specific, they may be representatives of a
-// class of exporter bugs on ill-typed code that we have yet to flush out.
+// class of exporter bugs on ill-typed code. That code is one that we have
+// yet to flush out.
 //
 // TODO(adonovan): systematize our search for similar problems using
 // fuzz testing.
@@ -787,13 +750,9 @@ func TestExportInvalid(t *testing.T) {
 		objName string
 	}{
 		// The lack of a receiver causes Recv.Type=Invalid.
-		// (The type checker then treats Foo as a package-level
-		// function, inserting it into the package scope.)
-		// The exporter needs to apply the same treatment.
 		{"issue 57729", `package p; func () Foo() {}`, "Foo"},
 
-		// It must be possible to export a constant with unknown kind, even if its
-		// type is known.
+		// It must be possible to export a constant with unknown kind, even if its type is known.
 		{"issue 60605", `package p; const EPSILON float64 = 1e-`, "EPSILON"},
 
 		// We must not crash when exporting a struct with unknown package.
@@ -807,8 +766,7 @@ func TestExportInvalid(t *testing.T) {
 
 			f, err := goparser.ParseFile(fset, "p.go", test.src, 0)
 			if f == nil {
-				// Some test cases may have parse errors, but we must always have a
-				// file.
+				// Some test cases may have parse errors, but we must always have a file.
 				t.Fatalf("ParseFile returned nil file. Err: %v", err)
 			}
 
@@ -818,8 +776,7 @@ func TestExportInvalid(t *testing.T) {
 			}
 			pkg1, _ := config.Check("p", fset, []*ast.File{f}, nil)
 
-			// Export it.
-			// (Shallowness isn't important here.)
+			// Export it. (Shallowness isn't important here.)
 			data, err := gcimporter.IExportShallow(fset, pkg1, nil)
 			if err != nil {
 				t.Fatalf("export: %v", err) // any failure to export is a bug
@@ -833,7 +790,6 @@ func TestExportInvalid(t *testing.T) {
 			}
 
 			// Check that the expected object is present in both packages.
-			// We can't assert the type hasn't changed: it may have, in some cases.
 			hasObj1 := pkg1.Scope().Lookup(test.objName) != nil
 			hasObj2 := pkg2.Scope().Lookup(test.objName) != nil
 			if hasObj1 != hasObj2 {
@@ -844,11 +800,7 @@ func TestExportInvalid(t *testing.T) {
 }
 
 func TestIssue58296(t *testing.T) {
-	// Compiles packages c, b, and a where c imports b and b imports a,
-	// then imports c with stub *types.Packages for b and a, and checks that
-	// both a and b are in the Imports() of c.
-	//
-	// This is how go/packages can read the exportdata when NeedDeps is off.
+	// Compiles packages c, b, and a where c.
 
 	// This package only handles gc export data.
 	needsCompiler(t, "gc")
@@ -984,9 +936,6 @@ func lookupObj(t *testing.T, scope *types.Scope, name string) types.Object {
 }
 
 // skipWindows skips the test on windows.
-//
-// On windows, we have to set the -D option for the compiler to avoid having a drive
-// letter and an illegal ':' in the import path - just skip it (see also issue #3483).
 func skipWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("avoid dealing with relative paths/drive letters on windows")
@@ -1069,9 +1018,7 @@ func TestGenericMethods(t *testing.T) {
 	defer os.RemoveAll(tmpdir)
 	testoutdir := filepath.Join(tmpdir, "testdata")
 
-	// Following the pattern of TestIssue13898, b.go needs to be compiled from
-	// the output directory. We pass the full path to compile() so that we don't
-	// have to copy the file to that directory.
+	// Following the pattern of TestIssue13898, b.go needs to be compiled from the output directory.
 	srcdir := filepath.Join("testdata", "genmeth")
 	bpath, err := filepath.Abs(filepath.Join(srcdir, "b.go"))
 	if err != nil {
@@ -1080,4 +1027,56 @@ func TestGenericMethods(t *testing.T) {
 
 	compilePkg(t, srcdir, "a.go", testoutdir, nil, apkg(testoutdir))
 	compile(t, testoutdir, bpath, testoutdir, map[string]string{apkg(testoutdir): filepath.Join(testoutdir, "a.o")})
+}
+
+// TestParamDefaultsShallow checks that a parameter's default survives the
+// shallow export data gopls caches packages in. Without it a caller in
+// another package sees a parameter it must pass, and the call the user
+// wrote is reported as missing an argument.
+func TestParamDefaultsShallow(t *testing.T) {
+	const src = `package p
+
+type Level int
+
+func Greet(name string = "world", n int = 3, loud bool = true, lvl Level = 2) string { return name }
+
+func Plain(name string) string { return name }
+`
+	fset := token.NewFileSet()
+	f, err := goparser.ParseFile(fset, "p.go", src, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg1, err := (&types.Config{}).Check("p", fset, []*ast.File{f}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := gcimporter.IExportShallow(fset, pkg1, nil)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	imports := make(map[string]*types.Package)
+	pkg2, err := gcimporter.IImportShallow(fset, gcimporter.GetPackagesFromMap(imports), data, "p", nil)
+	if err != nil {
+		t.Fatalf("import: %v", err)
+	}
+
+	params := pkg2.Scope().Lookup("Greet").Type().(*types.Signature).Params()
+	want := []string{`"world"`, "3", "true", "2"}
+	for i, want := range want {
+		deflt := params.At(i).Default()
+		if deflt == nil {
+			t.Errorf("parameter %s lost its default", params.At(i).Name())
+			continue
+		}
+		if got := deflt.Const.ExactString(); got != want {
+			t.Errorf("parameter %s default = %s, want %s", params.At(i).Name(), got, want)
+		}
+	}
+
+	plain := pkg2.Scope().Lookup("Plain").Type().(*types.Signature).Params()
+	if deflt := plain.At(0).Default(); deflt != nil {
+		t.Errorf("parameter without a default came back with %v", deflt)
+	}
 }

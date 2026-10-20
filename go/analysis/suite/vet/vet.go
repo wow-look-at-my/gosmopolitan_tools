@@ -1,15 +1,13 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// The vet package defines the suite of analyzers used by cmd/vet,
-// the default analysis tool run by "go vet".
-// Its behavior is equivalent to:
+// The vet package defines the suite of analyzers used by cmd/vet, the default
+// analysis tool run by "go vet". Its behavior is equivalent to.
 //
 //	func main() { unitchecker.Main(vet.Suite...) }
 //
-// If you need a different suite, define your own tool
-// and run "go vet -vettool=mytool".
+// If you need a different suite, define your own tool and run "go vet
+// -vettool=mytool".
 package vet
 
 import (

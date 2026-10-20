@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package buildutil_test
 
@@ -59,8 +58,8 @@ func TestContainingPackage(t *testing.T) {
 
 		defer os.RemoveAll(tmp)
 
-		// symlink between $GOPATH/src and /tmp/go/src
-		// in order to test all possible symlink cases
+		// symlink between $GOPATH/src and /tmp/go/src to test all possible symlink
+		// cases
 		if err := os.Symlink(gopath+"/src", tmp+"/src"); err != nil {
 			t.Fatal(err)
 		}

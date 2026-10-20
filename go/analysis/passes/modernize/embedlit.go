@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -36,9 +35,8 @@ var EmbedLitAnalyzer = &analysis.Analyzer{
 }
 
 // Go1.27 introduced the ability to directly access embedded struct fields.
-// The embedlit modernizer suggests two types of fixes that use this feature:
-// 1. Removing redundant field type specifiers in embedded struct fields.
-// 2. Moving embedded struct field assignments inside of the struct literal
+// Removing redundant field type specifiers in embedded struct fields. Moving
+// embedded struct field assignments inside of the struct literal
 // initialization.
 func runEmbedLit(pass *analysis.Pass) (any, error) {
 	var (
@@ -48,10 +46,8 @@ func runEmbedLit(pass *analysis.Pass) (any, error) {
 	)
 	for curLit := range inspect.Root().Preorder((*ast.CompositeLit)(nil)) {
 		if curLit.ParentEdgeKind() != edge.KeyValueExpr_Value { // non-nested comp lit
-			// TODO(mkalil): Figure out how to handle addition/removal of commas in
-			// the comp lit when we observe code where both patterns apply. (This will
-			// likely require a significant amount of work). For now, only apply edits
-			// from one pattern at a time.
+			// TODO(mkalil): Figure out how to handle addition/removal of commas in the
+			// comp lit when we observe code where both patterns apply.
 			if !embedlitUnnest(pass, info, curLit) {
 				err := embedlitCombine(pass, index, info, curLit) // calls pass.ReadFile
 				if err != nil {
@@ -64,28 +60,22 @@ func runEmbedLit(pass *analysis.Pass) (any, error) {
 }
 
 // Pattern A: removing unneeded embedded field type specifier from the struct
-// literal.
-// T{U: U{f: v, ...}} => T{f: v, ...}
-// It returns true if it reported a diagnostic with edits.
+// literal. T{U: U{f: v, ...}} => T{f: v, ...} It returns true if it reported
+// a diagnostic with edits.
 func embedlitUnnest(pass *analysis.Pass, info *types.Info, curLit inspector.Cursor) (reported bool) {
 	var (
 		lit         = curLit.Node().(*ast.CompositeLit)
 		compLitType = info.TypeOf(lit)
 	)
 
-	// checkLit determines whether any of the fields in the given struct literal can
-	// be promoted, and calculates the corresponding edits.
+	// checkLit determines whether any of the fields in the given struct literal can be promoted.
 	var checkLit func(lit *ast.CompositeLit)
 	checkLit = func(lit *ast.CompositeLit) {
 		for i, elt := range lit.Elts {
 			// Can't promote an unkeyed field; would result in a syntax error.
 			if kv, ok := elt.(*ast.KeyValueExpr); ok {
 				if innerLit := isEmbeddedFieldLit(info, compLitType, kv); innerLit != nil {
-					// Inv: len(innerLit.Elts) > 0. We skip empty struct literals.
-					// Emit edits to delete the unnecessary embedded field type specifier
-					// and its closing brace.
-					// Delete any inner trailing commas or white space. Extra trailing commas
-					// would result in invalid code.
+					// We skip empty struct literals.
 					closingPos := innerLit.Elts[len(innerLit.Elts)-1].End()
 					file := astutil.EnclosingFile(curLit)
 					// Enable modernizer only for Go1.27.
@@ -97,22 +87,11 @@ func embedlitUnnest(pass *analysis.Pass, info *types.Info, curLit inspector.Curs
 						!moreiters.Empty(astutil.Comments(file, closingPos, innerLit.Rbrace+1)) {
 						continue
 					}
-					// Delete starting from the key to the character right after the
-					// opening brace of the inner literal:
-					// T{U: U{f: v, ...}}
-					//   -----
+					// Delete starting from the key to the character right after the opening brace of the inner literal: T{U: U{f.
 					startPos := kv.Pos()
 					endPos := innerLit.Lbrace + 1
 
-					// Delete the entire line if the key and its opening brace are
-					// together on their own line. This prevents leaving behind unneeded
-					// blank lines inside struct literals that `gofmt` will not remove.
-					// T{
-					// 		U: U{    <- delete entire line
-					// 			f: v,
-					//		}
-					//	}
-					//
+					// Delete the entire line if the key and its opening brace are together on their own line.
 					tokFile := pass.Fset.File(kv.Pos())
 					lineOf := func(pos token.Pos) int {
 						return tokFile.PositionFor(pos, false).Line
@@ -120,16 +99,16 @@ func embedlitUnnest(pass *analysis.Pass, info *types.Info, curLit inspector.Curs
 					curLine := lineOf(kv.Pos())
 					var prevLine int
 					if i == 0 {
-						// First element, so the previous line is the parent lbrace.
+						// First element, so the line is the parent lbrace.
 						prevLine = lineOf(lit.Lbrace)
 					} else {
 						prevLine = lineOf(lit.Elts[i-1].End())
 					}
 
 					// We can safely delete the entire line if the key value expression is
-					// alone on its line: it starts on a new line relative to the previous
-					// element (prevLine < curLine), and the first element of the inner
-					// literal starts on a subsequent line.
+					// alone on its line. It starts on a new line relative to the element
+					// (prevLine < curLine), and the first element of the inner literal
+					// starts on a subsequent line.
 					if prevLine < curLine && curLine < tokFile.LineCount() && // (1-based)
 						lineOf(innerLit.Elts[0].Pos()) > curLine {
 						lineStart := tokFile.LineStart(curLine)
@@ -142,17 +121,14 @@ func embedlitUnnest(pass *analysis.Pass, info *types.Info, curLit inspector.Curs
 					}
 
 					edits := []analysis.TextEdit{
-						// T{U: U{f: v, ...}}
-						//   -----         -
+						// T{U: U{f: v, ...}} -
 						{
 							// Delete the key and the opening brace of the inner struct literal.
 							Pos: startPos,
 							End: endPos,
 						},
 						{
-							// Delete the corresponding closing brace, including preceding
-							// white space or commas. Failing to delete trailing commas may
-							// result in invalid code.
+							// Delete the corresponding closing brace, including preceding white space or commas.
 							Pos: closingPos,
 							End: innerLit.Rbrace + 1,
 						},
@@ -179,24 +155,19 @@ func embedlitUnnest(pass *analysis.Pass, info *types.Info, curLit inspector.Curs
 }
 
 // Pattern B: moving embedded field assignments inside the struct literal
-// initialization.
-// t := T{...}; t.x = x => t := T{..., x: x}
-// (or var t = ...)
+// initialization. t := T{...}; t.x = x => t := T{..., x: x} (or var t = ...)
 func embedlitCombine(pass *analysis.Pass, index *typeindex.Index, info *types.Info, curLit inspector.Cursor) error {
 	compLit := curLit.Node().(*ast.CompositeLit)
 	if !moreiters.Every(slices.Values(compLit.Elts), func(e ast.Expr) bool {
 		return is[*ast.KeyValueExpr](e)
 	}) {
-		// Promoting additional embedded fields would result in mixing keyed and
-		// unkeyed fields, which isn't allowed.
+		// Promoting additional embedded fields would result in mixing keyed and unkeyed fields, which isn't allowed.
 		return nil
 	}
 	var (
 		// Ident for "t" in the assignment.
 		lhs *ast.Ident
 		// The cursor representing the statement that initializes the comp lit "t".
-		// We use its siblings to search for field assignments and verify that there
-		// are no intervening statements, in case those statements observe "t".
 		curStmt inspector.Cursor
 	)
 	switch curLit.ParentEdgeKind() {
@@ -234,8 +205,7 @@ func embedlitCombine(pass *analysis.Pass, index *typeindex.Index, info *types.In
 	var (
 		compLitType = info.TypeOf(compLit)
 		tObj        = info.ObjectOf(lhs)
-		// Marks the contiguous block of embedded field assign statements that will
-		// be moved into the struct initialization.
+		// Marks the contiguous block of embedded field assign statements that will be moved into the struct initialization.
 		firstStmt, lastStmt  inspector.Cursor
 		hasEmbeddedSelection bool
 	)
@@ -243,10 +213,7 @@ func embedlitCombine(pass *analysis.Pass, index *typeindex.Index, info *types.In
 		return nil
 	}
 
-	// Record the index paths of the existing fields in the composite literal. Two
-	// fields in a composite literal conflict if one field's path is a prefix of
-	// the other's. If the field in an assignment conflicts with an existing
-	// field, we won't suggest a fix to move it into the struct literal.
+	// Record the index paths of the existing fields in the composite literal.
 	var fieldPaths [][]int
 	for _, elt := range compLit.Elts {
 		k, ok := elt.(*ast.KeyValueExpr).Key.(*ast.Ident)
@@ -267,11 +234,9 @@ stmtloop:
 		if !ok {
 			break // end of (e.g.) block
 		}
-		// All embedded field value assignments must immediately follow the struct
-		// initialization.
+		// All embedded field value assignments must immediately follow the struct initialization.
 		assign, ok := curStmt.Node().(*ast.AssignStmt)
 		if !ok || len(assign.Lhs) != 1 || !(assign.Tok == token.ASSIGN || assign.Tok == token.DEFINE) {
-			// TODO(mkalil): handle multi-assignments like t.x, t.y = 1, 2
 			break
 		}
 		expr := assign.Lhs[0]
@@ -299,9 +264,7 @@ stmtloop:
 		if slices.ContainsFunc(fieldPaths, func(index []int) bool { return pathConflicts(index, assignIdx) }) {
 			break
 		}
-		// The selection is from an embedded field if it directly
-		// assigns an embedded struct field (t.B = B{...}) or if
-		// the length of the index path is greater than one.
+		// The selection is from an embedded field.
 		if fieldVar.Embedded() || len(assignIdx) > 1 {
 			hasEmbeddedSelection = true
 		}
@@ -317,14 +280,8 @@ stmtloop:
 			if info.ObjectOf(id) == tObj {
 				break stmtloop
 			}
-			// Note: we don't need to worry about expressions with side effects
-			// changing the behavior when moved inside the comp lit. The order of
-			// effects will be preserved because we preserve the order of the key
-			// value pairs inside the comp lit.
 		}
-		// We might move multiple sequential assignment statements into
-		// the struct literal, so we need to keep track of the index path
-		// of this assignment to check it against subsequent assignments.
+		// We might move multiple sequential assignment statements into the struct literal.
 		fieldPaths = append(fieldPaths, assignIdx)
 		if !firstStmt.Valid() {
 			firstStmt = curStmt
@@ -343,8 +300,7 @@ stmtloop:
 		return nil
 	}
 
-	// Read file content to determine if the struct lit has a trailing comma
-	// after its last element.
+	// Read file content to determine if the struct lit has a trailing comma after its last element.
 	tokFile := pass.Fset.File(compLit.Rbrace)
 	filename := tokFile.Name()
 	src, err := pass.ReadFile(filename)
@@ -370,17 +326,12 @@ stmtloop:
 		hasTrailingComma = bytes.Contains(span, []byte(","))
 	}
 	var edits []analysis.TextEdit
-	// Emit edits to move the field assignment into the struct lit while
-	// removing it from its current place.
-	// t := T{...}; t.x = v
-	//           ----- --- -
-	// t := T{...,    x:  v}
+	// Emit edits to move the field assignment into the struct lit while removing
+	// it from its current place. t := T{...}; t.x = v --- - t := T{..., x: v}
 
 	// Add a trailing comma before the closing brace of compLit if one doesn't
-	// exist, and delete the closing brace itself.
-	// t := T{...}; t.x = v
-	//           -
-	// t := T{..., t.x = v
+	// exist, and delete the closing brace itself. t := T{...}; t.x = v - t :=
+	// T{..., t.x = v
 	if len(compLit.Elts) > 0 && !hasTrailingComma {
 		edits = append(edits, analysis.TextEdit{
 			Pos:     compLit.Rbrace,
@@ -394,10 +345,7 @@ stmtloop:
 		})
 	}
 
-	// For each assignment:
-	// t.x = v
-	// -- ---
-	//   x : v
+	// For each assignment: t.x = v -- x: v
 	curStmt = firstStmt
 	var prevStmt inspector.Cursor
 	for {
@@ -416,7 +364,7 @@ stmtloop:
 			NewText: []byte(":"),
 		})
 
-		// Add a comma after the previous assignment if this is not the first one.
+		// Add a comma after the assignment if this is not the first one.
 		if prevStmt.Valid() {
 			edits = append(edits, analysis.TextEdit{
 				Pos:     prevStmt.Node().End(),
@@ -465,7 +413,7 @@ func isEmbeddedFieldLit(info *types.Info, topLevelType types.Type, kv *ast.KeyVa
 		return nil
 	}
 	// We cannot remove this type if any of its nested composite elements have
-	// unkeyed fields or are ambiguous, so we check for those conditions before
+	// unkeyed fields or are ambiguous. We check for those conditions before
 	// returning.
 	for _, elt := range lit.Elts {
 		kv, ok := elt.(*ast.KeyValueExpr)
@@ -477,13 +425,7 @@ func isEmbeddedFieldLit(info *types.Info, topLevelType types.Type, kv *ast.KeyVa
 			return nil
 		}
 		k := kv.Key.(*ast.Ident) // can't fail
-		// Cannot promote an ambiguous type, for example:
-		// type T struct { A; B }
-		// type A struct { x int }
-		// type B struct { x int }
-		// _ = T{A: A{x: 1}}
-		// cannot be simplified to T{x: 1} because T has two different embedded fields called "x".
-		// We also reject composite literals with slice elements, as parentObj will be nil.
+		// Cannot promote an ambiguous type, for example: type T struct { A.
 		parentObj, _, _ := types.LookupFieldOrMethod(topLevelType, true, obj.Pkg(), k.Name)
 		if parentObj != obj {
 			return nil
@@ -507,7 +449,7 @@ func keyedField(info *types.Info, kv *ast.KeyValueExpr) *types.Var {
 }
 
 // pathConflicts reports whether the specified index paths conflict.
-// Two index paths conflict if one is a prefix of the other.
+// Index paths conflict if one is a prefix of the other.
 func pathConflicts(p1, p2 []int) bool {
 	return (len(p1) >= len(p2) && slices.Equal(p1[:len(p2)], p2)) ||
 		(len(p2) >= len(p1) && slices.Equal(p2[:len(p1)], p1))

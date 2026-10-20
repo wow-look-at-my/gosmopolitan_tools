@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package present
 
@@ -75,7 +74,7 @@ func parseInlineLink(s string) (link string, length int) {
 	}
 	urlEnd := strings.Index(s, "]")
 	rawURL := s[2:urlEnd]
-	const badURLChars = `<>"{}|\^[] ` + "`" // per RFC2396 section 2.4.3
+	const badURLChars = `<>"{}|\^[] ` + "`"
 	if strings.ContainsAny(rawURL, badURLChars) {
 		return
 	}
@@ -83,9 +82,8 @@ func parseInlineLink(s string) (link string, length int) {
 		simpleURL := ""
 		url, err := url.Parse(rawURL)
 		if err == nil {
-			// If the URL is http://foo.com, drop the http://
-			// In other words, render [[http://golang.org]] as:
-			//   <a href="http://golang.org">golang.org</a>
+			// If the URL is http://foo.com, drop the http:// In other words, render
+			// [[http://golang.org]] as: <a href="http://golang.org">golang.org</a>
 			if after, ok := strings.CutPrefix(rawURL, url.Scheme+"://"); ok {
 				simpleURL = after
 			} else if after, ok := strings.CutPrefix(rawURL, url.Scheme+":"); ok {

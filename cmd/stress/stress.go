@@ -1,19 +1,17 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build unix || aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows
 
-// The stress utility is intended for catching sporadic failures.
-// It runs a given process in parallel in a loop and collects any failures.
-// Usage:
+// The stress utility is intended for catching sporadic failures. It runs a
+// given process in parallel in a loop and collects any failures. Usage:
 //
 //	$ stress ./fmt.test -test.run=TestSometing -test.cpu=10
 //
-// You can also specify a number of parallel processes with -p flag;
-// instruct the utility to not kill hanged processes for gdb attach;
-// or specify the failure output you are looking for (if you want to
-// ignore some other sporadic failures).
+// You can also specify a number of parallel processes with -p flag. Instruct
+// the utility to not kill hanged processes for gdb attach. Or specify the
+// failure output you are looking for (if you want to ignore some other
+// sporadic failures).
 package main
 
 import (

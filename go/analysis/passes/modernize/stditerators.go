@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -31,17 +30,14 @@ var StdIteratorsAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_stditerators",
 }
 
-// stditeratorsTable records std types that have legacy T.{Len,At}
-// iteration methods as well as a newer T.All method that returns an
-// iter.Seq.
+// stditeratorsTable records std types that have legacy T.{Len,At} iteration
+// methods as well as a newer T.All method that returns an iter.Seq.
 var stditeratorsTable = [...]struct {
 	pkgpath, typename, lenmethod, atmethod, itermethod, elemname string
 
-	seqn int // 1 or 2 => "for x" or "for _, x"
+	seqn int
 }{
-	// Example: in go/types, (*Tuple).Variables returns an
-	// iterator that replaces a loop over (*Tuple).{Len,At}.
-	// The loop variable is named "v".
+	// Example: in go/types, (*Tuple).Variables returns an iterator that replaces a loop over (*Tuple).{Len,At}.
 	{"go/types", "Interface", "NumEmbeddeds", "EmbeddedType", "EmbeddedTypes", "etyp", 1},
 	{"go/types", "Interface", "NumExplicitMethods", "ExplicitMethod", "ExplicitMethods", "method", 1},
 	{"go/types", "Interface", "NumMethods", "Method", "Methods", "method", 1},
@@ -61,43 +57,9 @@ var stditeratorsTable = [...]struct {
 	{"reflect", "Value", "NumMethod", "Method", "Methods", "method", 2},
 }
 
-// stditerators suggests fixes to replace loops using Len/At-style
-// iterator APIs by a range loop over an iterator. The set of
-// participating types and methods is defined by [iteratorsTable].
-//
-// Pattern:
-//
-//	for i := 0; i < x.Len(); i++ {
-//		use(x.At(i))
-//	}
-//
-// =>
-//
-//	for elem := range x.All() {
-//		use(elem)
-//	}
-//
-// Variant:
-//
-//	for i := range x.Len() { ... }
-//
-// Note: Iterators have a dynamic cost. How do we know that
-// the user hasn't intentionally chosen not to use an
-// iterator for that reason? We don't want to go fix to
-// undo optimizations. Do we need a suppression mechanism?
-//
-// TODO(adonovan): recognize the more complex patterns that
-// could make full use of both components of an iter.Seq2, e.g.
-//
-//	for i := 0; i < v.NumField(); i++ {
-//		use(v.Field(i), v.Type().Field(i))
-//	}
-//
-// =>
-//
-//	for structField, field := range v.Fields() {
-//		use(structField, field)
-//	}
+// stditerators suggests fixes to replace loops using Len/At-style iterator
+// APIs by a range loop over an iterator. The set of participating types and
+// methods is defined by [iteratorsTable].
 func stditerators(pass *analysis.Pass) (any, error) {
 	var (
 		index = pass.ResultOf[typeindexanalyzer.Analyzer].(*typeindex.Index)
@@ -116,25 +78,12 @@ func stditerators(pass *analysis.Pass) (any, error) {
 			atMethod  = index.Selection(row.pkgpath, row.typename, row.atmethod)
 		)
 
-		// chooseName returns an appropriate fresh name
-		// for the index variable of the iterator loop
-		// whose body is specified.
-		//
-		// If the loop body starts with
-		//
-		//     for ... { e := x.At(i); use(e) }
-		//
-		// or
-		//
-		//     for ... { if e := x.At(i); cond { use(e) } }
-		//
-		// then chooseName prefers the name e and additionally
-		// returns the var's symbol. We'll transform this to:
-		//
-		//     for e := range x.Len() { e := e; use(e) }
-		//
-		// which leaves a redundant assignment that a
-		// subsequent 'forvar' pass will eliminate.
+		// chooseName returns an appropriate fresh name for the index variable of
+		// the iterator loop whose body is specified. for ... { e := x.At(i). Use(e)
+		// } for ... { if e := x.At(i). Cond { use(e) } } then chooseName prefers
+		// the name e and additionally returns the var's symbol. We'll transform
+		// this to. for e := range x.Len() { e := e; use(e) } which leaves a
+		// redundant assignment that a subsequent 'forvar' pass will eliminate.
 		chooseName := func(curBody inspector.Cursor, x ast.Expr, i *types.Var) (string, *types.Var) {
 
 			// isVarAssign reports whether stmt has the form v := x.At(i)
@@ -161,12 +110,12 @@ func stditerators(pass *analysis.Pass) (any, error) {
 
 			body := curBody.Node().(*ast.BlockStmt)
 			if len(body.List) > 0 {
-				// Is body { elem := x.At(i); ... } ?
+				// At(i); ...
 				if v := isVarAssign(body.List[0]); v != nil {
 					return v.Name(), v
 				}
 
-				// Or { if elem := x.At(i); cond { ... } } ?
+				// At(i); cond { ...
 				if ifstmt, ok := body.List[0].(*ast.IfStmt); ok && ifstmt.Init != nil {
 					if v := isVarAssign(ifstmt.Init); v != nil {
 						return v.Name(), v
@@ -175,8 +124,7 @@ func stditerators(pass *analysis.Pass) (any, error) {
 			}
 
 			loop := curBody.Parent().Node()
-			// We generate a new name only if the preferred name is already declared here
-			// and is used within the loop body.
+			// We generate a new name only if the preferred name is already declared here and is used within the loop body.
 			name := freshName(info, index, info.Scopes[loop], loop.Pos(), curBody, curBody, token.NoPos, row.elemname)
 			return name, nil
 		}
@@ -202,7 +150,7 @@ func stditerators(pass *analysis.Pass) (any, error) {
 			// Analyze enclosing loop.
 			switch curLenCall.ParentEdgeKind() {
 			case edge.BinaryExpr_Y:
-				// pattern 1: for i := 0; i < x.Len(); i++ { ... }
+				// One pattern: for i := 0; i < x.Len(); i++ { ... }
 				var (
 					curCmp = curLenCall.Parent()
 					cmp    = curCmp.Node().(*ast.BinaryExpr)
@@ -222,7 +170,6 @@ func stditerators(pass *analysis.Pass) (any, error) {
 						continue
 					}
 					// Have: for i := 0; i < x.Len(); i++ { ... }.
-					//       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 					rng = astutil.RangeOf(loop.For, loop.Post.End())
 					indexVar = v
 					curBody = curFor.ChildAt(edge.ForStmt_Body, -1)
@@ -232,7 +179,7 @@ func stditerators(pass *analysis.Pass) (any, error) {
 					//	for i       := 0; i < x.Len(); i++ {
 					//          ----       -------  ---  -----
 					//	for elem    := range  x.All()      {
-					// or   for _, elem := ...
+					// or for _, elem := ...
 					edits = []analysis.TextEdit{
 						{
 							Pos:     v.Pos(),
@@ -257,7 +204,7 @@ func stditerators(pass *analysis.Pass) (any, error) {
 				}
 
 			case edge.RangeStmt_X:
-				// pattern 2: for i := range x.Len() { ... }
+				// A later pattern: for i := range x.Len() { ... }
 				var (
 					curRange = curLenCall.Parent()
 					loop     = curRange.Node().(*ast.RangeStmt)
@@ -265,8 +212,7 @@ func stditerators(pass *analysis.Pass) (any, error) {
 				if id, ok := loop.Key.(*ast.Ident); ok &&
 					loop.Value == nil &&
 					loop.Tok == token.DEFINE {
-					// Have: for i := range x.Len() { ... }
-					//                ~~~~~~~~~~~~~
+					// Have: for i := range x.Len() { ... } ~~~~~~~~~~~~~
 
 					rng = astutil.RangeOf(loop.Range, loop.X.End())
 					indexVar = info.Defs[id].(*types.Var)
@@ -296,10 +242,8 @@ func stditerators(pass *analysis.Pass) (any, error) {
 				continue // no loop of the required form
 			}
 
-			// TODO(adonovan): what about possible
-			// modifications of x within the loop?
-			// Aliasing seems to make a conservative
-			// treatment impossible.
+			// TODO(adonovan): what about possible modifications of x within the loop?
+			// Aliasing seems to make a conservative treatment impossible.
 
 			// Check that all uses of var i within loop body are x.At(i).
 			for curUse := range index.Uses(indexVar) {
@@ -321,20 +265,15 @@ func stditerators(pass *analysis.Pass) (any, error) {
 					continue nextCall
 				}
 
-				// At each point of use, check that
-				// the fresh variable is not shadowed
-				// by an intervening local declaration
-				// (or by the idiomatic elemVar optionally
-				// found by chooseName).
+				// At each point of use, check that the fresh variable is not shadowed by
+				// an intervening local declaration (or by the idiomatic elemVar
+				// optionally found by chooseName).
 				if obj := lookup(info, curAtCall, elem); obj != nil && obj != elemVar && obj.Pos() > indexVar.Pos() {
-					// (Ideally, instead of giving up, we would
-					// embellish the name and try again.)
+					// (Ideally, instead of giving up, we would embellish the name and try again.)
 					continue nextCall
 				}
 
-				// use(x.At(i))
-				//     -------
-				// use(elem   )
+				// use(x.At(i)) ------- use(elem )
 				edits = append(edits, analysis.TextEdit{
 					Pos:     atCall.Pos(),
 					End:     atCall.End(),
@@ -343,9 +282,6 @@ func stditerators(pass *analysis.Pass) (any, error) {
 			}
 
 			// Check file Go version is new enough for the iterator method.
-			// (In the long run, version filters are not highly selective,
-			// so there's no need to do them first, especially as this check
-			// may be somewhat expensive.)
 			if v, err := methodGoVersion(row.pkgpath, row.typename, row.itermethod); err != nil {
 				panic(err)
 			} else if !analyzerutil.FileUsesGoVersion(pass, astutil.EnclosingFile(curLenCall), v.String()) {
@@ -374,9 +310,8 @@ func stditerators(pass *analysis.Pass) (any, error) {
 // methodGoVersion reports the version at which the method
 // (pkgpath.recvtype).method appeared in the standard library.
 func methodGoVersion(pkgpath, recvtype, method string) (stdlib.Version, error) {
-	// TODO(adonovan): opt: this might be inefficient for large packages
-	// like go/types. If so, memoize using a map (and kill two birds with
-	// one stone by also memoizing the 'within' check above).
+	// TODO(adonovan): opt: this might be inefficient for large packages like
+	// go/types.
 	for _, sym := range stdlib.PackageSymbols()[pkgpath] {
 		if sym.Kind == stdlib.Method {
 			_, recv, name := sym.SplitMethod()

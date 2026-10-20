@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil_test
 
@@ -152,8 +151,7 @@ type A struct {}`,
 			in: `type A struct {
 			         b int /*Deprecated: use 'c'*/
 			     }`,
-			// We can't prevent this, as ast.CommentGroup doesn't specify
-			// where the comment happened. We won't advertise this.
+			// We can't prevent this, as ast.CommentGroup doesn't specify where the comment happened. We won't advertise this.
 			want: "Deprecated: use 'c'\n",
 		},
 		{

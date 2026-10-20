@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -15,11 +14,9 @@ import (
 	"os"
 )
 
-// If true, perform sanity checking and show progress at each
-// successive iteration of optimizeBlocks.  Very verbose.
+// If true, perform sanity checking and show progress at each successive iteration of optimizeBlocks. verbose.
 const debugBlockOpt = false
 
-// markReachable sets Index=-1 for all blocks reachable from b.
 func markReachable(b *BasicBlock) {
 	b.Index = -1
 	for _, succ := range b.Succs {
@@ -57,9 +54,9 @@ func deleteUnreachableBlocks(f *Function) {
 	f.removeNilBlocks()
 }
 
-// jumpThreading attempts to apply simple jump-threading to block b,
-// in which a->b->c become a->c if b is just a Jump.
-// The result is true if the optimization was applied.
+// jumpThreading attempts to apply simple jump-threading to block b, in which
+// a->b->c become a->c if b is a Jump. The result is true if the optimization
+// was applied.
 func jumpThreading(f *Function, b *BasicBlock) bool {
 	if b.Index == 0 {
 		return false // don't apply to entry block
@@ -80,7 +77,7 @@ func jumpThreading(f *Function, b *BasicBlock) bool {
 	for j, a := range b.Preds {
 		a.replaceSucc(b, c)
 
-		// If a now has two edges to c, replace its degenerate If by Jump.
+		// If a now has edges to c, replace its degenerate If by Jump.
 		if len(a.Succs) == 2 && a.Succs[0] == c && a.Succs[1] == c {
 			jump := new(Jump)
 			jump.setBlock(a)
@@ -103,8 +100,6 @@ func jumpThreading(f *Function, b *BasicBlock) bool {
 	return true
 }
 
-// fuseBlocks attempts to apply the block fusion optimization to block
-// a, in which a->b becomes ab if len(a.Succs)==len(b.Preds)==1.
 // The result is true if the optimization was applied.
 func fuseBlocks(f *Function, a *BasicBlock) bool {
 	if len(a.Succs) != 1 {
@@ -115,9 +110,8 @@ func fuseBlocks(f *Function, a *BasicBlock) bool {
 		return false
 	}
 
-	// Degenerate &&/|| ops may result in a straight-line CFG
-	// containing φ-nodes. (Ideally we'd replace such them with
-	// their sole operand but that requires Referrers, built later.)
+	// Degenerate &&/|| ops may result in a straight-line CFG containing
+	// φ-nodes.
 	if b.hasPhi() {
 		return false // not sound without further effort
 	}
@@ -144,9 +138,8 @@ func fuseBlocks(f *Function, a *BasicBlock) bool {
 	return true
 }
 
-// optimizeBlocks() performs some simple block optimizations on a
-// completed function: dead block elimination, block fusion, jump
-// threading.
+// optimizeBlocks() performs some simple block optimizations on a completed
+// function: dead block elimination, block fusion, jump threading.
 func optimizeBlocks(f *Function) {
 	deleteUnreachableBlocks(f)
 
@@ -167,7 +160,7 @@ func optimizeBlocks(f *Function) {
 				continue
 			}
 
-			// Fuse blocks.  b->c becomes bc.
+			// Fuse blocks. b->c becomes bc.
 			if fuseBlocks(f, b) {
 				changed = true
 			}

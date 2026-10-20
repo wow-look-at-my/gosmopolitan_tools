@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package unmarshal
 
@@ -31,16 +30,11 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	switch pass.Pkg.Path() {
 	case "encoding/gob", "encoding/json", "encoding/xml", "encoding/asn1":
-		// These packages know how to use their own APIs.
-		// Sometimes they are testing what happens to incorrect programs.
+		// These packages know how to use their own APIs. Sometimes they are testing what happens to incorrect programs.
 		return nil, nil
 	}
 
-	// Note: (*"encoding/json".Decoder).Decode, (* "encoding/gob".Decoder).Decode
-	// and (* "encoding/xml".Decoder).Decode are methods and can be a typeutil.Callee
-	// without directly importing their packages. So we cannot just skip this package
-	// when !analysis.Imports(pass.Pkg, "encoding/...").
-	// TODO(taking): Consider using a prepass to collect typeutil.Callees.
+	// Callee without directly importing their packages. Callees.
 
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -59,17 +53,14 @@ func run(pass *analysis.Pass) (any, error) {
 
 		recv := fn.Signature().Recv()
 		if fn.Name() == "Unmarshal" && recv == nil {
-			// "encoding/json".Unmarshal
-			// "encoding/xml".Unmarshal
+			// "encoding/json".Unmarshal "encoding/xml".Unmarshal
 			// "encoding/asn1".Unmarshal
 			switch fn.Pkg().Path() {
 			case "encoding/json", "encoding/xml", "encoding/asn1":
 				argidx = 1 // func([]byte, interface{})
 			}
 		} else if fn.Name() == "Decode" && recv != nil {
-			// (*"encoding/json".Decoder).Decode
-			// (* "encoding/gob".Decoder).Decode
-			// (* "encoding/xml".Decoder).Decode
+			// (*"encoding/json".Decoder).Decode (* "encoding/gob".Decoder).Decode (* "encoding/xml".Decoder).Decode
 			_, named := typesinternal.ReceiverNamed(recv)
 			if tname := named.Obj(); tname.Name() == "Decoder" {
 				switch tname.Pkg().Path() {
@@ -79,7 +70,7 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 		}
 		if argidx < 0 {
-			return // not a function we are interested in
+			return
 		}
 
 		if len(call.Args) < argidx+1 {

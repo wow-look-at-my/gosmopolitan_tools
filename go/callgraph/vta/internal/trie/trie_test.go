@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.13
 
@@ -333,20 +332,15 @@ func TestMerge(t *testing.T) {
 			// crafted for `!prefixesOverlap(p, m, q, n)`
 			left:  map[uint64]any{1: "a", 2 + 1: "b"},
 			right: map[uint64]any{4 + 1: "c", 4 + 2: "d"},
-			// p: 5, m: 2 q: 1, n: 2
-			want: "{1: a, 3: b, 5: c, 6: d}",
+			want:  "{1: a, 3: b, 5: c, 6: d}",
 		},
 		{
 			// crafted for `ord(m, n) && !zeroBit(q, m)`
 			left:  map[uint64]any{8 + 2 + 1: "a", 16 + 4: "b"},
 			right: map[uint64]any{16 + 8 + 2 + 1: "c", 16 + 8 + 4 + 2 + 1: "d"},
-			// left: p: 15, m: 16
-			// right: q: 27, n: 4
-			want: "{11: a, 20: b, 27: c, 31: d}",
+			want:  "{11: a, 20: b, 27: c, 31: d}",
 		},
 		{
-			// crafted for `ord(n, m) && !zeroBit(p, n)`
-			// p: 6, m: 1 q: 5, n: 2
 			left:  map[uint64]any{4 + 2: "b", 4 + 2 + 1: "c"},
 			right: map[uint64]any{4: "a", 4 + 2 + 1: "dropped"},
 			want:  "{4: a, 6: b, 7: c}",
@@ -383,22 +377,22 @@ func TestIntersect(t *testing.T) {
 			right: map[uint64]any{10: "A", 39: "B", 75: "C"},
 			want:  "{}",
 		},
-		{ // m == n && p == q  && left.(*empty) case
+		{ // m == n && p == q && left.(*empty) case
 			left:  map[uint64]any{4: 1, 6: 3, 10: 8, 15: "on left"},
 			right: map[uint64]any{0: 8, 7: 6, 11: 0, 15: "on right"},
 			want:  "{15: on left}",
 		},
-		{ // m == n && p == q  && right.(*empty) case
+		{ // m == n && p == q && right.(*empty) case
 			left:  map[uint64]any{0: "on left", 1: 2, 2: 3, 3: 1, 7: 3},
 			right: map[uint64]any{0: "on right", 5: 1, 6: 8},
 			want:  "{0: on left}",
 		},
-		{ // m == n && p == q  &&  both left and right are not empty
+		{ // m == n && p == q && both left and right are not empty
 			left:  map[uint64]any{1: "a", 2: "b", 3: "c"},
 			right: map[uint64]any{0: "A", 1: "B", 2: "C"},
 			want:  "{1: a, 2: b}",
 		},
-		{ // m == n && p == q  &&  both left and right are not empty
+		{ // m == n && p == q && both left and right are not empty
 			left:  map[uint64]any{1: "a", 2: "b", 3: "c"},
 			right: map[uint64]any{0: "A", 1: "B", 2: "C"},
 			want:  "{1: a, 2: b}",
@@ -485,8 +479,7 @@ func TestRemove(t *testing.T) {
 		{map[uint64]any{}, 10, "{}"},
 		{map[uint64]any{10: "a"}, 10, "{}"},
 		{map[uint64]any{39: "b"}, 10, "{39: b}"},
-		// Branch cases:
-		// !matchPrefix(kp, br.prefix, br.branching)
+		// Branch cases: !matchPrefix(kp, br.prefix, br.branching)
 		{map[uint64]any{10: "a", 39: "b"}, 128, "{10: a, 39: b}"},
 		// case: left == br.left && right == br.right
 		{map[uint64]any{10: "a", 39: "b"}, 16, "{10: a, 39: b}"},

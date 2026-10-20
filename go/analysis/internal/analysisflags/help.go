@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package analysisflags
 
@@ -85,8 +84,7 @@ outer:
 				title := paras[0]
 				fmt.Printf("%s: %s\n", a.Name, title)
 
-				// Show only the flags relating to this analysis,
-				// properly prefixed.
+				// Show only the flags relating to this analysis, properly prefixed.
 				first := true
 				fs := flag.NewFlagSet(a.Name, flag.ExitOnError)
 				a.Flags.VisitAll(func(f *flag.Flag) {

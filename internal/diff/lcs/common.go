@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package lcs
 
@@ -12,7 +11,6 @@ import (
 // lcs is a longest common sequence
 type lcs []diag
 
-// A diag is a piece of the edit graph where A[X+i] == B[Y+i], for 0<=i<Len.
 // All computed diagonals are parts of a longest common subsequence.
 type diag struct {
 	X, Y int
@@ -30,9 +28,8 @@ func (l lcs) sort() lcs {
 	return l
 }
 
-// validate that the elements of the lcs do not overlap
-// (can only happen when the two-sided algorithm ends early)
-// expects the lcs to be sorted
+// validate that the elements of the lcs do not overlap (can only happen when
+// the two-sided algorithm ends early) expects the lcs to be sorted
 func (l lcs) valid() bool {
 	for i := 1; i < len(l); i++ {
 		if l[i-1].X+l[i-1].Len > l[i].X {
@@ -45,14 +42,10 @@ func (l lcs) valid() bool {
 	return true
 }
 
-// repair overlapping lcs
-// only called if two-sided stops early
+// repair overlapping lcs only called if two-sided stops early
 func (l lcs) fix() lcs {
-	// from the set of diagonals in l, find a maximal non-conflicting set
-	// this problem may be NP-complete, but we use a greedy heuristic,
-	// which is quadratic, but with a better data structure, could be D log D.
-	// independent is not enough: {0,3,1} and {3,0,2} can't both occur in an lcs
-	// which has to have monotone x and y
+	// from the set of diagonals in l, find a maximal non-conflicting set this
+	// problem may be NP-complete, but we use a greedy heuristic.
 	if len(l) == 0 {
 		return nil
 	}
@@ -87,8 +80,8 @@ const (
 	bad                       // proposed diag is inconsistent with the lcs so far
 )
 
-// overlap trims the proposed diag prop  so it doesn't overlap with
-// the existing diag that has already been added to the lcs.
+// overlap trims the proposed diag prop so it doesn't overlap with the
+// existing diag that has already been added to the lcs.
 func overlap(exist, prop diag) (direction, diag) {
 	if prop.X <= exist.X && exist.X < prop.X+prop.Len {
 		// remove the end of prop where it overlaps with the X end of exist

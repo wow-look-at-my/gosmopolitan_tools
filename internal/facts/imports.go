@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package facts
 
@@ -10,23 +9,14 @@ import (
 	"golang.org/x/tools/internal/typesinternal"
 )
 
-// importMap computes the import map for a package by traversing the
-// entire exported API each of its imports.
-//
-// This is a workaround for the fact that we cannot access the map used
-// internally by the types.Importer returned by go/importer. The entries
-// in this map are the packages and objects that may be relevant to the
-// current analysis unit.
-//
-// Packages in the map that are only indirectly imported may be
-// incomplete (!pkg.Complete()).
-//
-// This function scales very poorly with packages' transitive object
-// references, which can be more than a million for each package near
-// the top of a large project. (This was a significant contributor to
-// #60621.)
-// TODO(adonovan): opt: compute this information more efficiently
-// by obtaining it from the internals of the gcexportdata decoder.
+// importMap computes the import map for a package by traversing the entire
+// exported API each of its imports. This is a workaround for the fact that
+// we cannot access the map used internally by the types.Importer returned
+// by go/importer. The entries in this map are the packages and objects that
+// may be relevant to the current analysis unit. Packages in the map that
+// are only indirectly imported may be incomplete (!pkg.Complete()).
+// TODO(adonovan): opt: compute this information more efficiently by
+// obtaining it from the internals of the gcexportdata decoder.
 func importMap(imports []*types.Package) map[string]*types.Package {
 	objects := make(map[types.Object]bool)
 	typs := make(map[types.Type]bool) // Named and TypeParam
@@ -58,10 +48,6 @@ func importMap(imports []*types.Package) map[string]*types.Package {
 			}
 
 			// Remove infinite expansions of *types.Named by always looking at the origin.
-			// Some named types with type parameters [that will not type check] have
-			// infinite expansions:
-			//     type N[T any] struct { F *N[N[T]] }
-			// importMap() is called on such types when Analyzer.RunDespiteErrors is true.
 			T = typesinternal.Origin(T)
 			if !typs[T] {
 				typs[T] = true

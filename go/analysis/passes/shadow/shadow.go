@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package shadow
 
@@ -41,9 +40,8 @@ func run(pass *analysis.Pass) (any, error) {
 
 	spans := make(map[types.Object]span)
 	for id, obj := range pass.TypesInfo.Defs {
-		// Ignore identifiers that don't denote objects
-		// (package names, symbolic variables such as t
-		// in t := x.(type) of type switch headers).
+		// Ignore identifiers that don't denote objects (package names, symbolic
+		// variables such as t in t := x.(type) of type switch headers).
 		if obj != nil {
 			growSpan(spans, obj, id.Pos(), id.End())
 		}
@@ -52,14 +50,9 @@ func run(pass *analysis.Pass) (any, error) {
 		growSpan(spans, obj, id.Pos(), id.End())
 	}
 	for node, obj := range pass.TypesInfo.Implicits {
-		// A type switch with a short variable declaration
-		// such as t := x.(type) doesn't declare the symbolic
-		// variable (t in the example) at the switch header;
-		// instead a new variable t (with specific type) is
-		// declared implicitly for each case. Such variables
-		// are found in the types.Info.Implicits (not Defs)
-		// map. Add them here, assuming they are declared at
-		// the type cases' colon ":".
+		// A type switch with a short variable declaration such as t := x.(type)
+		// does not declare the symbolic variable (t in the example) at the switch
+		// header.
 		if cc, ok := node.(*ast.CaseClause); ok {
 			growSpan(spans, obj, cc.Colon, cc.Colon)
 		}
@@ -81,24 +74,7 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 // A span stores the minimum range of byte positions in the file in which a
-// given variable (types.Object) is mentioned. It is lexically defined: it spans
-// from the beginning of its first mention to the end of its last mention.
-// A variable is considered shadowed (if strict is off) only if the
-// shadowing variable is declared within the span of the shadowed variable.
-// In other words, if a variable is shadowed but not used after the shadowed
-// variable is declared, it is inconsequential and not worth complaining about.
-// This simple check dramatically reduces the nuisance rate for the shadowing
-// check, at least until something cleverer comes along.
-//
-// One wrinkle: A "naked return" is a silent use of a variable that the Span
-// will not capture, but the compilers catch naked returns of shadowed
-// variables so we don't need to.
-//
-// Cases this gets wrong (TODO):
-// - If a for loop's continuation statement mentions a variable redeclared in
-// the block, we should complain about it but don't.
-// - A variable declared inside a function literal can falsely be identified
-// as shadowing a variable in the outer function.
+// given variable (types.Object) is mentioned.
 type span struct {
 	min token.Pos
 	max token.Pos
@@ -146,14 +122,12 @@ func checkShadowAssignment(pass *analysis.Pass, spans map[types.Object]span, a *
 	}
 }
 
-// idiomaticShortRedecl reports whether this short declaration can be ignored for
-// the purposes of shadowing, that is, that any redeclarations it contains are deliberate.
+// idiomaticShortRedecl reports whether this short declaration can be ignored
+// shadowing, that is, that any redeclarations it contains are deliberate.
 func idiomaticShortRedecl(pass *analysis.Pass, a *ast.AssignStmt) bool {
-	// Don't complain about deliberate redeclarations of the form
-	//	i := i
-	// Such constructs are idiomatic in range loops to create a new variable
-	// for each iteration. Another example is
-	//	switch n := n.(type)
+	// Don't complain about deliberate redeclarations of the form i := i Such
+	// constructs are idiomatic in range loops to create a new variable for each
+	// iteration.
 	if len(a.Rhs) != len(a.Lhs) {
 		return false
 	}
@@ -182,13 +156,11 @@ func idiomaticShortRedecl(pass *analysis.Pass, a *ast.AssignStmt) bool {
 	return true
 }
 
-// idiomaticRedecl reports whether this declaration spec can be ignored for
-// the purposes of shadowing, that is, that any redeclarations it contains are deliberate.
+// idiomaticRedecl reports whether this declaration spec can be ignored
+// shadowing, that is, that any redeclarations it contains are deliberate.
 func idiomaticRedecl(d *ast.ValueSpec) bool {
-	// Don't complain about deliberate redeclarations of the form
-	//	var i, j = i, j
-	// Don't ignore redeclarations of the form
-	//	var i = 3
+	// Don't complain about deliberate redeclarations of the form var i, j = i, j
+	// Don't ignore redeclarations of the form var i = 3
 	if len(d.Names) != len(d.Values) {
 		return false
 	}
@@ -212,8 +184,7 @@ func checkShadowDecl(pass *analysis.Pass, spans map[types.Object]span, d *ast.Ge
 			pass.ReportRangef(spec, "invalid AST: var GenDecl not ValueSpec")
 			return
 		}
-		// Don't complain about deliberate redeclarations of the form
-		//	var i = i
+		// Don't complain about deliberate redeclarations of the form var i = i
 		if idiomaticRedecl(valueSpec) {
 			return
 		}
@@ -233,8 +204,7 @@ func checkShadowing(pass *analysis.Pass, spans map[types.Object]span, ident *ast
 	if obj == nil {
 		return
 	}
-	// obj.Parent.Parent is the surrounding scope. If we can find another declaration
-	// starting from there, we have a shadowed identifier.
+	// obj.Parent.Parent is the surrounding scope.
 	_, shadowed := obj.Parent().Parent().LookupParent(obj.Name(), obj.Pos())
 	if shadowed == nil {
 		return
@@ -244,13 +214,13 @@ func checkShadowing(pass *analysis.Pass, spans map[types.Object]span, ident *ast
 		return
 	}
 	if strict {
-		// The shadowed identifier must appear before this one to be an instance of shadowing.
+		// The shadowed identifier must appear before this to be an instance of
+		// shadowing.
 		if shadowed.Pos() > ident.Pos() {
 			return
 		}
 	} else {
-		// Don't complain if the span of validity of the shadowed identifier doesn't include
-		// the shadowing identifier.
+		// Don't complain if the span of validity of the shadowed identifier doesn't include the shadowing identifier.
 		span, ok := spans[shadowed]
 		if !ok {
 			pass.ReportRangef(ident, "internal error: no range for %q", ident.Name)
@@ -260,7 +230,8 @@ func checkShadowing(pass *analysis.Pass, spans map[types.Object]span, ident *ast
 			return
 		}
 	}
-	// Don't complain if the types differ: that implies the programmer really wants two different things.
+	// Don't complain if the types differ: that implies the programmer wants
+	// different things.
 	if types.Identical(obj.Type(), shadowed.Type()) {
 		line := pass.Fset.Position(shadowed.Pos()).Line
 		pass.ReportRangef(ident, "declaration of %q shadows declaration at line %d", obj.Name(), line)

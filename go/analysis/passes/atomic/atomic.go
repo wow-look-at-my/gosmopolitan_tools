@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package atomic
 
@@ -63,9 +62,8 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// checkAtomicAddAssignment walks the atomic.Add* method calls checking
-// for assigning the return value to the same variable being used in the
-// operation
+// checkAtomicAddAssignment walks the atomic.Add* method calls checking for
+// assigning the return value to the same variable being used in the operation
 func checkAtomicAddAssignment(pass *analysis.Pass, left ast.Expr, call *ast.CallExpr) {
 	if len(call.Args) != 2 {
 		return

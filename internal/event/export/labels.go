@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package export
 
@@ -12,10 +11,8 @@ import (
 	"golang.org/x/tools/internal/event/label"
 )
 
-// Labels builds an exporter that manipulates the context using the event.
-// If the event is type IsLabel or IsStartSpan then it returns a context updated
-// with label values from the event.
-// For all other event types the event labels will be updated with values from the
+// Labels builds an exporter that manipulates the context using the event. For
+// all other event types the event labels will be updated with values from the
 // context if they are missing.
 func Labels(output event.Exporter) event.Exporter {
 	return func(ctx context.Context, ev core.Event, lm label.Map) context.Context {

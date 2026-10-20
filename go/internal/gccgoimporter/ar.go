@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Except for this comment, this file is a verbatim copy of the file
 // with the same name in $GOROOT/src/go/internal/gccgoimporter.
@@ -47,11 +46,11 @@ const (
 // The contents of the fmag field of a standard archive header.
 const arfmag = "`\n"
 
-// arExportData takes an archive file and returns a ReadSeeker for the
-// export data in that file. This assumes that there is only one
-// object in the archive containing export data, which is not quite
-// what gccgo does; gccgo concatenates together all the export data
-// for all the objects in the file.  In practice that case does not arise.
+// arExportData takes an archive file and returns a ReadSeeker for the export
+// data in that file. This assumes that there is only one object in the
+// archive containing export data, which is not what gccgo does. Gccgo
+// concatenates together all the export data for all the objects in the file.
+// In practice that case does not arise.
 func arExportData(archive io.ReadSeeker) (io.ReadSeeker, error) {
 	if _, err := archive.Seek(0, io.SeekStart); err != nil {
 		return nil, err
@@ -95,8 +94,6 @@ func standardArExportData(archive io.ReadSeeker) (io.ReadSeeker, error) {
 
 		fn := hdrBuf[arNameOff : arNameOff+arNameSize]
 		if fn[0] == '/' && (fn[1] == ' ' || fn[1] == '/' || bytes.Equal(fn[:8], []byte("/SYM64/ "))) {
-			// Archive symbol table or extended name table,
-			// which we don't care about.
 		} else {
 			archiveAt := readerAtFromSeeker(archive)
 			ret, err := elfFromAr(io.NewSectionReader(archiveAt, off, size))
@@ -130,8 +127,6 @@ func elfFromAr(member *io.SectionReader) (io.ReadSeeker, error) {
 }
 
 // readerAtFromSeeker turns an io.ReadSeeker into an io.ReaderAt.
-// This is only safe because there won't be any concurrent seeks
-// while this code is executing.
 func readerAtFromSeeker(rs io.ReadSeeker) io.ReaderAt {
 	if ret, ok := rs.(io.ReaderAt); ok {
 		return ret

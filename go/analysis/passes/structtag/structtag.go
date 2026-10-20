@@ -1,6 +1,5 @@
-// Copyright 2010 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package structtag defines an Analyzer that checks struct field tags
 // are well formed.
@@ -59,10 +58,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// namesSeen keeps track of encoding tags by their key, name, and nested level
-// from the initial struct. The level is taken into account because equal
-// encoding key names only conflict when at the same level; otherwise, the lower
-// level shadows the higher level.
+// namesSeen keeps track of encoding tags by their key, name, and nested level from the initial struct.
 type namesSeen map[uniqueName]token.Pos
 
 type uniqueName struct {
@@ -92,8 +88,7 @@ var checkTagSpaces = map[string]bool{"json": true, "xml": true, "asn1": true}
 // checkCanonicalFieldTag checks a single struct field tag.
 func checkCanonicalFieldTag(pass *analysis.Pass, field *types.Var, tag string, seen *namesSeen) {
 	if strings.HasPrefix(pass.Pkg.Path(), "encoding/") {
-		// These packages know how to use their own APIs.
-		// Sometimes they are testing what happens to incorrect programs.
+		// These packages know how to use their own APIs. Sometimes they are testing what happens to incorrect programs.
 		return
 	}
 
@@ -111,9 +106,8 @@ func checkCanonicalFieldTag(pass *analysis.Pass, field *types.Var, tag string, s
 
 	// Check for use of json or xml tags with unexported fields.
 
-	// Embedded struct. Nothing to do for now, but that
-	// may change, depending on what happens with issue 7363.
-	// TODO(adonovan): investigate, now that issue is fixed.
+	// Embedded struct. Nothing to do but that may change, depending on what
+	// happens with.
 	if field.Anonymous() {
 		return
 	}
@@ -124,8 +118,7 @@ func checkCanonicalFieldTag(pass *analysis.Pass, field *types.Var, tag string, s
 
 	for _, enc := range [...]string{"json", "xml"} {
 		switch reflect.StructTag(tag).Get(enc) {
-		// Ignore warning if the field not exported and the tag is marked as
-		// ignored.
+		// Ignore warning if the field not exported and the tag is marked as ignored.
 		case "", "-":
 		default:
 			pass.Report(analysis.Diagnostic{
@@ -167,11 +160,7 @@ func checkTagDuplicates(pass *analysis.Pass, tag, key string, nearest, field *ty
 		return
 	}
 	if key == "xml" && field.Name() == "XMLName" {
-		// XMLName defines the XML element name of the struct being
-		// checked. That name cannot collide with element or attribute
-		// names defined on other fields of the struct. Vet does not have a
-		// check for untagged fields of type struct defining their own name
-		// by containing a field named XMLName; see issue 18256.
+		// XMLName defines the XML element name of the struct being checked.
 		return
 	}
 	if i := strings.Index(val, ","); i >= 0 {
@@ -187,15 +176,10 @@ func checkTagDuplicates(pass *analysis.Pass, tag, key string, nearest, field *ty
 		alsoPos := pass.Fset.Position(pos)
 		alsoPos.Column = 0
 
-		// Make the "also at" position relative to the current position,
-		// to ensure that all warnings are unambiguous and correct. For
-		// example, via anonymous struct fields, it's possible for the
-		// two fields to be in different packages and directories.
+		// Make the "also at" position relative to the current position.
 		thisPos := pass.Fset.Position(field.Pos())
 		rel, err := filepath.Rel(filepath.Dir(thisPos.Filename), alsoPos.Filename)
 		if err != nil {
-			// Possibly because the paths are relative; leave the
-			// filename alone.
 		} else {
 			alsoPos.Filename = rel
 		}
@@ -219,7 +203,7 @@ var (
 )
 
 // validateStructTag parses the struct tag and returns an error if it is not
-// in the canonical format, which is a space-separated list of key:"value"
+// in the canonical format. This is a space-separated list of key:"value"
 // settings. The value may contain spaces.
 func validateStructTag(tag string) error {
 	// This code is based on the StructTag.Lookup code in package reflect.
@@ -227,8 +211,7 @@ func validateStructTag(tag string) error {
 	n := 0
 	for ; tag != ""; n++ {
 		if n > 0 && tag != "" && tag[0] != ' ' {
-			// More restrictive than reflect, but catches likely mistakes
-			// like `x:"foo",y:"bar"`, which parses as `x:"foo" ,y:"bar"` with second key ",y".
+			// More restrictive than reflect, but catches likely mistakes like `x:"foo",y:"bar"`, which parses as `x:"foo" ,y:"bar"` with second key ",y".
 			return errTagSpace
 		}
 		// Skip leading space.
@@ -242,9 +225,6 @@ func validateStructTag(tag string) error {
 		}
 
 		// Scan to colon. A space, a quote or a control character is a syntax error.
-		// Strictly speaking, control chars include the range [0x7f, 0x9f], not just
-		// [0x00, 0x1f], but in practice, we ignore the multi-byte control characters
-		// as it is simpler to inspect the tag's bytes than the tag's runes.
 		i = 0
 		for i < len(tag) && tag[i] > ' ' && tag[i] != ':' && tag[i] != '"' && tag[i] != 0x7f {
 			i++

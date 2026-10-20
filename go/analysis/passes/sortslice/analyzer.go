@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package sortslice defines an Analyzer that checks for calls
 // to sort.Slice that do not use a slice type as first argument.
@@ -64,8 +63,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// Restore typ to the original type, we may unwrap the tuple above,
-		// typ might not be the type of arg.
+		// Restore typ to the original type, we may unwrap the tuple above, typ might not be the type of arg.
 		typ = pass.TypesInfo.Types[arg].Type
 
 		var fixes []analysis.SuggestedFix

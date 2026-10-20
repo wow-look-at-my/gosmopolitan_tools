@@ -1,228 +1,13 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Indexed package export.
 //
-// The indexed export data format is an evolution of the previous
-// binary export data format. Its chief contribution is introducing an
-// index table, which allows efficient random access of individual
-// declarations and inline function bodies. In turn, this allows
-// avoiding unnecessary work for compilation units that import large
-// packages.
-//
-//
-// The top-level data format is structured as:
-//
-//     Header struct {
-//         Tag        byte   // 'i'
-//         Version    uvarint
-//         StringSize uvarint
-//         DataSize   uvarint
-//     }
-//
-//     Strings [StringSize]byte
-//     Data    [DataSize]byte
-//
-//     MainIndex []struct{
-//         PkgPath   stringOff
-//         PkgName   stringOff
-//         PkgHeight uvarint
-//
-//         Decls []struct{
-//             Name   stringOff
-//             Offset declOff
-//         }
-//     }
-//
-//     Fingerprint [8]byte
-//
-// uvarint means a uint64 written out using uvarint encoding.
-//
-// []T means a uvarint followed by that many T objects. In other
-// words:
-//
-//     Len   uvarint
-//     Elems [Len]T
-//
-// stringOff means a uvarint that indicates an offset within the
-// Strings section. At that offset is another uvarint, followed by
-// that many bytes, which form the string value.
-//
-// declOff means a uvarint that indicates an offset within the Data
-// section where the associated declaration can be found.
-//
-//
-// There are five kinds of declarations, distinguished by their first
-// byte:
-//
-//     type Var struct {
-//         Tag  byte // 'V'
-//         Pos  Pos
-//         Type typeOff
-//     }
-//
-//     type Func struct {
-//         Tag       byte // 'F' or 'G'
-//         Pos       Pos
-//         TypeParams []typeOff  // only present if Tag == 'G'
-//         Signature Signature
-//     }
-//
-//     type Const struct {
-//         Tag   byte // 'C'
-//         Pos   Pos
-//         Value Value
-//     }
-//
-//     type Type struct {
-//         Tag        byte // 'T' or 'U'
-//         Pos        Pos
-//         TypeParams []typeOff  // only present if Tag == 'U'
-//         Underlying typeOff
-//
-//         Methods []struct{  // omitted if Underlying is an interface type
-//             Pos       Pos
-//             Name      stringOff
-//             Recv      Param
-//             Signature Signature
-//         }
-//     }
-//
-//     type Alias struct {
-//         Tag  byte // 'A' or 'B'
-//         Pos  Pos
-//         TypeParams []typeOff  // only present if Tag == 'B'
-//         Type typeOff
-//     }
-//
-//     // "Automatic" declaration of each typeparam
-//     type TypeParam struct {
-//         Tag        byte // 'P'
-//         Pos        Pos
-//         Implicit   bool
-//         Constraint typeOff
-//     }
-//
-// typeOff means a uvarint that either indicates a predeclared type,
-// or an offset into the Data section. If the uvarint is less than
-// predeclReserved, then it indicates the index into the predeclared
-// types list (see predeclared in bexport.go for order). Otherwise,
-// subtracting predeclReserved yields the offset of a type descriptor.
-//
-// Value means a type, kind, and type-specific value. See
-// (*exportWriter).value for details.
-//
-//
-// There are twelve kinds of type descriptors, distinguished by an itag:
-//
-//     type DefinedType struct {
-//         Tag     itag // definedType
-//         Name    stringOff
-//         PkgPath stringOff
-//     }
-//
-//     type PointerType struct {
-//         Tag  itag // pointerType
-//         Elem typeOff
-//     }
-//
-//     type SliceType struct {
-//         Tag  itag // sliceType
-//         Elem typeOff
-//     }
-//
-//     type ArrayType struct {
-//         Tag  itag // arrayType
-//         Len  uint64
-//         Elem typeOff
-//     }
-//
-//     type ChanType struct {
-//         Tag  itag   // chanType
-//         Dir  uint64 // 1 RecvOnly; 2 SendOnly; 3 SendRecv
-//         Elem typeOff
-//     }
-//
-//     type MapType struct {
-//         Tag  itag // mapType
-//         Key  typeOff
-//         Elem typeOff
-//     }
-//
-//     type FuncType struct {
-//         Tag       itag // signatureType
-//         PkgPath   stringOff
-//         Signature Signature
-//     }
-//
-//     type StructType struct {
-//         Tag     itag // structType
-//         PkgPath stringOff
-//         Fields []struct {
-//             Pos      Pos
-//             Name     stringOff
-//             Type     typeOff
-//             Embedded bool
-//             Note     stringOff
-//         }
-//     }
-//
-//     type InterfaceType struct {
-//         Tag     itag // interfaceType
-//         PkgPath stringOff
-//         Embeddeds []struct {
-//             Pos  Pos
-//             Type typeOff
-//         }
-//         Methods []struct {
-//             Pos       Pos
-//             Name      stringOff
-//             Signature Signature
-//         }
-//     }
-//
-//     // Reference to a type param declaration
-//     type TypeParamType struct {
-//         Tag     itag // typeParamType
-//         Name    stringOff
-//         PkgPath stringOff
-//     }
-//
-//     // Instantiation of a generic type (like List[T2] or List[int])
-//     type InstanceType struct {
-//         Tag     itag // instanceType
-//         Pos     pos
-//         TypeArgs []typeOff
-//         BaseType typeOff
-//     }
-//
-//     type UnionType struct {
-//         Tag     itag // interfaceType
-//         Terms   []struct {
-//             tilde bool
-//             Type  typeOff
-//         }
-//     }
-//
-//
-//
-//     type Signature struct {
-//         Params   []Param
-//         Results  []Param
-//         Variadic bool  // omitted if Results is empty
-//     }
-//
-//     type Param struct {
-//         Pos  Pos
-//         Name stringOff
-//         Type typOff
-//     }
-//
-//
-// Pos encodes a file:line:column triple, incorporating a simple delta
-// encoding scheme within a data object. See exportWriter.pos for
-// details.
+// The indexed export data format is an evolution of the binary export data
+// format. Its chief contribution is introducing an index table, which allows
+// efficient random access of individual declarations and inline function
+// bodies. In turn, this allows avoiding unnecessary work for compilation
+// units that import large packages.
 
 package gcimporter
 
@@ -245,60 +30,17 @@ import (
 )
 
 // IExportShallow encodes "shallow" export data for the specified package.
-//
-// For types, we use "shallow" export data. Historically, the Go
-// compiler always produced a summary of the types for a given package
-// that included types from other packages that it indirectly
-// referenced: "deep" export data. This had the advantage that the
-// compiler (and analogous tools such as gopls) need only load one
-// file per direct import.  However, it meant that the files tended to
-// get larger based on the level of the package in the import
-// graph. For example, higher-level packages in the kubernetes module
-// have over 1MB of "deep" export data, even when they have almost no
-// content of their own, merely because they mention a major type that
-// references many others. In pathological cases the export data was
-// 300x larger than the source for a package due to this quadratic
-// growth.
-//
-// "Shallow" export data means that the serialized types describe only
-// a single package. If those types mention types from other packages,
-// the type checker may need to request additional packages beyond
-// just the direct imports. Type information for the entire transitive
-// closure of imports is provided (lazily) by the DAG.
-//
-// No promises are made about the encoding other than that it can be decoded by
-// the same version of IIExportShallow. If you plan to save export data in the
-// file system, be sure to include a cryptographic digest of the executable in
-// the key to avoid version skew.
-//
-// If the provided reportf func is non-nil, it is used for reporting
-// bugs (e.g. recovered panics) encountered during export, enabling us
-// to obtain via telemetry the stack that would otherwise be lost by
-// merely returning an error.
 func IExportShallow(fset *token.FileSet, pkg *types.Package, reportf ReportFunc) ([]byte, error) {
-	// In principle this operation can only fail if out.Write fails,
-	// but that's impossible for bytes.Buffer---and as a matter of
-	// fact iexportCommon doesn't even check for I/O errors.
-	// TODO(adonovan): handle I/O errors properly.
-	// TODO(adonovan): use byte slices throughout, avoiding copying.
+	// In principle this operation can only fail if out.Write fails.
 	const bundle, shallow = false, true
 	var out bytes.Buffer
 	err := iexportCommon(&out, fset, bundle, shallow, iexportVersion, []*types.Package{pkg}, reportf)
 	return out.Bytes(), err
 }
 
-// IImportShallow decodes "shallow" types.Package data encoded by
-// [IExportShallow] in the same executable. This function cannot import data
-// from cmd/compile or gcexportdata.Write.
+// IImportShallow decodes "shallow" types.Package data encoded by [IExportShallow] in the same executable. This function cannot import data from cmd/compile or gcexportdata.Write.
 //
-// The importer calls getPackages to obtain package symbols for all
-// packages mentioned in the export data, including the one being
-// decoded.
-//
-// If the provided reportf func is non-nil, it will be used for reporting bugs
-// encountered during import.
-// TODO(rfindley): remove reportf when we are confident enough in the new
-// objectpath encoding.
+// The importer calls getPackages to obtain package symbols for all packages mentioned in the export data, including the one being decoded.
 func IImportShallow(fset *token.FileSet, getPackages GetPackagesFunc, data []byte, path string, reportf ReportFunc) (*types.Package, error) {
 	const bundle = false
 	const shallow = true
@@ -313,14 +55,9 @@ func IImportShallow(fset *token.FileSet, getPackages GetPackagesFunc, data []byt
 type ReportFunc = func(string, ...any)
 
 // Current bundled export format version. Increase with each format change.
-// 0: initial implementation
 const bundleVersion = 0
 
 // IExportData writes indexed export data for pkg to out.
-//
-// If no file set is provided, position info will be missing.
-// The package path of the top-level package will not be recorded,
-// so that calls to IImportData can override with a provided package path.
 func IExportData(out io.Writer, fset *token.FileSet, pkg *types.Package) error {
 	const bundle, shallow = false, false
 	return iexportCommon(out, fset, bundle, shallow, iexportVersion, []*types.Package{pkg}, nil)
@@ -336,14 +73,11 @@ func iexportCommon(out io.Writer, fset *token.FileSet, bundle, shallow bool, ver
 	if !debug {
 		defer func() {
 			if e := recover(); e != nil {
-				// Report the stack via telemetry (see #71067).
 				if reportf != nil {
 					reportf("panic in exporter")
 				}
 				if ierr, ok := e.(internalError); ok {
-					// internalError usually means we exported a
-					// bad go/types data structure: a violation
-					// of an implicit precondition of Export.
+					// internalError usually means we exported a bad go/types data structure.
 					err = ierr
 					return
 				}
@@ -470,9 +204,7 @@ func (p *iexporter) encodeFile(w *intWriter, file *token.File, needed []uint64) 
 	lines := file.Lines() // byte offset of each line start
 	w.uint64(uint64(len(lines)))
 
-	// Rather than record the entire array of line start offsets,
-	// we save only a sparse list of (index, offset) pairs for
-	// the start of each line that contains a needed position.
+	// Rather than record the entire array of line start offsets.
 	var sparse [][2]int // (index, offset) pairs
 outer:
 	for i, lineStart := range lines {
@@ -502,10 +234,7 @@ outer:
 	}
 }
 
-// writeIndex writes out an object index. mainIndex indicates whether
-// we're writing out the main index, which is also read by
-// non-compiler tools and includes a complete package description
-// (i.e., name and height).
+// writeIndex writes out an object index.
 func (w *exportWriter) writeIndex(index map[types.Object]uint64) {
 	type pkgObj struct {
 		obj  types.Object
@@ -514,9 +243,8 @@ func (w *exportWriter) writeIndex(index map[types.Object]uint64) {
 	// Build a map from packages to objects from that package.
 	pkgObjs := map[*types.Package][]pkgObj{}
 
-	// For the main index, make sure to include every package that
-	// we reference, even if we're not exporting (or reexporting)
-	// any symbols from it.
+	// For the main index, make sure to include every package that we reference,
+	// even if we're not exporting (or reexporting) any symbols from it.
 	if w.p.localpkg != nil {
 		pkgObjs[w.p.localpkg] = nil
 	}
@@ -557,8 +285,7 @@ func (w *exportWriter) writeIndex(index map[types.Object]uint64) {
 	}
 }
 
-// exportName returns the 'exported' name of an object. It differs from
-// obj.Name() only for type parameters (see tparamExportName for details).
+// exportName returns the 'exported' name of an object.
 func (p *iexporter) exportName(obj types.Object) (res string) {
 	if name := p.tparamNames[obj]; name != "" {
 		return name
@@ -574,9 +301,7 @@ type iexporter struct {
 	objEncoder *objectpath.Encoder // encodes objects from other packages in shallow mode; lazily allocated
 	localpkg   *types.Package      // (nil in bundle mode)
 
-	// allPkgs tracks all packages that have been referenced by
-	// the export data, so we can ensure to include them in the
-	// main index.
+	// allPkgs tracks all packages that have been referenced by the export data.
 	allPkgs map[*types.Package]bool
 
 	declTodo objQueue
@@ -584,9 +309,7 @@ type iexporter struct {
 	strings     intWriter
 	stringIndex map[string]uint64
 
-	// In shallow mode, object positions are encoded as (file, offset).
-	// Each file is recorded as a line-number table.
-	// Only the lines of needed positions are saved faithfully.
+	// In shallow mode, object positions are encoded as (file, offset). Each file is recorded as a line-number table.
 	fileInfo  map[*token.File]uint64 // value is index in fileInfos
 	fileInfos []*filePositions
 
@@ -605,8 +328,7 @@ type filePositions struct {
 
 func (p *iexporter) trace(format string, args ...any) {
 	if !trace {
-		// Call sites should also be guarded, but having this check here allows
-		// easily enabling/disabling debug trace statements.
+		// Call sites should also be guarded.
 		return
 	}
 	fmt.Printf(strings.Repeat("..", p.indent)+format+"\n", args...)
@@ -614,8 +336,6 @@ func (p *iexporter) trace(format string, args ...any) {
 
 // objectpathEncoder returns the lazily allocated objectpath.Encoder to use
 // when encoding objects in other packages during shallow export.
-//
-// Using a shared Encoder amortizes some of cost of objectpath search.
 func (p *iexporter) objectpathEncoder() *objectpath.Encoder {
 	if p.objEncoder == nil {
 		p.objEncoder = new(objectpath.Encoder)
@@ -714,10 +434,7 @@ func (p *iexporter) doDecl(obj types.Object) {
 	case *types.Func:
 		sig := obj.Type().(*types.Signature)
 		if sig.Recv() != nil {
-			// We shouldn't see methods in the package scope,
-			// but the type checker may repair "func () F() {}"
-			// to "func (Invalid) F()" and then treat it like "func F()",
-			// so allow that. See golang/go#57729.
+			// We must not see methods in the package scope.
 			if sig.Recv().Type() != types.Typ[types.Invalid] {
 				panic(internalErrorf("unexpected method: %v", sig))
 			}
@@ -731,12 +448,7 @@ func (p *iexporter) doDecl(obj types.Object) {
 		}
 		w.pos(obj.Pos())
 		// The tparam list of the function type is the declaration of the type
-		// params. So, write out the type params right now. Then those type params
-		// will be referenced via their type offset (via typOff) in all other
-		// places in the signature and function where they are used.
-		//
-		// While importing the type parameters, tparamList computes and records
-		// their export name, so that it can be later used when writing the index.
+		// params. So, write out the type params right now.
 		if tparams := sig.TypeParams(); tparams.Len() > 0 {
 			w.tparamList(obj.Name(), tparams, obj.Pkg())
 		}
@@ -782,8 +494,7 @@ func (p *iexporter) doDecl(obj types.Object) {
 				w.tparamList(obj.Name(), tparams, obj.Pkg())
 			}
 			if materialized {
-				// Preserve materialized aliases,
-				// even of non-exported types.
+				// Preserve materialized aliases, even of non-exported types.
 				t = alias.Rhs()
 			}
 			w.typ(t, obj.Pkg())
@@ -804,8 +515,7 @@ func (p *iexporter) doDecl(obj types.Object) {
 		w.pos(obj.Pos())
 
 		if named.TypeParams().Len() > 0 {
-			// While importing the type parameters, tparamList computes and records
-			// their export name, so that it can be later used when writing the index.
+			// While importing the type parameters, tparamList computes and records their export name.
 			w.tparamList(obj.Name(), named.TypeParams(), obj.Pkg())
 		}
 
@@ -861,10 +571,9 @@ func (w *exportWriter) pos(pos token.Pos) {
 	}
 }
 
-// posV2 encoding (used only in shallow mode) records positions as
-// (file, offset), where file is the index in the token.File table
-// (which records the file name and newline offsets) and offset is a
-// byte offset. It effectively ignores //line directives.
+// posV2 encoding (used only in shallow mode) records positions as (file,
+// offset), where file is the index in the token.File table (which records the
+// file name and newline offsets) and offset is a byte offset.
 func (w *exportWriter) posV2(pos token.Pos) {
 	if pos == token.NoPos {
 		w.uint64(0)
@@ -920,14 +629,8 @@ func (w *exportWriter) posV0(pos token.Pos) {
 	file := p.Filename
 	line := int64(p.Line)
 
-	// When file is the same as the last position (common case),
-	// we can save a few bytes by delta encoding just the line
-	// number.
-	//
-	// Note: Because data objects may be read out of order (or not
-	// at all), we can only apply delta encoding within a single
-	// object. This is handled implicitly by tracking prevFile and
-	// prevLine as fields of exportWriter.
+	// When file is the same as the last position (common case), we can save a
+	// few bytes by delta encoding the line number.
 
 	if file == w.prevFile {
 		delta := line - w.prevLine
@@ -946,10 +649,7 @@ func (w *exportWriter) posV0(pos token.Pos) {
 
 func (w *exportWriter) pkg(pkg *types.Package) {
 	if pkg == nil {
-		// [exportWriter.typ] accepts a nil pkg only for types
-		// of constants, which cannot contain named objects
-		// such as fields or methods and thus should never
-		// reach this method (#76222).
+		// [exportWriter.typ] accepts a nil pkg only for types of constants.
 		panic("nil package")
 	}
 	// Ensure any referenced packages are declared in the main index.
@@ -1028,8 +728,7 @@ func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
 	case *types.Named:
 		if targs := t.TypeArgs(); targs.Len() > 0 {
 			w.startType(instanceType)
-			// TODO(rfindley): investigate if this position is correct, and if it
-			// matters.
+			// TODO(rfindley): investigate if this position is correct, and if it matters.
 			w.pos(t.Obj().Pos())
 			w.typeList(targs, pkg)
 			w.typ(t.Origin(), pkg)
@@ -1057,7 +756,6 @@ func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
 
 	case *types.Chan:
 		w.startType(chanType)
-		// 1 RecvOnly; 2 SendOnly; 3 SendRecv
 		var dir uint64
 		switch t.Dir() {
 		case types.RecvOnly:
@@ -1083,23 +781,13 @@ func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
 	case *types.Struct:
 		w.startType(structType)
 		n := t.NumFields()
-		// Even for struct{} we must emit some qualifying package, because that's
-		// what the compiler does, and thus that's what the importer expects.
+		// Even for struct{} we must emit some qualifying package, because that's what the compiler does.
 		fieldPkg := pkg
 		if n > 0 {
 			fieldPkg = t.Field(0).Pkg()
 		}
 		if fieldPkg == nil {
-			// TODO(rfindley): improve this very hacky logic.
-			//
-			// The importer expects a package to be set for all struct types, even
-			// those with no fields. A better encoding might be to set NumFields
-			// before pkg. setPkg panics with a nil package, which may be possible
-			// to reach with invalid packages (and perhaps valid packages, too?), so
-			// (arbitrarily) set the localpkg if available.
-			//
-			// Alternatively, we may be able to simply guarantee that pkg != nil, by
-			// reconsidering the encoding of constant values.
+			// TODO(rfindley): improve this hacky logic.
 			if w.p.shallow {
 				fieldPkg = w.p.localpkg
 			} else {
@@ -1138,8 +826,7 @@ func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
 			w.typ(ft, pkg)
 		}
 
-		// See comment for struct fields. In shallow mode we change the encoding
-		// for interface methods that are promoted from other packages.
+		// See comment for struct fields.
 
 		n = t.NumExplicitMethods()
 		w.uint64(uint64(n))
@@ -1171,54 +858,15 @@ func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
 
 // objectPath writes the package and objectPath to use to look up obj in a
 // different package, when encoding in "shallow" mode.
-//
-// When doing a shallow import, the importer creates only the local package,
-// and requests package symbols for dependencies from the client.
-// However, certain types defined in the local package may hold objects defined
-// (perhaps deeply) within another package.
-//
-// For example, consider the following:
-//
-//	package a
-//	func F() chan * map[string] struct { X int }
-//
-//	package b
-//	import "a"
-//	var B = a.F()
-//
-// In this example, the type of b.B holds fields defined in package a.
-// In order to have the correct canonical objects for the field defined in the
-// type of B, they are encoded as objectPaths and later looked up in the
-// importer. The same problem applies to interface methods.
 func (w *exportWriter) objectPath(obj types.Object) {
 	if obj.Pkg() == nil || obj.Pkg() == w.p.localpkg {
 		// obj.Pkg() may be nil for the builtin error.Error.
-		// In this case, or if obj is declared in the local package, no need to
-		// encode.
 		w.string("")
 		return
 	}
 	objectPath, err := w.p.objectpathEncoder().For(obj)
 	if err != nil {
-		// Fall back to the empty string, which will cause the importer to create a
-		// new object, which matches earlier behavior. Creating a new object is
-		// sufficient for many purposes (such as type checking), but causes certain
-		// references algorithms to fail (golang/go#60819). However, we didn't
-		// notice this problem during months of gopls@v0.12.0 testing.
-		//
-		// TODO(golang/go#61674): this workaround is insufficient, as in the case
-		// where the field forwarded from an instantiated type that may not appear
-		// in the export data of the original package:
-		//
-		//  // package a
-		//  type A[P any] struct{ F P }
-		//
-		//  // package b
-		//  type B a.A[int]
-		//
-		// We need to update references algorithms not to depend on this
-		// de-duplication, at which point we may want to simply remove the
-		// workaround here.
+		// Fall back to the empty string, which will cause the importer to create a new object, which matches earlier behavior.
 		w.string("")
 		return
 	}
@@ -1255,9 +903,7 @@ func (w *exportWriter) tparamList(prefix string, list *types.TypeParamList, pkg 
 const blankMarker = "$"
 
 // tparamExportName returns the 'exported' name of a type parameter, which
-// differs from its actual object name: it is prefixed with a qualifier, and
-// blank type parameter names are disambiguated by their index in the type
-// parameter list.
+// differs from its actual object name.
 func tparamExportName(prefix string, tparam *types.TypeParam) string {
 	assert(prefix != "")
 	name := tparam.Obj().Name()
@@ -1295,6 +941,18 @@ func (w *exportWriter) param(obj types.Object) {
 	w.pos(obj.Pos())
 	w.localIdent(obj)
 	w.typ(obj.Type(), obj.Pkg())
+	if w.p.version >= iexportVersionParamDefaults {
+		// A caller in another package omits the argument for this parameter.
+		var deflt constant.Value
+		if v, ok := obj.(*types.Var); ok {
+			if d := v.Default(); d != nil {
+				deflt = d.Const
+			}
+		}
+		if w.bool(deflt != nil) {
+			w.value(obj.Type(), deflt, obj.Pkg())
+		}
+	}
 }
 
 // only called for constants
@@ -1308,13 +966,6 @@ func (w *exportWriter) value(typ types.Type, v constant.Value, pkg *types.Packag
 	}
 
 	if v.Kind() == constant.Unknown {
-		// golang/go#60605: treat unknown constant values as if they have invalid type
-		//
-		// This loses some fidelity over the package type-checked from source, but that
-		// is acceptable.
-		//
-		// TODO(rfindley): we should switch on the recorded constant kind rather
-		// than the constant type
 		return
 	}
 
@@ -1352,8 +1003,6 @@ func (w *exportWriter) value(typ types.Type, v constant.Value, pkg *types.Packag
 // big.Float.
 func constantToFloat(x constant.Value) *big.Float {
 	x = constant.ToFloat(x)
-	// Use the same floating-point precision (512) as cmd/compile
-	// (see Mpprec in cmd/compile/internal/gc/mpfloat.go).
 	const mpprec = 512
 	var f big.Float
 	f.SetPrec(mpprec)
@@ -1366,8 +1015,7 @@ func constantToFloat(x constant.Value) *big.Float {
 		d := valueToRat(denom)
 		f.SetRat(n.Quo(n, d))
 	} else {
-		// Value too large to represent as a fraction => inaccessible.
-		// TODO(gri): add big.Float accessor to constant.Value.
+		// Value too large to represent as a fraction => inaccessible. TODO(gri): add big.Float accessor to constant.Value.
 		_, ok := f.SetString(x.ExactString())
 		assert(ok)
 	}
@@ -1375,8 +1023,7 @@ func constantToFloat(x constant.Value) *big.Float {
 }
 
 func valueToRat(x constant.Value) *big.Rat {
-	// Convert little-endian to big-endian.
-	// I can't believe this is necessary.
+	// Convert little-endian to big-endian. I can't believe this is necessary.
 	bytes := constant.Bytes(x)
 	for i := 0; i < len(bytes)/2; i++ {
 		bytes[i], bytes[len(bytes)-1-i] = bytes[len(bytes)-1-i], bytes[i]
@@ -1384,26 +1031,16 @@ func valueToRat(x constant.Value) *big.Rat {
 	return new(big.Rat).SetInt(new(big.Int).SetBytes(bytes))
 }
 
-// mpint exports a multi-precision integer.
-//
-// For unsigned types, small values are written out as a single
-// byte. Larger values are written out as a length-prefixed big-endian
-// byte string, where the length prefix is encoded as its complement.
-// For example, bytes 0, 1, and 2 directly represent the integer
-// values 0, 1, and 2; while bytes 255, 254, and 253 indicate a 1-,
-// 2-, and 3-byte big-endian string follow.
-//
-// Encoding for signed types use the same general approach as for
-// unsigned types, except small values use zig-zag encoding and the
-// bottom bit of length prefix byte for large values is reserved as a
-// sign bit.
-//
-// The exact boundary between small and large encodings varies
-// according to the maximum number of bytes needed to encode a value
-// of type typ. As a special case, 8-bit types are always encoded as a
-// single byte.
-//
-// TODO(mdempsky): Is this level of complexity really worthwhile?
+// mpint exports a multi-precision integer. For unsigned types, small values
+// are written out as a single byte. Larger values are written out as a
+// length-prefixed big-endian byte string, where the length prefix is
+// encoded as its complement. Encoding for signed types use the same general
+// approach as for unsigned types, except small values use zig-zag encoding.
+// The bottom bit of length prefix byte for large values is reserved as a
+// sign bit. The exact boundary between small and large encodings varies
+// according to the maximum number of bytes needed to encode a value of type
+// typ. As a special case, 8-bit types are always encoded as a single byte.
+// TODO(mdempsky): Is this level of complexity worthwhile?
 func (w *exportWriter) mpint(x *big.Int, typ types.Type) {
 	basic, ok := typ.Underlying().(*types.Basic)
 	if !ok {
@@ -1477,7 +1114,6 @@ func (w *exportWriter) mpfloat(f *big.Float, typ types.Type) {
 		panic("infinite constant")
 	}
 
-	// Break into f = mant × 2**exp, with 0.5 <= mant < 1.
 	var mant big.Float
 	exp := int64(f.MantExp(&mant))
 
@@ -1568,7 +1204,7 @@ func (q *objQueue) pushTail(obj types.Object) {
 	} else if q.head+len(q.ring) == q.tail {
 		// Grow the ring.
 		nring := make([]types.Object, len(q.ring)*2)
-		// Copy the old elements.
+		// Copy the elements.
 		part := q.ring[q.head%len(q.ring):]
 		if q.tail-q.head <= len(part) {
 			part = part[:q.tail-q.head]
@@ -1601,11 +1237,6 @@ func (e internalError) Error() string { return "gcimporter: " + string(e) }
 
 // TODO(adonovan): make this call panic, so that it's symmetric with errorf.
 // Otherwise it's easy to forget to do anything with the error.
-//
-// TODO(adonovan): also, consider switching the names "errorf" and
-// "internalErrorf" as the former is used for bugs, whose cause is
-// internal inconsistency, whereas the latter is used for ordinary
-// situations like bad input, whose cause is external.
 func internalErrorf(format string, args ...any) error {
 	return internalError(fmt.Sprintf(format, args...))
 }

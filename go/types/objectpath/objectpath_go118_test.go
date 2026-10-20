@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package objectpath_test
 
@@ -117,8 +116,6 @@ func main() {}
 		{"p", "F.T0CM0.RA0", "var  WL", ""},
 		{"p", "F.T0CM0.RA0.CM0", "func (interface).N(item W) WL", ""},
 
-		// Finding S.M0 reproduced the infinite recursion reported in #51717,
-		// because F is searched before S.
 		{"p", "S.M0", "func (p.S).M()", ""},
 	}
 	for _, test := range paths {

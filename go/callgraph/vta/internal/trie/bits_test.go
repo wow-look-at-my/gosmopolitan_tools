@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.13
 
@@ -250,35 +249,26 @@ func TestOrd(t *testing.T) {
 }
 
 func TestPrefixesOverlapLemma(t *testing.T) {
-	// test
-	//   mask(p, fbb) == mask(q, fbb)
-	// iff
-	//   m > n && matchPrefix(q, p, m) or  (note: big endian encoding)
-	//   m < n && matchPrefix(p, q, n) or  (note: big endian encoding)
-	//   m ==n && p == q
+	// test mask(p, fbb) == mask(q, fbb) iff m > n && matchPrefix(q, p, m) or (note: big endian encoding) m < n && matchPrefix(p, q, n) or (note: big endian encoding) m ==n && p == q
 
-	// Case 1: mask(p, fbb) == mask(q, fbb) => m > n && matchPrefix(q, p, m)
 	m, n := bitpos(1<<2), bitpos(1<<1)
 	p, q := mask(0b100, m), mask(0b010, n)
 	if !(prefixesOverlap(p, m, q, n) && m > n && matchPrefix(q, p, m)) {
 		t.Errorf("prefixesOverlap(%#b, %#b, %#b, %#b) lemma does not hold",
 			p, m, q, n)
 	}
-	// Case 2: mask(p, fbb) == mask(q, fbb) => m < n && matchPrefix(p, q, n)
 	m, n = bitpos(1<<2), bitpos(1<<3)
 	p, q = mask(0b100, m), mask(0b1000, n)
 	if !(prefixesOverlap(p, m, q, n) && m < n && matchPrefix(p, q, n)) {
 		t.Errorf("prefixesOverlap(%#b, %#b, %#b, %#b) lemma does not hold",
 			p, m, q, n)
 	}
-	// Case 3: mask(p, fbb) == mask(q, fbb) => m < n && matchPrefix(p, q, n)
 	m, n = bitpos(1<<2), bitpos(1<<2)
 	p, q = mask(0b100, m), mask(0b001, n)
 	if !(prefixesOverlap(p, m, q, n) && m == n && p == q) {
 		t.Errorf("prefixesOverlap(%#b, %#b, %#b, %#b) lemma does not hold",
 			p, m, q, n)
 	}
-	// Case 4: mask(p, fbb) != mask(q, fbb)
 	m, n = bitpos(1<<1), bitpos(1<<1)
 	p, q = mask(0b100, m), mask(0b001, n)
 	if prefixesOverlap(p, m, q, n) ||

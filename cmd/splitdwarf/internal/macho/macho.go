@@ -1,9 +1,5 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Mach-O header data structures
-// http://developer.apple.com/mac/library/documentation/DeveloperTools/Conceptual/MachORuntime/Reference/reference.html
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package macho
 
@@ -108,7 +104,6 @@ type LoadCmd uint32
 func (c LoadCmd) Command() LoadCmd { return c }
 
 const ( // SNAKE_CASE to CamelCase translation from C names
-	// Note 3 and 8 are obsolete
 	LcSegment            LoadCmd = 0x1
 	LcSymtab             LoadCmd = 0x2
 	LcThread             LoadCmd = 0x4
@@ -405,7 +400,7 @@ func (n *Nlist64) Put32(b []byte, o binary.ByteOrder) uint32 {
 	return 8 + 4
 }
 
-// Regs386 is the Mach-O 386 register structure.
+// Regs386 is a later mach-o register structure.
 type Regs386 struct {
 	AX    uint32
 	BX    uint32

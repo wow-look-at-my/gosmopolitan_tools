@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package versions_test
 
@@ -106,8 +105,8 @@ func TestVersionComparisons(t *testing.T) {
 		{"bad", "bad", 0},
 		// Other tests.
 		{"go1.20", "go1.20.0-bigcorp", 0},
-		{"go1.21", "go1.21.0-bigcorp", -1},  // Starting in Go 1.21, patch missing is different from explicit .0.
-		{"go1.21.0", "go1.21.0-bigcorp", 0}, // Starting in Go 1.21, patch missing is different from explicit .0.
+		{"go1.21", "go1.21.0-bigcorp", -1},
+		{"go1.21.0", "go1.21.0-bigcorp", 0},
 		{"go1.19rc1", "go1.19", -1},
 	} {
 		got := versions.Compare(item.x, item.y)

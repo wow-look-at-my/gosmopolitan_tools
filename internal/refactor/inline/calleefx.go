@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -20,39 +19,19 @@ const (
 	winf = -2 //  W∞: arbitrary write to memory (or unknown control)
 )
 
-// calleefx returns a list of parameter indices indicating the order
-// in which parameters are first referenced during evaluation of the
-// callee, relative both to each other and to other effects of the
-// callee (if any), such as arbitrary reads (rinf) and arbitrary
-// effects (winf), including unknown control flow. Each parameter
-// that is referenced appears once in the list.
+// calleefx returns a list of parameter indices. Indicating the order in which
+// parameters are first referenced during evaluation of the callee. Relative
+// both to each other and to other effects of the callee (if any), such as
+// arbitrary reads (rinf) and arbitrary effects (winf). Including unknown
+// control flow. Each parameter that is referenced appears once in the list.
 //
 // For example, the effects list of this function:
 //
 //	func f(x, y, z int) int {
 //	    return y + x + g() + z
 //	}
-//
-// is [1 0 -2 2], indicating reads of y and x, followed by the unknown
-// effects of the g() call, and finally the read of parameter z. This
-// information is used during inlining to ascertain when it is safe
-// for parameter references to be replaced by their corresponding
-// argument expressions. Such substitutions are permitted only when
-// they do not cause "write" operations (those with effects) to
-// commute with "read" operations (those that have no effect but are
-// not pure). Impure operations may be reordered with other impure
-// operations, and pure operations may be reordered arbitrarily.
-//
-// The analysis ignores the effects of runtime panics, on the
-// assumption that well-behaved programs shouldn't encounter them.
 func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*paramInfo) []int {
-	// This traversal analyzes the callee's statements (in syntax
-	// form, though one could do better with SSA) to compute the
-	// sequence of events of the following kinds:
-	//
-	// 1  read of a parameter variable.
-	// 2. reads from other memory.
-	// 3. writes to memory
+	// This traversal analyzes the callee's statements.
 
 	var effects []int // indices of parameters, or rinf/winf (-ve)
 	seen := make(map[int]bool)
@@ -67,11 +46,7 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 	unknown := func() {
 		effect(winf)
 
-		// Ensure that all remaining parameters are "seen"
-		// after we go into the unknown (unless they are
-		// unreferenced by the function body). This lets us
-		// not bother implementing the complete traversal into
-		// control structures.
+		// Ensure that all remaining parameters are "seen" after we go into the unknown (unless they are unreferenced by the function body).
 
 		// Sort params by Index for determinism
 		sortedParams := make([]*types.Var, 0, len(paramInfos))
@@ -104,17 +79,14 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 					effect(pinfo.Index) // read parameter var
 				}
 
-				// Use of local variables is ok.
 			}
 
 		case *ast.BasicLit:
 			// no effect
 
 		case *ast.FuncLit:
-			// A func literal has no read or write effect
-			// until called, and (most) function calls are
-			// considered to have arbitrary effects.
-			// So, no effect.
+			// A func literal has no read or write effect until called, and (most)
+			// function calls are considered to have arbitrary effects. So, no effect.
 
 		case *ast.CompositeLit:
 			for _, elt := range n.Elts {
@@ -131,9 +103,8 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 				// See types.SelectionKind for background.
 				switch seln.Kind() {
 				case types.MethodExpr:
-					// A method expression T.f acts like a
-					// reference to a func decl,
-					// so it doesn't read x until called.
+					// A method expression T.f acts like a reference to a func decl, so it
+					// doesn't read x until called.
 
 				case types.MethodVal, types.FieldVal:
 					// A field or method value selection x.f
@@ -150,7 +121,6 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 
 		case *ast.IndexExpr:
 			if tv := info.Types[n.Index]; tv.IsType() {
-				// no effect (G[T] instantiation)
 			} else {
 				visitExpr(n.X)
 				visitExpr(n.Index)
@@ -186,9 +156,8 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 					visitExpr(arg)
 				}
 
-				// The pure built-ins have no effects beyond
-				// those of their operands (not even memory reads).
-				// All other calls have unknown effects.
+				// The pure built-ins have no effects beyond those of their operands (not
+				// even memory reads). All other calls have unknown effects.
 				if !typesinternal.CallsPureBuiltin(info, n) {
 					unknown() // arbitrary effects
 				}
@@ -224,14 +193,13 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 		}
 	}
 
-	// visitStmt's result indicates the continuation:
-	// false for return, true for the next statement.
+	// visitStmt's result indicates the continuation: false for return, true for
+	// the next statement.
 	//
-	// We could treat return as an unknown, but this way
-	// yields definite effects for simple sequences like
-	// {S1; S2; return}, so unreferenced parameters are
-	// not spuriously added to the effects list, and thus
-	// not spuriously disqualified from elimination.
+	// We could treat return as an unknown, but this way yields definite effects
+	// for simple sequences like {S1. S2. Return}, so unreferenced parameters are
+	// not spuriously added to the effects list, and thus not spuriously
+	// disqualified from elimination.
 	visitStmt = func(n ast.Stmt) bool {
 		switch n := n.(type) {
 		case *ast.DeclStmt:
@@ -244,7 +212,6 @@ func calleefx(info *types.Info, body *ast.BlockStmt, paramInfos map[*types.Var]*
 					}
 
 				case *ast.TypeSpec:
-					// no effect
 				}
 			}
 

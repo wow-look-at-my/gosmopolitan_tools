@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -58,13 +57,6 @@ var Suite = []*analysis.Analyzer{
 	TestingContextAnalyzer,
 	unsafeFuncsAnalyzer, // awaiting public symbol
 	WaitGroupGoAnalyzer,
-
-	// Not included:
-	//
-	// AppendClippedAnalyzer, 	// not nil-preserving
-	// BLoopAnalyzer, 		// may skew benchmark results, see golang/go#74967
-	// FmtAppendfAnalyzer, 		// makes code less clear, see golang/go#77581
-	// SlicesDeleteAnalyzer, 	// not nil-preserving
 }
 
 // -- helpers --
@@ -81,7 +73,6 @@ func formatExprs(fset *token.FileSet, exprs []ast.Expr) string {
 	return buf.String()
 }
 
-// isZeroIntConst reports whether e is an integer whose value is 0.
 func isZeroIntConst(info *types.Info, e ast.Expr) bool {
 	return isIntLiteral(info, e, 0)
 }
@@ -101,11 +92,6 @@ func isInteger(t types.Type) bool {
 // that uses at least the specified version of Go (e.g. "go1.24").
 //
 // The pass's analyzer must require [inspect.Analyzer].
-//
-// TODO(adonovan): opt: eliminate this function, instead following the
-// approach of [fmtappendf], which uses typeindex and
-// [analyzerutil.FileUsesGoVersion]; see "Tip" documented at the
-// latter function for motivation.
 func filesUsingGoVersion(pass *analysis.Pass, version string) iter.Seq[inspector.Cursor] {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -154,14 +140,10 @@ func lookup(info *types.Info, cur inspector.Cursor, name string) types.Object {
 
 func first[T any](x T, _ any) T { return x }
 
-// freshName returns a fresh name at the given pos and scope based on preferredName.
-// It generates a new name using refactor.FreshName only if:
-// (a) the preferred name is already defined at definedCur, and
-// (b) there are references to it from within usedCur.
-// If useAfterPos.IsValid(), the references must be after
-// useAfterPos within usedCur in order to warrant a fresh name.
-// Otherwise, it returns preferredName, since shadowing is valid in this case.
-// (declaredCur and usedCur may be identical in some use cases).
+// freshName returns a fresh name at the given pos and scope based on
+// preferredName. If useAfterPos.IsValid(), the references must be after
+// useAfterPos within usedCur to warrant a fresh name. Otherwise, it returns
+// preferredName, since shadowing is valid in this case.
 func freshName(info *types.Info, index *typeindex.Index, scope *types.Scope, pos token.Pos, defCur inspector.Cursor, useCur inspector.Cursor, useAfterPos token.Pos, preferredName string) string {
 	obj := lookup(info, defCur, preferredName)
 	if obj == nil {
@@ -180,7 +162,6 @@ func freshName(info *types.Info, index *typeindex.Index, scope *types.Scope, pos
 // isLocal reports whether obj is local to some function.
 // Precondition: not a struct field or interface method.
 func isLocal(obj types.Object) bool {
-	// [... 5=stmt 4=func 3=file 2=pkg 1=universe]
 	var depth int
 	for scope := obj.Parent(); scope != nil; scope = scope.Parent() {
 		depth++

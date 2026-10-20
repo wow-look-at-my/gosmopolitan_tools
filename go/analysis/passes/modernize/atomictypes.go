@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -36,14 +35,13 @@ var AtomicTypesAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_atomictypes",
 }
 
-// TODO(mkalil): support the Pointer variants.
-// Consider the following function signatures for pointer loading:
-// func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
-// func (x *Pointer[T]) Load() *T
-// Since the former uses *unsafe.Pointer while the latter uses *Pointer[T],
-// we would need to determine the type T to apply the transformation, and there
-// will be additional edits required to remove any *unsafe.Pointer casts.
-// 	"LoadPointer", "StorePointer", "SwapPointer", "CompareAndSwapPointer"
+// TODO(mkalil): support the Pointer variants. Consider the following function
+// signatures for pointer loading. Func LoadPointer(addr *unsafe.Pointer) (val
+// unsafe.Pointer) func (x *Pointer[T]) Load() *T Since the former uses
+// *unsafe.Pointer while the latter uses *Pointer[T]. We would need to
+// determine the type T to apply the transformation, and there will be
+// additional edits required to remove any *unsafe.Pointer casts.
+// "LoadPointer", "StorePointer", "SwapPointer", "CompareAndSwapPointer"
 
 // sync/atomic functions of interest. Some added in go1.19, some added in go1.23.
 var syncAtomicFuncs = []string{
@@ -73,7 +71,7 @@ func runAtomic(pass *analysis.Pass) (any, error) {
 	// in calls to atomic.AddInt32(&v, ...) et al.
 	var (
 		atomicPkg *types.Package
-		vars      = make(map[*types.Var]string) // maps candidate vars v to the name of the call they appear in
+		vars      = make(map[*types.Var]string) // maps candidate vars v to the name of the call they appear.
 	)
 	for _, funcName := range syncAtomicFuncs {
 		obj := index.Object("sync/atomic", funcName)
@@ -109,8 +107,6 @@ func runAtomic(pass *analysis.Pass) (any, error) {
 	}
 
 	// Gather all fields of struct types used in unkeyed composite literals.
-	// Such literals don't contain identifiers for their fields, so they don't
-	// appear in the type index's uses of a field object.
 	unkeyedFields := make(map[*types.Var]bool)
 	for curLit := range inspect.Root().Preorder((*ast.CompositeLit)(nil)) {
 		lit := curLit.Node().(*ast.CompositeLit)
@@ -134,8 +130,7 @@ func runAtomic(pass *analysis.Pass) (any, error) {
 		}
 	}
 
-	// Check that all uses of each candidate variable
-	// appear in calls of the form atomic.AddInt32(&v, ...).
+	// Check that all uses of each candidate variable appear in calls of the form atomic.AddInt32(&v, ...).
 nextvar:
 	for v, funcName := range vars {
 		fixFiles := make(map[*ast.File]bool) // unique files involved in the current fix
@@ -154,14 +149,12 @@ nextvar:
 			names = parent.Names
 			typ = parent.Type
 			if unkeyedFields[v.Origin()] {
-				// Do not change the type of a field used by an unkeyed literal:
-				// its positional element may no longer be assignable.
+				// Do not change the type of a field used by an unkeyed literal: its positional element may no longer be assignable.
 				continue
 			}
 		case *ast.ValueSpec: // var v int
 			if len(parent.Values) > 0 {
-				// e.g. var v int = 5
-				// skip because rewriting as `var v atomic.Int32 = 5` is invalid
+				// e.g. var v int = 5 skip because rewriting as `var v atomic.Int32 = 5` is invalid
 				continue
 			}
 			names = parent.Names
@@ -174,19 +167,11 @@ nextvar:
 		newType := strings.Title(oldType.Underlying().String()) // e.g. "Int32"
 
 		file := astutil.EnclosingFile(def)
-		// Get package prefix to avoid shadowing, and import edits, which may be
-		// necessary if the fix spans files.
-		// For example: file "a" declares an int32, which doesn't require the
-		// sync/atomic import, while file "b" calls atomic.LoadInt32(v). After
-		// the fix, the need for the import will shift from the use in file "b"
-		// (which becomes a method call v.Load) to the declaration in file "a"
-		// (which becomes atomic.Int32).
+		// Get package prefix to avoid shadowing, and import edits, which may be necessary if the fix spans files.
 		pkgPrefix, edits := refactor.AddImport(pass.TypesInfo, file, "atomic", "sync/atomic", "", def.Node().Pos())
 		// Edit the type.
 		//
-		// var v int32
-		//       ------------
-		// var v atomic.Int32
+		// var v int32 ------------ var v atomic.Int32
 		edits = append(edits, analysis.TextEdit{
 			Pos:     typ.Pos(),
 			End:     typ.End(),
@@ -198,13 +183,12 @@ nextvar:
 		var validUses []inspector.Cursor
 		for cur := range index.Uses(v) {
 			if v.IsField() && cur.ParentEdgeKind() == edge.KeyValueExpr_Key {
-				continue nextvar // we cannot fix initial an value assignment T{v: 1}
+				continue nextvar
 			}
 			if cur.ParentEdgeKind() == edge.SelectorExpr_Sel {
 				cur = cur.Parent() // ascend from v to expr.v
 			}
-			// Inv: cur is the l-value expression denoting v.
-			// v must appear beneath atomic.AddInt32(&v, ...) call.
+			// Inv: cur is the l-value expression denoting v. v must appear beneath atomic.AddInt32(&v, ...) call.
 			valid := false
 			if cur.ParentEdgeKind() == edge.UnaryExpr_X &&
 				cur.Parent().Node().(*ast.UnaryExpr).Op == token.AND {
@@ -219,14 +203,6 @@ nextvar:
 
 			if !valid {
 				// More complex case: reject candidate.
-				//
-				// For example, cur may be an unsynchronized load (e.g. v == 0). To
-				// avoid a type conversion error, we'd have to rewrite this as
-				// v.Load(). However, this is an invalid rewrite: if the program is
-				// mixing atomic operations with unsynchronized reads, the author
-				// might have accidentally introduced a data race and the suggested
-				// fix could obscure the mistake. Or, if the usage is intentional,
-				// rewriting may result in a behavior change.
 				continue nextvar
 			}
 			validUses = append(validUses, cur)
@@ -236,9 +212,7 @@ nextvar:
 			vexpr := cur.Node()
 			call := cur.Parent().Parent().Node().(*ast.CallExpr)
 			fn := typeutil.Callee(info, call).(*types.Func)
-			// atomic.AddInt32(&v,    ...)
-			// ----------------- -----
-			//                  v.Add(...)
+			// atomic.AddInt32(&v, ...) ----- v.Add(...)
 			after := vexpr.End() // LoadInt32(&v⁁)
 			if len(call.Args) > 1 {
 				after = call.Args[1].Pos() // AddInt32(&v, ⁁...)
@@ -258,7 +232,6 @@ nextvar:
 			fixFiles[astutil.EnclosingFile(cur)] = true
 		}
 
-		// Check minimum Go version: go1.19, or 1.23 for the And/Or functions.
 		if !(analyzerutil.FileUsesGoVersion(pass, file, versions.Go1_19) ||
 			analyzerutil.FileUsesGoVersion(pass, file, versions.Go1_23) &&
 				(strings.HasPrefix(funcName, "And") || strings.HasPrefix(funcName, "Or"))) {

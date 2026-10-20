@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package errorsas defines an Analyzer that checks that the second argument to
 // [errors.As] is a pointer to a type implementing error.
@@ -37,8 +36,7 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	switch pass.Pkg.Path() {
 	case "errors", "errors_test":
-		// These packages know how to use their own APIs.
-		// Sometimes they are testing what happens to incorrect programs.
+		// These packages know how to use their own APIs. Sometimes they are testing what happens to incorrect programs.
 		return nil, nil
 	}
 
@@ -66,8 +64,7 @@ func run(pass *analysis.Pass) (any, error) {
 func checkAsTarget(info *types.Info, e ast.Expr) error {
 	t := info.Types[e].Type
 	if types.Identical(t.Underlying(), anyType) {
-		// A target of any is always allowed, since it often indicates
-		// a value forwarded from another source.
+		// A target of any is always allowed, since it often indicates a value forwarded from another source.
 		return nil
 	}
 	pt, ok := t.Underlying().(*types.Pointer)

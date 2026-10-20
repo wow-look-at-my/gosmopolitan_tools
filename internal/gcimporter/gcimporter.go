@@ -1,24 +1,19 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This file is a reduced copy of $GOROOT/src/go/internal/gcimporter/gcimporter.go.
 
-// Package gcimporter provides various functions for reading
-// gc-generated object files that can be used to implement the
-// Importer interface defined by the Go 1.5 standard library package.
+// The encoding is deterministic: if the encoder is applied twice to the same
+// types.Package data structure, both encodings are equal. This property may
+// be important to avoid spurious changes in applications such as build
+// systems.
 //
-// The encoding is deterministic: if the encoder is applied twice to
-// the same types.Package data structure, both encodings are equal.
-// This property may be important to avoid spurious changes in
-// applications such as build systems.
-//
-// However, the encoder is not necessarily idempotent. Importing an
-// exported package may yield a types.Package that, while it
-// represents the same set of Go types as the original, may differ in
-// the details of its internal representation. Because of these
-// differences, re-encoding the imported package may yield a
-// different, but equally valid, encoding of the package.
+// However, the encoder is not necessarily idempotent. Importing an exported
+// package may yield a types.Package that. This happens while it represents
+// the same set of Go types as the original, may differ in the details of its
+// internal representation. Because of these differences, re-encoding the
+// imported package may yield a different, but equally valid, encoding of the
+// package.
 package gcimporter // import "golang.org/x/tools/internal/gcimporter"
 
 import (
@@ -31,8 +26,7 @@ import (
 )
 
 const (
-	// Enable debug during development: it adds some additional checks, and
-	// prevents errors from being recovered.
+	// Enable debug during development: it adds some additional checks, and prevents errors from being recovered.
 	debug = false
 
 	// If trace is set, debugging output is printed to std out.

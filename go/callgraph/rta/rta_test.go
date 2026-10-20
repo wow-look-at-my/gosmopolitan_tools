@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -25,10 +24,9 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// TestRTA runs RTA on each testdata/*.txtar file containing a single
-// go file in a single package or multiple files in different packages,
-// and compares the results with the expectations expressed in the WANT
-// comment.
+// TestRTA runs RTA on each testdata/*.txtar file containing a single go file
+// in a single package or multiple files in different packages. TestRTA
+// compares the results with the expectations expressed in the WANT comment.
 func TestRTA(t *testing.T) {
 	archivePaths := []string{
 		"testdata/func.txtar",
@@ -90,8 +88,8 @@ func TestRTA(t *testing.T) {
 	}
 }
 
-// check tests the RTA analysis results against the test expectations
-// defined by a comment starting with a line "WANT:".
+// check tests the RTA analysis results against the test expectations defined
+// by a comment starting with a line "WANT:".
 //
 // The rest of the comment consists of lines of the following forms:
 //
@@ -99,8 +97,8 @@ func TestRTA(t *testing.T) {
 //	reachable <func>			# reachable function
 //	rtype     <type>			# run-time type descriptor needed
 //
-// Each line asserts that an element is found in the given set, or, if
-// the line is preceded by "!", that it is not in the set.
+// Each line asserts that an element is found in the given set, or, if the
+// line is preceded by "!". That line is that it is not in the set.
 //
 // Functions are notated as if by ssa.Function.String.
 func check(t *testing.T, f *ast.File, pkg *ssa.Package, res *rta.Result) {
@@ -119,7 +117,6 @@ func check(t *testing.T, f *ast.File, pkg *ssa.Package, res *rta.Result) {
 	}
 	want, linenum := expectation(f)
 
-	// Parse the comment into three string-to-sense maps.
 	var (
 		wantEdge      = make(map[string]bool)
 		wantReachable = make(map[string]bool)
@@ -168,9 +165,8 @@ func check(t *testing.T, f *ast.File, pkg *ssa.Package, res *rta.Result) {
 
 	type stringset = map[string]bool // (sets: values are true)
 
-	// compare checks that got matches each assertion of the form
-	// (str, sense) in want. The sense determines whether the test
-	// is positive or negative.
+	// compare checks that got matches each assertion of the form (str, sense) in
+	// want. The sense determines whether the test is positive or negative.
 	compare := func(kind string, got stringset, want map[string]bool) {
 		ok := true
 		for str, sense := range want {

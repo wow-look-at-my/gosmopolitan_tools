@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package static computes the call graph of a Go program containing
 // only static call edges.
@@ -46,28 +45,8 @@ func CallGraph(prog *ssa.Program) *callgraph.Graph {
 		}
 	}
 
-	// If we were ever to redesign this function, we should allow
-	// the caller to provide the set of root functions and just
-	// perform the reachability step. This would allow them to
-	// work forwards from main entry points:
-	//
-	// rootNames := []string{"init", "main"}
-	// for _, main := range ssautil.MainPackages(prog.AllPackages()) {
-	// 	for _, rootName := range rootNames {
-	// 		visit(cg.CreateNode(main.Func(rootName)))
-	// 	}
-	// }
-	//
-	// or to control whether to include non-exported
-	// functions/methods, wrapper methods, and so on.
-	// Unfortunately that's not consistent with its historical
-	// behavior and existing tests.
-	//
-	// The logic below is a slight simplification and
-	// rationalization of ssautil.AllFunctions. (Having to include
-	// (*T).F wrapper methods is unfortunate--they are not source
-	// functions, and if they're reachable, they'll be in the
-	// graph--but the existing tests will break without it.)
+	// If we were ever to redesign this function, we should allow the caller to
+	// provide the set of root functions and perform the reachability step.
 
 	methodsOf := func(T types.Type) {
 		if !types.IsInterface(T) {

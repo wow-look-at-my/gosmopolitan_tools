@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -25,13 +24,6 @@ import (
 // To construct an SSA program:
 //
 //   - Call NewProgram to create an empty Program.
-//   - Call CreatePackage providing typed syntax for each package
-//     you want to build, and call it with types but not
-//     syntax for each of those package's direct dependencies.
-//   - Call [Package.Build] on each syntax package you wish to build,
-//     or [Program.Build] to build all of them.
-//
-// See the Example tests for simple examples.
 func NewProgram(fset *token.FileSet, mode BuilderMode) *Program {
 	return &Program{
 		Fset:     fset,
@@ -43,13 +35,12 @@ func NewProgram(fset *token.FileSet, mode BuilderMode) *Program {
 	}
 }
 
-// memberFromObject populates package pkg with a member for the
-// typechecker object obj.
+// memberFromObject populates package pkg with a member for the typechecker
+// object obj.
 //
-// For objects from Go source code, syntax is the associated syntax
-// tree (for funcs and vars only) and goversion defines the
-// appropriate interpretation; they will be used during the build
-// phase.
+// For objects from Go source code, syntax is the associated syntax tree (for
+// funcs and vars only) and goversion defines the appropriate interpretation.
+// They will be used during the build phase.
 func memberFromObject(pkg *Package, obj types.Object, syntax ast.Node, goversion string) {
 	name := obj.Name()
 	switch obj := obj.(type) {
@@ -140,9 +131,8 @@ func createFunction(prog *Program, obj *types.Func, name string, syntax ast.Node
 	return fn
 }
 
-// membersFromDecl populates package pkg with members for each
-// typechecker object (var, func, const or type) associated with the
-// specified decl.
+// membersFromDecl populates package pkg with members for each typechecker
+// object (var, func, const or type) associated with the specified decl.
 func membersFromDecl(pkg *Package, decl ast.Decl, goversion string) {
 	switch decl := decl.(type) {
 	case *ast.GenDecl: // import, const, type or var
@@ -177,15 +167,14 @@ func membersFromDecl(pkg *Package, decl ast.Decl, goversion string) {
 	}
 }
 
-// CreatePackage creates and returns an SSA Package from the
-// specified type-checked, error-free file ASTs, and populates its
-// Members mapping.
+// CreatePackage creates and returns an SSA Package from the specified
+// type-checked, error-free file ASTs, and populates its Members mapping.
 //
 // importable determines whether this package should be returned by a
 // subsequent call to ImportedPackage(pkg.Path()).
 //
-// The real work of building SSA form for each function is not done
-// until a subsequent call to Package.Build.
+// The real work of building SSA form for each function is not done until a
+// subsequent call to Package.Build.
 func (prog *Program) CreatePackage(pkg *types.Package, files []*ast.File, info *types.Info, importable bool) *Package {
 	if pkg == nil {
 		panic("nil pkg") // otherwise pkg.Scope below returns types.Universe!
@@ -226,9 +215,7 @@ func (prog *Program) CreatePackage(pkg *types.Package, files []*ast.File, info *
 			}
 		}
 	} else {
-		// GC-compiled binary package (or "unsafe")
-		// No code.
-		// No position information.
+		// GC-compiled binary package (or "unsafe") No code. No position information.
 		scope := p.Pkg.Scope()
 		for _, name := range scope.Names() {
 			obj := scope.Lookup(name)
@@ -285,34 +272,14 @@ func (prog *Program) AllPackages() []*Package {
 	return pkgs
 }
 
-// ImportedPackage returns the importable Package whose PkgPath
-// is path, or nil if no such Package has been created.
-//
-// A parameter to CreatePackage determines whether a package should be
-// considered importable. For example, no import declaration can resolve
-// to the ad-hoc main package created by 'go build foo.go'.
-//
-// TODO(adonovan): rethink this function and the "importable" concept;
-// most packages are importable. This function assumes that all
-// types.Package.Path values are unique within the ssa.Program, which is
-// false---yet this function remains very convenient.
-// Clients should use (*Program).Package instead where possible.
-// SSA doesn't really need a string-keyed map of packages.
-//
-// Furthermore, the graph of packages may contain multiple variants
-// (e.g. "p" vs "p as compiled for q.test"), and each has a different
-// view of its dependencies.
+// ImportedPackage returns the importable Package whose PkgPath is path, or
+// nil if no such Package has been created.
 func (prog *Program) ImportedPackage(path string) *Package {
 	return prog.imported[path]
 }
 
-// SetNoReturn sets the predicate used when building the ssa.Program
-// prog that reports whether a given function cannot return.
-// This may be used to prune spurious control flow edges
-// after (e.g.) log.Fatal, improving the precision of analyses.
-//
-// A typical implementation is the [ctrlflow.CFGs.NoReturn] method from
-// [golang.org/x/tools/go/analysis/passes/ctrlflow].
+// SetNoReturn sets the predicate used when building the ssa.Program prog that
+// reports whether a given function cannot return.
 func (prog *Program) SetNoReturn(noReturn func(*types.Func) bool) {
 	prog.noReturn = noReturn
 }

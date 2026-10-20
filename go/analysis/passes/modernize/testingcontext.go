@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -38,20 +37,13 @@ var TestingContextAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_testingcontext",
 }
 
-// The testingContext pass replaces calls to context.WithCancel from within
-// tests to a use of testing.{T,B,F}.Context(), added in Go 1.24.
-//
 // Specifically, the testingContext pass suggests to replace:
 //
 //	ctx, cancel := context.WithCancel(context.Background()) // or context.TODO
 //	defer cancel()
-//
-// with:
-//
 //	ctx := t.Context()
 //
 // provided:
-//
 //   - ctx and cancel are declared by the assignment
 //   - the deferred call is the only use of cancel and occurs immediately
 //     after the assignment
@@ -112,9 +104,7 @@ calls:
 		if !ok || !soleUseIs(index, lhs[1], deferId) {
 			continue // b is used elsewhere
 		}
-		// Have:
-		// a, b := context.WithCancel(context.{Background,TODO}())
-		// defer b()
+		// Have: a, b := context.WithCancel(context.{Background,TODO}()) defer b()
 
 		// Check that we are in a test func.
 		var (
@@ -150,9 +140,7 @@ calls:
 				// All subsequent defers will also be after "defer cancel()" so we don't need to inspect them
 				break
 			}
-			// Check that the defer statement is within the test function body. Defer
-			// statements inside func literals are allowed because they are not within
-			// scope of the testing func.
+			// Check that the defer statement is within the test function body.
 			if fn, ok := enclosingFunc(curOtherDefer); ok && fn == curFunc {
 				continue calls
 			}
@@ -199,8 +187,6 @@ func soleUseIs(index *typeindex.Index, obj types.Object, id *ast.Ident) bool {
 	return !empty
 }
 
-// isTestFn checks whether fn is a test function (TestX, BenchmarkX, FuzzX),
-// returning the corresponding types.Object of the *testing.{T,B,F} argument.
 // Returns nil if fn is a test function, but the testing.{T,B,F} argument is
 // unnamed (or _).
 //
@@ -210,7 +196,6 @@ func soleUseIs(index *typeindex.Index, obj types.Object, id *ast.Ident) bool {
 // Adapted from go/analysis/passes/tests.
 // TODO(rfindley): consider refactoring to share logic.
 func isTestFn(info *types.Info, fn *ast.FuncDecl) types.Object {
-	// Want functions with 0 results and 1 parameter.
 	if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 ||
 		fn.Type.Params == nil ||
 		len(fn.Type.Params.List) != 1 ||

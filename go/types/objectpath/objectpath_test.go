@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package objectpath_test
 
@@ -93,11 +92,11 @@ type Issue68046 interface { f(x int) interface{Issue68046} }
 		{"b", "T.UF0", "field A int", ""},
 		{"b", "T.UF1", "field b int", ""},
 		{"b", "T.UF2", "field T a.T", ""},
-		{"b", "U.UF2", "field T a.T", ""},          // U.U... are aliases for T.U...
-		{"b", "A", "type b.A = struct{x int}", ""}, // go1.22/alias=1: "type b.A = b.A"
+		{"b", "U.UF2", "field T a.T", ""}, // U.U... are aliases for T.U...
+		{"b", "A", "type b.A = struct{x int}", ""},
 		{"b", "A.aF0", "field x int", ""},
 		{"b", "A.F0", "field x int", ""},
-		{"b", "AN", "type b.AN = b.unexported2", ""}, // go1.22/alias=1: "type b.AN = b.AN"
+		{"b", "AN", "type b.AN = b.unexported2", ""},
 		{"b", "AN.UF0", "field z int", ""},
 		{"b", "AN.aO", "type b.unexported2 struct{z int}", ""},
 		{"b", "AN.O", "type b.unexported2 struct{z int}", ""},
@@ -160,7 +159,7 @@ type Issue68046 interface { f(x int) interface{Issue68046} }
 		{types.Universe.Lookup("nil"), "predeclared nil has no path"},
 		{types.Universe.Lookup("len"), "predeclared builtin len has no path"},
 		{types.Universe.Lookup("int"), "predeclared type int has no path"},
-		{b.TypesInfo.Implicits[b.Syntax[0].Imports[0]], "no path for package a (\"a\")"}, // import "a"
+		{b.TypesInfo.Implicits[b.Syntax[0].Imports[0]], "no path for package a (\"a\")"},
 		{b.Types.Scope().Lookup("unexportedFunc"), "no path for non-exported func b.unexportedFunc()"},
 	} {
 		path, err := objectpath.For(test.obj)
@@ -178,7 +177,6 @@ type Issue68046 interface { f(x int) interface{Issue68046} }
 
 // loadPackages expands the archive and loads the package patterns relative to its root.
 func loadPackages(t *testing.T, archive string, patterns ...string) map[string]*packages.Package {
-	// TODO(adonovan): ExtractTxtarToTmp (sans File) would be useful.
 	ar := txtar.Parse([]byte(archive))
 	pkgs := testfiles.LoadPackages(t, ar, patterns...)
 	m := make(map[string]*packages.Package)
@@ -196,20 +194,7 @@ type pathTest struct {
 }
 
 func testPath(pkgmap map[string]*packages.Package, test pathTest) error {
-	// We test objectpath by enumerating a set of paths
-	// and ensuring that Path(pkg, Object(pkg, path)) == path.
-	//
-	// It might seem more natural to invert the test:
-	// identify a set of objects and for each one,
-	// ensure that Object(pkg, Path(pkg, obj)) == obj.
-	// However, for most interesting test cases there is no
-	// easy way to identify the object short of applying
-	// a series of destructuring operations to pkg---which
-	// is essentially what objectpath.Object does.
-	// (We do a little of that when testing bad paths, below.)
-	//
-	// The downside is that the test depends on the path encoding.
-	// The upside is that the test exercises the encoding.
+	// We test objectpath by enumerating a set of paths and ensuring that Path(pkg, Object(pkg, path)) == path.
 	pkg := pkgmap["x.io/"+test.pkg].Types
 
 	// check path -> object
@@ -241,7 +226,6 @@ func testPath(pkgmap map[string]*packages.Package, test pathTest) error {
 		return fmt.Errorf("For(%v) failed: %v, want %q", obj, err, test.path)
 	}
 	// We do not require that test.path == path2. Aliases are legal.
-	// But we do require that Object(path2) finds the same object.
 	obj2, err := objectpath.Object(pkg, path2)
 	if err != nil {
 		return fmt.Errorf("Object(%s, %q) failed: %v (roundtrip from %q)", pkg.Path(), path2, err, test.path)
@@ -250,11 +234,6 @@ func testPath(pkgmap map[string]*packages.Package, test pathTest) error {
 		return fmt.Errorf("Object(%s, For(obj)) != obj: got %s, obj is %s (path1=%q, path2=%q)", pkg.Path(), obj2, obj, test.path, path2)
 	}
 
-	// We also call [objectpath.Encoder.For] three times to ensure it
-	// gives consistent results with [objectpath.For] in all states:
-	//  1: searching for symbol without index
-	//  2: building index and looking up symbol
-	//  3: looking up symbol in existing index.
 	{
 		enc := new(objectpath.Encoder)
 
@@ -283,8 +262,8 @@ func testPath(pkgmap map[string]*packages.Package, test pathTest) error {
 }
 
 // TestSourceAndExportData uses objectpath to compute a correspondence
-// of objects between two versions of the same package, one loaded from
-// source, the other from export data.
+// of objects between a couple of versions of the same package, one
+// loaded from source. The other from export data.
 func TestSourceAndExportData(t *testing.T) {
 	const src = `
 package p
@@ -368,8 +347,6 @@ func (unreachable) F() {} // not reachable in export data
 		}
 
 		// Check the object strings match.
-		// (We can't check that types are identical because the
-		// objects belong to different type-checker realms.)
 		srcstr := objectString(srcobj)
 		binstr := objectString(binobj)
 		if srcstr != binstr {
@@ -384,7 +361,6 @@ func objectString(obj types.Object) string {
 	s := types.ObjectString(obj, (*types.Package).Name)
 
 	// The printing of interface methods changed in go1.11.
-	// This work-around makes the specific test pass with earlier versions.
 	s = strings.Replace(s, "func (interface).Method", "func (p.Foo).Method", -1)
 
 	return s
@@ -392,8 +368,6 @@ func objectString(obj types.Object) string {
 
 // TestOrdering verifies that the compiler and go/types emit methods in the same order,
 // including when generic methods are present.
-//
-// See golang/go#78495 and golang/go#81188.
 func TestOrdering(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
@@ -432,8 +406,6 @@ func TestOrdering(t *testing.T) {
 		srcpkg := loadPackageWithMode(packages.LoadSyntax)
 
 		// objectpath encodes concrete methods by their go/types method index.
-		// Verify that paths produced from source-loaded types resolve to the same
-		// methods in compiler export data.
 		srcNamed := srcpkg.Types.Scope().Lookup("T").Type().(*types.Named)
 		for srcMethod := range srcNamed.Methods() {
 			path, err := objectpath.For(srcMethod)
@@ -509,14 +481,9 @@ func (T) N() { }
 }
 
 func TestIssue70418(t *testing.T) {
-	// This cyclic structure exhibited a bug (go.dev/issues/70418)
-	// with the seenMethods map that causes a lot of gopls crashes.
-	// objectpath would inspect the methods of I:
-	// - First we see I.A, which leads to Anon, to F, which is marked as seen.
-	// - Second we see I.F, embedded via alias Anon.
-	//   Since we've already seen F, we break out of the interface method loop.
-	// - Third, we fail to visit I.Z.
-	// The solution is to skip only I.F, not the rest of the interface.
+	// This cyclic structure exhibited a bug (go.dev/issues/70418) with the
+	// seenMethods map that causes a lot of gopls crashes. objectpath will
+	// inspect the methods of I.
 
 	const src = `
 -- go.mod --

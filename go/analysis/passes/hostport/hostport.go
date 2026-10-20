@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package hostport defines an analyzer for calls to net.Dial with
 // addresses of the form "%s:%d" or "%s:%s", which work only with IPv4.
@@ -58,12 +57,11 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil // fast path: package doesn't use fmt.Sprintf
 	}
 
-	// checkAddr reports a diagnostic (and returns true) if e
-	// is a call of the form fmt.Sprintf("%s:%d", ...).
-	// The diagnostic includes a fix.
+	// checkAddr reports a diagnostic (and returns true) if e is a call of the
+	// form fmt.Sprintf("%s:%d", ...). The diagnostic includes a fix.
 	//
-	// dialCall is non-nil if the Dial call is non-local
-	// but within the same file.
+	// dialCall is non-nil if the Dial call is non-local but within the same
+	// file.
 	checkAddr := func(e ast.Expr, dialCall *ast.CallExpr) {
 		if call, ok := e.(*ast.CallExpr); ok &&
 			len(call.Args) == 3 &&
@@ -80,8 +78,7 @@ func run(pass *analysis.Pass) (any, error) {
 					numericPort = true
 
 				case "%s:%s":
-					// Have: fmt.Sprintf("%s:%s", host, portStr)
-					// Keep port string as is.
+					// Have: fmt.Sprintf("%s:%s", host, portStr) Keep port string as is.
 
 				default:
 					return
@@ -107,10 +104,6 @@ func run(pass *analysis.Pass) (any, error) {
 					port := call.Args[2]
 
 					// Is port an integer literal?
-					//
-					// (Don't allow arbitrary constants k otherwise the
-					// transformation k => fmt.Sprintf("%d", "123")
-					// loses the symbolic connection to k.)
 					var kPort int64 = -1
 					if lit, ok := port.(*ast.BasicLit); ok && lit.Kind == token.INT {
 						if v, err := strconv.ParseInt(lit.Value, 0, 64); err == nil {
@@ -118,7 +111,7 @@ func run(pass *analysis.Pass) (any, error) {
 						}
 					}
 					if kPort >= 0 {
-						// literal: 0x7B  => "123"
+						// literal: 0x7B => "123"
 						edits = append(edits, analysis.TextEdit{
 							Pos:     port.Pos(),
 							End:     port.End(),
@@ -182,9 +175,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 			case *ast.Ident:
-				// addr := fmt.Sprintf("%s:%d", ...)
-				// ...
-				// net.Dial("tcp", addr)
+				// addr := fmt.Sprintf("%s:%d", ...) ... net.Dial("tcp", addr)
 
 				// Search for decl of addrVar within common ancestor of addrVar and Dial call.
 				// TODO(adonovan): abstract "find RHS of statement that assigns var v".

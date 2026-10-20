@@ -1,57 +1,18 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package vta computes the call graph of a Go program using the Variable
-// Type Analysis (VTA) algorithm originally described in "Practical Virtual
-// Method Call Resolution for Java," Vijay Sundaresan, Laurie Hendren,
-// Chrislain Razafimahefa, Raja Vallée-Rai, Patrick Lam, Etienne Gagnon, and
-// Charles Godin.
+// Package vta computes the call graph of a Go program using the Variable Type
+// Analysis (VTA) algorithm described in "Practical Virtual Method Call
+// Resolution for Java," Vijay Sundaresan, Laurie Hendren, Chrislain
+// Razafimahefa, Raja Vallée-Rai, Patrick Lam, Etienne Gagnon, and Charles
+// Godin.
 //
-// Note: this package is in experimental phase and its interface is
-// subject to change.
-// TODO(zpavlinovic): reiterate on documentation.
+// Note: this package is in experimental phase and its interface is subject to
+// change. TODO(zpavlinovic): reiterate on documentation.
 //
 // The VTA algorithm overapproximates the set of types (and function literals)
 // a variable can take during runtime by building a global type propagation
-// graph and propagating types (and function literals) through the graph.
-//
-// A type propagation is a directed, labeled graph. A node can represent
-// one of the following:
-//   - A field of a struct type.
-//   - A local (SSA) variable of a method/function.
-//   - All pointers to a non-interface type.
-//   - The return value of a method.
-//   - All elements in an array.
-//   - All elements in a slice.
-//   - All elements in a map.
-//   - All elements in a channel.
-//   - A global variable.
-//
-// In addition, the implementation used in this package introduces
-// a few Go specific kinds of nodes:
-//   - (De)references of nested pointers to interfaces are modeled
-//     as a unique nestedPtrInterface node in the type propagation graph.
-//   - Each function literal is represented as a function node whose
-//     internal value is the (SSA) representation of the function. This
-//     is done to precisely infer flow of higher-order functions.
-//
-// Edges in the graph represent flow of types (and function literals) through
-// the program. That is, the model 1) typing constraints that are induced by
-// assignment statements or function and method calls and 2) higher-order flow
-// of functions in the program.
-//
-// The labeling function maps each node to a set of types and functions that
-// can intuitively reach the program construct the node represents. Initially,
-// every node is assigned a type corresponding to the program construct it
-// represents. Function nodes are also assigned the function they represent.
-// The labeling function then propagates types and function through the graph.
-//
-// The result of VTA is a type propagation graph in which each node is labeled
-// with a conservative overapproximation of the set of types (and functions)
-// it may have. This information is then used to construct the call graph.
-// For each unresolved call site, vta uses the set of types and functions
-// reaching the node representing the call site to create a set of callees.
+// graph. It propagating types (and function literals) through the graph.
 package vta
 
 // TODO(zpavlinovic): update VTA for how it handles generic function bodies and instantiation wrappers.
@@ -69,13 +30,6 @@ import (
 // efficient approach to construct a CHA call graph.
 //
 // The resulting graph does not have a root node.
-//
-// CallGraph does not make any assumptions on initial types global variables
-// and function/method inputs can have. CallGraph is then sound, modulo use of
-// reflection and unsafe, if the initial call graph is sound.
-//
-// The supplied SSA functions must have been constructed with the
-// [ssa.InstantiateGenerics] mode flag.
 func CallGraph(funcs map[*ssa.Function]bool, initial *callgraph.Graph) *callgraph.Graph {
 	callees := makeCalleesFunc(funcs, initial)
 	vtaG, canon := typePropGraph(funcs, callees)
@@ -85,9 +39,8 @@ func CallGraph(funcs map[*ssa.Function]bool, initial *callgraph.Graph) *callgrap
 	return c.construct(funcs)
 }
 
-// constructor type linearly traverses the input program
-// and constructs a callgraph based on the results of the
-// VTA type propagation phase.
+// constructor type linearly traverses the input program and constructs a
+// callgraph based on the results of the VTA type propagation phase.
 type constructor struct {
 	types   propTypeMap
 	cache   methodCache
@@ -164,11 +117,7 @@ func propFunc(p propType, c ssa.CallInstruction, cache methodCache) []*ssa.Funct
 	return cache.methods(p.typ, c.Common().Method.Name(), c.Parent().Prog)
 }
 
-// methodCache serves as a type -> method name -> methods
-// cache when computing methods of a type using the
-// ssa.Program.MethodSets and ssa.Program.MethodValue
-// APIs. The cache is used to speed up querying of
-// methods of a type as the mentioned APIs are expensive.
+// methodCache serves as a type -> method name -> methods cache when computing methods of a type using the ssa.Program.MethodSets and ssa.Program.MethodValue APIs.
 type methodCache map[types.Type]map[string][]*ssa.Function
 
 // methods returns methods of a type `t` named `name`. First consults

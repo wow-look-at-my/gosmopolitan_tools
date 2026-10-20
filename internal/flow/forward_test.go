@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package flow_test
 
@@ -54,7 +53,6 @@ func checkAnalysis[Fact comparable](t *testing.T, analysis *flow.Analysis[Fact, 
 }
 
 func TestBasic(t *testing.T) {
-	// Define a trivial graph of 4 nodes in sequence: 0 -> 1 -> 2 -> 3
 	g := &simpleGraph{
 		numNodes: 4,
 		edges: [][]int{
@@ -88,12 +86,6 @@ func TestBasic(t *testing.T) {
 }
 
 func TestDiamond(t *testing.T) {
-	// Diamond graph:
-	//   0
-	//  / \
-	// 1   2
-	//  \ /
-	//   3
 	g := &simpleGraph{
 		numNodes: 4,
 		edges: [][]int{
@@ -113,8 +105,8 @@ func TestDiamond(t *testing.T) {
 	checkAnalysis(t, analysis,
 		map[int]nodeSet{
 			0: 0,
-			1: set(0), // Edge (0, 1) carries NodeID 0
-			2: set(0), // Edge (0, 2) carries NodeID 0
+			1: set(0),
+			2: set(0),
 			3: set(0, 1, 2),
 		},
 		map[[2]int]nodeSet{
@@ -127,10 +119,6 @@ func TestDiamond(t *testing.T) {
 }
 
 func TestCycle(t *testing.T) {
-	// Graph with a cycle:
-	// 0 -> 1 -> 2
-	//      ^    |
-	//      +----+
 	g := &simpleGraph{
 		numNodes: 3,
 		edges: [][]int{
@@ -161,22 +149,7 @@ func TestCycle(t *testing.T) {
 }
 
 func TestFlowOrder(t *testing.T) {
-	// This test constructs a "Spine with Bottleneck" graph in which a naive
-	// visit order would result in quadratic time.
-	//
-	// Structure:
-	//  - Spine: Chain 0 -> 1 -> ... -> T-1.
-	//  - Bottleneck: All spine nodes (0..T-1) also point to T.
-	//  - Tail: T begins a chain T -> T+1 -> ... -> N-1.
-	//
-	// However, we randomly permute the node IDs to prevent a "lucky" order
-	// derived from the node IDs.
-	//
-	// With a naive order, updates to T from the spine would arrive one by one
-	// (or in small batches), triggering re-evaluation of the entire tail
-	// multiple times, and O(T*N) transfer calls.
-	//
-	// With RPO, T is evaluated once after all spine nodes are processed.
+	// This test constructs a "Spine with Bottleneck" graph in which a naive visit order would result in quadratic time.
 
 	T := 64 // Max ID allowed by nodeSet
 	N := 2 * T
@@ -200,7 +173,6 @@ func TestFlowOrder(t *testing.T) {
 		edges[uID] = append(edges[uID], node(v))
 		nEdges++
 	}
-	// Spine: 0 -> 1 -> ... -> T-1
 	for i := range T {
 		if i+1 != T {
 			addEdge(i, i+1)

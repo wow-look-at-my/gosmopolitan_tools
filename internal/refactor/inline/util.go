@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -45,29 +44,8 @@ func within(pos token.Pos, n ast.Node) bool {
 }
 
 // trivialConversion reports whether it is safe to omit the implicit
-// value-to-variable conversion that occurs in argument passing or
-// result return. The only case currently allowed is converting from
-// untyped constant to its default type (e.g. 0 to int).
-//
-// The reason for this check is that converting from A to B to C may
-// yield a different result than converting A directly to C: consider
-// 0 to int32 to any.
-//
-// trivialConversion under-approximates trivial conversions, as unfortunately
-// go/types does not record the type of an expression *before* it is implicitly
-// converted, and therefore it cannot distinguish typed constant
-// expressions from untyped constant expressions. For example, in the
-// expression `c + 2`, where c is a uint32 constant, trivialConversion does not
-// detect that the default type of this expression is actually uint32, not untyped
-// int.
-//
-// We could, of course, do better here by reverse engineering some of go/types'
-// constant handling. That may or may not be worthwhile.
-//
-// Example: in func f() int32 { return 0 },
-// the type recorded for 0 is int32, not untyped int;
-// although it is Identical to the result var,
-// the conversion is non-trivial.
+// value-to-variable conversion that occurs in argument passing or result
+// return.
 func trivialConversion(fromValue constant.Value, from, to types.Type) bool {
 	if fromValue != nil {
 		var defaultType types.Type
@@ -115,9 +93,6 @@ func intersects[K comparable, T1, T2 any](x map[K]T1, y map[K]T2) bool {
 
 // convert returns syntax for the conversion T(x).
 func convert(T, x ast.Expr) *ast.CallExpr {
-	// The formatter generally adds parens as needed,
-	// but before go1.22 it had a bug (#63362) for
-	// channel types that requires this workaround.
 	if ch, ok := T.(*ast.ChanType); ok && ch.Dir == ast.RECV {
 		T = &ast.ParenExpr{X: T}
 	}
@@ -132,9 +107,7 @@ func isPointer(t types.Type) bool {
 	return is[*types.Pointer](typeparams.CoreType(t))
 }
 
-// indirectSelection is like seln.Indirect() without bug #8353.
 func indirectSelection(seln *types.Selection) bool {
-	// Work around bug #8353 in Selection.Indirect when Kind=MethodVal.
 	if seln.Kind() == types.MethodVal {
 		tArg, indirect := effectiveReceiver(seln)
 		if indirect {

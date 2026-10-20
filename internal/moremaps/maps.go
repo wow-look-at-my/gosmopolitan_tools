@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package moremaps contains more functions for working with maps.
 package moremaps
@@ -12,8 +11,8 @@ import (
 	"slices"
 )
 
-// Arbitrary returns an arbitrary (key, value) entry from the map and ok is true, if
-// the map is not empty. Otherwise, it returns zero values for K and V, and false.
+// Arbitrary returns an arbitrary (key, value) entry from the map and ok is
+// true, if the map is not empty.
 func Arbitrary[K comparable, V any](m map[K]V) (_ K, _ V, ok bool) {
 	for k, v := range m {
 		return k, v, true
@@ -58,7 +57,6 @@ func SameKeys[K comparable, V1, V2 any](x map[K]V1, y map[K]V2) bool {
 
 // Sorted returns an iterator over the entries of m in key order.
 func Sorted[M ~map[K]V, K cmp.Ordered, V any](m M) iter.Seq2[K, V] {
-	// TODO(adonovan): use maps.Sorted if proposal #68598 is accepted.
 	return func(yield func(K, V) bool) {
 		keys := KeySlice(m)
 		slices.Sort(keys)
@@ -72,7 +70,6 @@ func Sorted[M ~map[K]V, K cmp.Ordered, V any](m M) iter.Seq2[K, V] {
 
 // SortedFunc returns an iterator over the entries of m in the key order determined by cmp.
 func SortedFunc[M ~map[K]V, K comparable, V any](m M, cmp func(x, y K) int) iter.Seq2[K, V] {
-	// TODO(adonovan): use maps.SortedFunc if proposal #68598 is accepted.
 	return func(yield func(K, V) bool) {
 		keys := KeySlice(m)
 		slices.SortFunc(keys, cmp)

@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package buildtag defines an Analyzer that checks build tags.
 package buildtag
@@ -84,8 +83,7 @@ func checkOtherFile(pass *analysis.Pass, filename string) error {
 	check.init(pass)
 	defer check.finish()
 
-	// We cannot use the Go parser, since this may not be a Go source file.
-	// Read the raw bytes instead.
+	// We cannot use the Go parser, since this may not be a Go source file. Read the raw bytes instead.
 	content, tf, err := analyzerutil.ReadFile(pass, filename)
 	if err != nil {
 		return err
@@ -116,11 +114,6 @@ func (check *checker) init(pass *analysis.Pass) {
 
 func (check *checker) file(pos token.Pos, text string) {
 	// Determine cutpoint where +build comments are no longer valid.
-	// They are valid in leading // comments in the file followed by
-	// a blank line.
-	//
-	// This must be done as a separate pass because of the
-	// requirement that the comment be followed by a blank line.
 	var plusBuildCutoff int
 	fullText := text
 	for text != "" {
@@ -142,8 +135,7 @@ func (check *checker) file(pos token.Pos, text string) {
 		}
 	}
 
-	// Process each line.
-	// Must stop once we hit goBuildOK == false
+	// Process each line. Must stop once we hit goBuildOK == false
 	text = fullText
 	check.inStar = false
 	for text != "" {
@@ -186,12 +178,6 @@ func (check *checker) file(pos token.Pos, text string) {
 		}
 		if line != "" {
 			// Found non-comment non-blank line.
-			// Ends space for valid //go:build comments,
-			// but also ends the fraction of the file we can
-			// reliably parse. From this point on we might
-			// incorrectly flag "comments" inside multiline
-			// string constants or anything else (this might
-			// not even be a Go program). So stop.
 			break
 		}
 	}
@@ -274,8 +260,7 @@ func (check *checker) goBuildLine(pos token.Pos, line string) {
 func (check *checker) plusBuildLine(pos token.Pos, line string) {
 	line = strings.TrimSpace(line)
 	if !constraint.IsPlusBuild(line) {
-		// Comment with +build but not at beginning.
-		// Only report early in file.
+		// Comment with +build but not at beginning. Only report early in file.
 		if check.plusBuildOK && !strings.HasPrefix(line, "// want") {
 			check.pass.Reportf(pos, "possible malformed +build comment")
 		}
@@ -296,7 +281,6 @@ func (check *checker) plusBuildLine(pos token.Pos, line string) {
 	}
 
 	fields := strings.Fields(line[len("//"):])
-	// IsPlusBuildConstraint check above implies fields[0] == "+build"
 	for _, arg := range fields[1:] {
 		for elem := range strings.SplitSeq(arg, ",") {
 			if strings.HasPrefix(elem, "!!") {
@@ -318,9 +302,7 @@ func (check *checker) plusBuildLine(pos token.Pos, line string) {
 	if check.crossCheck {
 		y, err := constraint.Parse(line)
 		if err != nil {
-			// Should never happen - constraint.Parse never rejects a // +build line.
-			// Also, we just checked the syntax above.
-			// Even so, report.
+			// Should never happen - constraint.Parse never rejects a // +build line. Also, we checked the syntax above.
 			check.pass.Reportf(pos, "%v", err)
 			check.crossCheck = false
 			return
@@ -340,9 +322,7 @@ func (check *checker) finish() {
 		return
 	}
 
-	// Have both //go:build and // +build,
-	// with no errors found (crossCheck still true).
-	// Check they match.
+	// Have both //go:build and // +build, with no errors found (crossCheck still true). Check they match.
 	var want constraint.Expr
 	lines, err := constraint.PlusBuildLines(check.goBuild)
 	if err != nil {
@@ -352,8 +332,7 @@ func (check *checker) finish() {
 	for _, line := range lines {
 		y, err := constraint.Parse(line)
 		if err != nil {
-			// Definitely should not happen, but not the user's fault.
-			// Do not report.
+			// Definitely should not happen, but not the user's fault. Do not report.
 			return
 		}
 		if want == nil {
@@ -394,8 +373,7 @@ func malformedGoTag(tag string) bool {
 		return false
 	}
 
-	// The tag starts with "go1" so it is almost certainly a GoVersion.
-	// Report it if it is not a valid build constraint.
+	// The tag starts with "go1" so it is almost certainly a GoVersion. Report it if it is not a valid build constraint.
 	return !validGoVersion(tag)
 }
 

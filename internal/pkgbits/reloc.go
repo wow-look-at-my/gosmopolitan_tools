@@ -1,17 +1,15 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package pkgbits
 
 // A RelocKind indicates a particular section within a unified IR export.
 type RelocKind int32
 
-// An Index represents a bitstream element index within a particular
-// section.
+// An Index represents a bitstream element index within a particular section.
 type Index int32
 
-// A relocEnt (relocation entry) is an entry in an element's local
+// A RelocEnt (relocation entry) is an entry in an element's local
 // reference table.
 //
 // TODO(mdempsky): Rename this too.

@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
@@ -30,8 +29,7 @@ func main() {
 	flag.Parse()
 	cfg := &packages.Config{
 		Fset: token.NewFileSet(),
-		// Don't request NeedTypes: we want to be certain that
-		// we loaded the types ourselves, from export data.
+		// Don't request NeedTypes: we want to be certain that we loaded the types ourselves, from export data.
 		Mode: packages.NeedName | packages.NeedExportFile,
 	}
 	pkgs, err := packages.Load(cfg, flag.Args()...)
@@ -44,8 +42,6 @@ func main() {
 
 	for _, pkg := range pkgs {
 		// Read types from compiler's unified export data file.
-		// This Package may included non-exported functions if they
-		// are called by inlinable exported functions.
 		var tpkg1 *types.Package
 		{
 			export, err := os.ReadFile(pkg.ExportFile)
@@ -64,8 +60,7 @@ func main() {
 		fmt.Println("# Read from compiler's unified export data:")
 		printPackage(tpkg1)
 
-		// Now reexport as indexed (deep) export data, and reimport.
-		// The Package will contain only exported symbols.
+		// Now reexport as indexed (deep) export data, and reimport. The Package will contain only exported symbols.
 		var tpkg2 *types.Package
 		{
 			var out bytes.Buffer

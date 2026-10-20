@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector
 
@@ -17,41 +16,21 @@ import (
 
 // A Cursor represents an [ast.Node]. It is immutable.
 //
-// Two Cursors compare equal if they represent the same node.
-//
-// The zero value of Cursor is not valid.
-//
-// Call [Inspector.Root] to obtain a cursor for the virtual root node
-// of the traversal. This is the sole valid cursor for which [Cursor.Node]
-// returns nil.
-//
-// Use the following methods to navigate efficiently around the tree:
-//   - for ancestors, use [Cursor.Parent] and [Cursor.Enclosing];
-//   - for children, use [Cursor.Child], [Cursor.Children],
-//     [Cursor.FirstChild], and [Cursor.LastChild];
-//   - for siblings, use [Cursor.PrevSibling] and [Cursor.NextSibling];
-//   - for descendants, use [Cursor.FindByPos], [Cursor.FindNode],
-//     [Cursor.Inspect], and [Cursor.Preorder].
-//
-// Use the [Cursor.ChildAt] and [Cursor.ParentEdge] methods for
-// information about the edges in a tree: which field (and slice
-// element) of the parent node holds the child.
+// Cursors compare equal if they represent the same node.
 type Cursor struct {
 	in    *Inspector
-	index int32 // index of push node; -1 for virtual root node
+	index int32
 }
 
 // Root returns a valid cursor for the virtual root node,
 // whose children are the files provided to [New].
-//
-// Its [Cursor.Node] method return nil.
 func (in *Inspector) Root() Cursor {
 	return Cursor{in, -1}
 }
 
-// At returns the cursor at the specified index in the traversal,
-// which must have been obtained from [Cursor.Index] on a Cursor
-// belonging to the same Inspector (see [Cursor.Inspector]).
+// At returns the cursor at the specified index in the traversal. This is
+// which must have been obtained from [Cursor.Index] on a Cursor belonging to
+// the same Inspector (see [Cursor.Inspector]).
 func (in *Inspector) At(index int32) Cursor {
 	if index < 0 {
 		panic("negative index")
@@ -65,25 +44,16 @@ func (in *Inspector) At(index int32) Cursor {
 	return Cursor{in, index}
 }
 
-// Valid reports whether the cursor is valid.
-// The zero value of cursor is invalid.
-// Unless otherwise documented, it is not safe to call
-// any other method on an invalid cursor.
+// Valid reports whether the cursor is valid. The zero value of cursor is
+// invalid.
 func (c Cursor) Valid() bool {
 	return c.in != nil
 }
 
-// Inspector returns the cursor's Inspector.
-// It returns nil if the Cursor is not valid.
+// Inspector returns the cursor's Inspector. It returns nil if the Cursor is not valid.
 func (c Cursor) Inspector() *Inspector { return c.in }
 
 // Index returns the index of this cursor position within the package.
-//
-// Clients should not assume anything about the numeric Index value
-// except that it increases monotonically throughout the traversal.
-// It is provided for use with [Inspector.At].
-//
-// Index must not be called on the Root node.
 func (c Cursor) Index() int32 {
 	if c.index < 0 {
 		panic("Index called on Root node")
@@ -120,12 +90,7 @@ func (c Cursor) GoString() string {
 	if c.index < 0 {
 		return "(root)"
 	}
-	// e.g "File.Decls[1].(*ast.GenDecl).Specs[0].(*ast.TypeSpec)"
-	//
-	// In hindsight even the File node should have reported a
-	// virtual ParentEdge of (Root_Files, i) where i is the index
-	// among the files passed to NewInspector. Then the path would
-	// read "(root).Files[i]", etc; but we missed the boat.
+	// e.g "File.Decls[1].(*ast.GenDecl).Specs[0].(*ast.TypeSpec)".
 	var buf strings.Builder
 	buf.WriteString("File")
 	var visit func(Cursor)
@@ -160,19 +125,11 @@ func (c Cursor) indices() (int32, int32) {
 	}
 }
 
-// Preorder returns an iterator over the nodes of the subtree
-// represented by c in depth-first order. Each node in the sequence is
-// represented by a Cursor that allows access to the Node, but may
-// also be used to start a new traversal, or to obtain the stack of
-// nodes enclosing the cursor.
-//
-// The traversal sequence is determined by [ast.Inspect]. The types
-// argument, if non-empty, enables type-based filtering of events. The
-// function f if is called only for nodes whose type matches an
-// element of the types slice.
-//
-// If you need control over descent into subtrees,
-// or need both pre- and post-order notifications, use [Cursor.Inspect]
+// Preorder returns an iterator over the nodes of the subtree represented by c
+// in depth-first order. Consider each node in the sequence. That node is
+// represented by a Cursor that allows access to the Node. But may also be
+// used to start a new traversal, or to obtain the stack of nodes enclosing
+// the cursor.
 func (c Cursor) Preorder(types ...ast.Node) iter.Seq[Cursor] {
 	mask := maskOf(types)
 
@@ -201,15 +158,6 @@ func (c Cursor) Preorder(types ...ast.Node) iter.Seq[Cursor] {
 // depth-first order. It calls f(n) for each node n before it
 // visits n's children. If f returns true, Inspect invokes f
 // recursively for each of the non-nil children of the node.
-//
-// Each node is represented by a Cursor that allows access to the
-// Node, but may also be used to start a new traversal, or to obtain
-// the stack of nodes enclosing the cursor.
-//
-// The complete traversal sequence is determined by [ast.Inspect].
-// The types argument, if non-empty, enables type-based filtering of
-// events. The function f if is called only for nodes whose type
-// matches an element of the types slice.
 func (c Cursor) Inspect(types []ast.Node, f func(c Cursor) (descend bool)) {
 	mask := maskOf(types)
 	events := c.in.events
@@ -220,9 +168,7 @@ func (c Cursor) Inspect(types []ast.Node, f func(c Cursor) (descend bool)) {
 			pop := ev.index
 			if ev.typ&mask != 0 && !f(Cursor{c.in, i}) ||
 				events[pop].typ&mask == 0 {
-				// The user opted not to descend, or the
-				// subtree does not contain types:
-				// skip past the pop.
+				// The user opted not to descend, or the subtree does not contain types: skip past the pop.
 				i = pop + 1
 				continue
 			}
@@ -235,10 +181,6 @@ func (c Cursor) Inspect(types []ast.Node, f func(c Cursor) (descend bool)) {
 // current node, starting with the Cursor itself.
 //
 // Enclosing must not be called on the Root node (whose [Cursor.Node] returns nil).
-//
-// The types argument, if non-empty, enables type-based filtering of
-// events: the sequence includes only enclosing nodes whose type
-// matches an element of the types slice.
 func (c Cursor) Enclosing(types ...ast.Node) iter.Seq[Cursor] {
 	if c.index < 0 {
 		panic("Cursor.Enclosing called on Root node")
@@ -267,16 +209,9 @@ func (c Cursor) Parent() Cursor {
 	return Cursor{c.in, c.in.events[c.index].parent}
 }
 
-// ParentEdge returns the identity of the field in the parent node
-// that holds this cursor's node, and if it is a list, the index within it.
-//
-// For example, f(x, y) is a CallExpr whose three children are Idents.
-// f has edge kind [edge.CallExpr_Fun] and index -1.
-// x and y have kind [edge.CallExpr_Args] and indices 0 and 1, respectively.
-//
-// If called on a child of the Root node, it returns ([edge.Invalid], -1).
-//
-// ParentEdge must not be called on the Root node (whose [Cursor.Node] returns nil).
+// ParentEdge returns the identity of the field in the parent node that
+// holds this cursor's node, and if it is a list, the index. That index is
+// within it.
 func (c Cursor) ParentEdge() (edge.Kind, int) {
 	if c.index < 0 {
 		panic("Cursor.ParentEdge called on Root node")
@@ -299,13 +234,10 @@ func (c Cursor) ParentEdgeIndex() int {
 }
 
 // ChildAt returns the cursor for the child of the
-// current node identified by its edge and index.
-// The index must be -1 if the edge.Kind is not a slice.
-// The indicated child node must exist.
+// current node identified by its edge and index. The
+// indicated child node must exist.
 //
 // ChildAt must not be called on the Root node (whose [Cursor.Node] returns nil).
-//
-// Invariant: c.Parent().ChildAt(c.ParentEdge()) == c.
 func (c Cursor) ChildAt(k edge.Kind, idx int) Cursor {
 	target := packEdgeKindAndIndex(k, idx)
 
@@ -357,10 +289,6 @@ func (c Cursor) Child(n ast.Node) Cursor {
 // (for example, of files, decls, specs, statements, fields, or expressions) as
 // the current node. It returns (zero, false) if the node is the last node in
 // the list, or is not part of a list.
-//
-// NextSibling must not be called on the Root node.
-//
-// See note at [Cursor.Children].
 func (c Cursor) NextSibling() (Cursor, bool) {
 	if c.index < 0 {
 		panic("Cursor.NextSibling called on Root node")
@@ -376,14 +304,8 @@ func (c Cursor) NextSibling() (Cursor, bool) {
 	return Cursor{}, false
 }
 
-// PrevSibling returns the cursor for the previous sibling node in the
-// same list (for example, of files, decls, specs, statements, fields,
-// or expressions) as the current node. It returns zero if the node is
-// the first node in the list, or is not part of a list.
-//
-// It must not be called on the Root node.
-//
-// See note at [Cursor.Children].
+// PrevSibling returns the cursor for the sibling node in the same list (for example, of files, decls, specs, statements, fields, or expressions) as the current node. It returns zero if the node is the first
+// node in the list, or is not part of a list.
 func (c Cursor) PrevSibling() (Cursor, bool) {
 	if c.index < 0 {
 		panic("Cursor.PrevSibling called on Root node")
@@ -421,8 +343,7 @@ func (c Cursor) LastChild() (Cursor, bool) {
 		}
 	} else {
 		j := events[c.index].index - 1 // before corresponding pop
-		// Inv: j == c.index if c has no children
-		//  or  j is last child's pop.
+		// Inv: j == c.index if c has no children or j is last child's pop.
 		if j > c.index { // c has children
 			return Cursor{c.in, events[j].index}, true
 		}
@@ -430,31 +351,8 @@ func (c Cursor) LastChild() (Cursor, bool) {
 	return Cursor{}, false
 }
 
-// Children returns an iterator over the direct children of the
-// current node, if any.
-//
-// When using Children, NextChild, and PrevChild, bear in mind that a
-// Node's children may come from different fields, some of which may
-// be lists of nodes without a distinguished intervening container
-// such as [ast.BlockStmt].
-//
-// For example, [ast.CaseClause] has a field List of expressions and a
-// field Body of statements, so the children of a CaseClause are a mix
-// of expressions and statements. Other nodes that have "uncontained"
-// list fields include:
-//
-//   - [ast.ValueSpec] (Names, Values)
-//   - [ast.CompositeLit] (Type, Elts)
-//   - [ast.IndexListExpr] (X, Indices)
-//   - [ast.CallExpr] (Fun, Args)
-//   - [ast.AssignStmt] (Lhs, Rhs)
-//
-// So, do not assume that the previous sibling of an ast.Stmt is also
-// an ast.Stmt, or if it is, that they are executed sequentially,
-// unless you have established that, say, its parent is a BlockStmt
-// or its [Cursor.ParentEdge] is [edge.BlockStmt_List].
-// For example, given "for S1; ; S2 {}", the predecessor of S2 is S1,
-// even though they are not executed in sequence.
+// Children returns an iterator over the direct children of the current node,
+// if any.
 func (c Cursor) Children() iter.Seq[Cursor] {
 	return func(yield func(Cursor) bool) {
 		c, ok := c.FirstChild()
@@ -480,8 +378,6 @@ func (c Cursor) Contains(c2 Cursor) bool {
 // rooted at c. It returns zero if n is not found.
 func (c Cursor) FindNode(n ast.Node) (Cursor, bool) {
 
-	// FindNode is equivalent to this code,
-	// but more convenient and 15-20% faster:
 	if false {
 		for candidate := range c.Preorder(n) {
 			if candidate.Node() == n {
@@ -491,9 +387,7 @@ func (c Cursor) FindNode(n ast.Node) (Cursor, bool) {
 		return Cursor{}, false
 	}
 
-	// TODO(adonovan): opt: should we assume Node.Pos is accurate
-	// and combine type-based filtering with position filtering
-	// like FindByPos?
+	// TODO(adonovan): opt.
 
 	mask := maskOf([]ast.Node{n})
 	events := c.in.events
@@ -514,29 +408,26 @@ func (c Cursor) FindNode(n ast.Node) (Cursor, bool) {
 	return Cursor{}, false
 }
 
-// FindByPos returns the cursor for the innermost node n in the tree
-// rooted at c such that n.Pos() <= start && end <= n.End().
-// (For an *ast.File, it uses the bounds n.FileStart-n.FileEnd.)
+// FindByPos returns the cursor for the innermost node n in the tree rooted at
+// c such that n.Pos() <= start && end <= n.End(). (For an *ast.File, it uses
+// the bounds n.FileStart-n.FileEnd.)
 //
-// An empty range (start == end) between two adjacent nodes is
-// considered to belong to the first node.
+// An empty range (start == end) between adjacent nodes is considered to
+// belong to the first node.
 //
-// It returns zero if none is found.
-// Precondition: start <= end.
+// It returns zero if none is found. Precondition: start <= end.
 //
-// See also [astutil.PathEnclosingInterval], which
-// tolerates adjoining whitespace.
+// See also [astutil.PathEnclosingInterval], which tolerates adjoining
+// whitespace.
 func (c Cursor) FindByPos(start, end token.Pos) (Cursor, bool) {
 	if end < start {
 		panic("end < start")
 	}
 	events := c.in.events
 
-	// This algorithm could be implemented using c.Inspect,
-	// but it is about 2.5x slower.
+	// This algorithm could be implemented using c.Inspect, but it is about 2.5x slower.
 
 	// best is the push-index of the latest (=innermost) node containing range.
-	// (Beware: latest is not always innermost because FuncDecl.{Name,Type} overlap.)
 	best := int32(-1)
 	for i, limit := c.indices(); i < limit; i++ {
 		ev := events[i]
@@ -553,11 +444,6 @@ func (c Cursor) FindByPos(start, end token.Pos) (Cursor, bool) {
 			} else {
 				// Edge case: FuncDecl.Name and .Type overlap:
 				// Don't update best from Name to FuncDecl.Type.
-				//
-				// The condition can be read as:
-				// - n is FuncType
-				// - n.parent is FuncDecl
-				// - best is strictly beneath the FuncDecl
 				if ev.typ == 1<<nFuncType &&
 					events[ev.parent].typ == 1<<nFuncDecl &&
 					best > ev.parent {
@@ -576,9 +462,6 @@ func (c Cursor) FindByPos(start, end token.Pos) (Cursor, bool) {
 				best = i
 
 				// Don't search beyond end of the first match.
-				// This is important only for an empty range (start=end)
-				// between two adjoining nodes, which would otherwise
-				// match both nodes; we want to match only the first.
 				limit = ev.index
 			} else if nodeEnd < start {
 				i = ev.index // disjoint, before; skip forward

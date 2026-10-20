@@ -4,19 +4,23 @@ on:
   push:
     branches: ['**']
 
+concurrency:
+  group: gha_${{ github.repository }}_${{ github.workflow }}_${{ github.ref != 'refs/heads/master' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 permissions:
   contents: read
   id-token: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.repository.visibility == 'public' && 'ubuntu-latest' || vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: wow-look-at-my/actions@secret-server#latest
 
-      - uses: wow-look-at-my/buildhost/.github/actions/buildhost-download@master
+      - uses: wow-look-at-my/buildhost/.github/actions/buildhost-download@lkgb
         id: cosmo
         with:
           project: gosmopolitan

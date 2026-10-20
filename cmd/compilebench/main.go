@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Compilebench benchmarks the speed of the Go compiler.
 //
@@ -8,72 +7,14 @@
 //
 //	compilebench [options]
 //
-// It times the compilation of various packages and prints results in
-// the format used by package testing (and expected by golang.org/x/perf/cmd/benchstat).
+// It times the compilation of various packages and prints results in the
+// format used by package testing (and expected by
+// golang.org/x/perf/cmd/benchstat).
 //
-// The options are:
+// The options are.
 //
 //	-alloc
 //		Report allocations.
-//
-//	-compile exe
-//		Use exe as the path to the cmd/compile binary.
-//
-//	-compileflags 'list'
-//		Pass the space-separated list of flags to the compilation.
-//
-//	-link exe
-//		Use exe as the path to the cmd/link binary.
-//
-//	-linkflags 'list'
-//		Pass the space-separated list of flags to the linker.
-//
-//	-count n
-//		Run each benchmark n times (default 1).
-//
-//	-cpuprofile file
-//		Write a CPU profile of the compiler to file.
-//
-//	-go path
-//		Path to "go" command (default "go").
-//
-//	-memprofile file
-//		Write a memory profile of the compiler to file.
-//
-//	-memprofilerate rate
-//		Set runtime.MemProfileRate during compilation.
-//
-//	-obj
-//		Report object file statistics.
-//
-//	-pkg pkg
-//		Benchmark compiling a single package.
-//
-//	-run regexp
-//		Only run benchmarks with names matching regexp.
-//
-//	-short
-//		Skip long-running benchmarks.
-//
-// Although -cpuprofile and -memprofile are intended to write a
-// combined profile for all the executed benchmarks to file,
-// today they write only the profile for the last benchmark executed.
-//
-// The default memory profiling rate is one profile sample per 512 kB
-// allocated (see “go doc runtime.MemProfileRate”).
-// Lowering the rate (for example, -memprofilerate 64000) produces
-// a more fine-grained and therefore accurate profile, but it also incurs
-// execution cost. For benchmark comparisons, never use timings
-// obtained with a low -memprofilerate option.
-//
-// # Example
-//
-// Assuming the base version of the compiler has been saved with
-// “toolstash save,” this sequence compares the old and new compiler:
-//
-//	compilebench -count 10 -compile $(toolstash -n compile) >old.txt
-//	compilebench -count 10 >new.txt
-//	benchstat old.txt new.txt
 package main
 
 import (
@@ -354,9 +295,7 @@ func (c compile) run(name string, count int) error {
 		return err
 	}
 
-	// If this package has assembly files, we'll need to pass a symabis
-	// file to the compiler; call a helper to invoke the assembler
-	// to do that.
+	// If this package has assembly files, we'll need to pass a symabis file to the compiler.
 	var symAbisFile string
 	var asmIncFile string
 	if len(pkg.SFiles) != 0 {
@@ -389,7 +328,7 @@ func (c compile) run(name string, count int) error {
 
 	opath := pkg.Dir + "/_compilebench_.o"
 	if *flagObj {
-		// TODO(josharian): object files are big; just read enough to find what we seek.
+		// TODO(josharian): object files are big; read enough to find what we seek.
 		data, err := os.ReadFile(opath)
 		if err != nil {
 			log.Print(err)
@@ -592,19 +531,14 @@ RET
 		return fmt.Errorf("writing %s failed: %v", src, err)
 	}
 
-	// Try compiling the assembly source file passing
-	// -compiling-runtime; if it succeeds, then we'll need it
-	// when doing assembly of the reflect package later on.
-	// If it does not succeed, the assumption is that it's not
-	// needed.
+	// Try compiling the assembly source file passing -compiling-runtime.
 	args := []string{"-o", obj, "-p", "reflect", "-compiling-runtime", src}
 	cmd := exec.Command(assembler, args...)
 	cmd.Dir = td
 	out, aerr := cmd.CombinedOutput()
 	if aerr != nil {
 		if strings.Contains(string(out), "flag provided but not defined: -compiling-runtime") {
-			// flag not defined: assume we're using a recent assembler, so
-			// don't use -compiling-runtime.
+			// flag not defined: assume we're using a recent assembler, so don't use -compiling-runtime.
 			return nil
 		}
 		// error is not flag-related; report it.
@@ -615,11 +549,11 @@ RET
 	return nil
 }
 
-// genSymAbisFile runs the assembler on the target package asm files
-// with "-gensymabis" to produce a symabis file that will feed into
-// the Go source compilation. This is fairly hacky in that if the
-// asm invocation convention changes it will need to be updated
-// (hopefully that will not be needed too frequently).
+// genSymAbisFile runs the assembler on the target package asm files with
+// "-gensymabis" to produce a symabis file that will feed into the Go source
+// compilation. This is hacky in that if the asm invocation convention changes
+// it will need to be updated (hopefully that will not be needed too
+// frequently).
 func genSymAbisFile(pkg *Pkg, symAbisFile, incdir string) error {
 	args := []string{"-gensymabis", "-o", symAbisFile,
 		"-p", pkg.ImportPath,

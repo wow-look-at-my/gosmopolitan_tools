@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package lostcancel
 
@@ -37,16 +36,8 @@ const debug = false
 
 var contextPackage = "context"
 
-// checkLostCancel reports a failure to the call the cancel function
-// returned by context.WithCancel, either because the variable was
-// assigned to the blank identifier, or because there exists a
-// control-flow path from the call to a return statement and that path
-// does not "use" the cancel function.  Any reference to the variable
-// counts as a use, even within a nested function literal.
-// If the variable's scope is larger than the function
-// containing the assignment, we assume that other uses exist.
-//
-// checkLostCancel analyzes a single named or literal function.
+// This is because there exists a control-flow path from the call to a return
+// statement and that path does not "use" the cancel function.
 func run(pass *analysis.Pass) (any, error) {
 	// Fast path: bypass check if file doesn't use context.WithCancel.
 	if !typesinternal.Imports(pass.Pkg, contextPackage) {
@@ -78,9 +69,8 @@ func runFunc(pass *analysis.Pass, node ast.Node) {
 	// Maps each cancel variable to its defining ValueSpec/AssignStmt.
 	cancelvars := make(map[*types.Var]ast.Node)
 
-	// TODO(adonovan): opt: refactor to make a single pass
-	// over the AST using inspect.WithStack and node types
-	// {FuncDecl,FuncLit,CallExpr,SelectorExpr}.
+	// TODO(adonovan): opt: refactor to make a single pass over the AST using
+	// inspect.WithStack and node types {FuncDecl,FuncLit,CallExpr,SelectorExpr}.
 
 	// Find the set of cancel vars to analyze.
 	ast.PreorderStack(node, nil, func(n ast.Node, stack []ast.Node) bool {
@@ -88,12 +78,7 @@ func runFunc(pass *analysis.Pass, node ast.Node) {
 			return false // don't stray into nested functions
 		}
 
-		// Look for n=SelectorExpr beneath stack=[{AssignStmt,ValueSpec} CallExpr]:
-		//
-		//   ctx, cancel    := context.WithCancel(...)
-		//   ctx, cancel     = context.WithCancel(...)
-		//   var ctx, cancel = context.WithCancel(...)
-		//
+		// Look for n=SelectorExpr beneath stack=[{AssignStmt,ValueSpec} CallExpr]:.
 		if !isContextWithCancel(pass.TypesInfo, n) || !isCall(stack[len(stack)-1]) {
 			return true
 		}
@@ -140,8 +125,7 @@ func runFunc(pass *analysis.Pass, node ast.Node) {
 		sig, _ = pass.TypesInfo.Defs[node.Name].Type().(*types.Signature)
 		if sig != nil && sig.Recv() == nil &&
 			node.Name.Name == "main" && pass.Pkg.Name() == "main" {
-			// Returning from main.main terminates the process,
-			// so there's no need to cancel contexts.
+			// Returning from main.main terminates the process, so there's no need to cancel contexts.
 			return
 		}
 		g = cfgs.FuncDecl(node)
@@ -168,8 +152,6 @@ func runFunc(pass *analysis.Pass, node ast.Node) {
 			pass.ReportRangef(stmt, "the %s function is not used on all paths (possible context leak)", v.Name())
 
 			pos, end := ret.Pos(), ret.End()
-			// golang/go#64547: cfg.Block.Return may return a synthetic
-			// ReturnStmt that overflows the file.
 			if pass.Fset.File(pos) != pass.Fset.File(end) {
 				end = pos
 			}
@@ -202,8 +184,7 @@ func isContextWithCancel(info *types.Info, n ast.Node) bool {
 		if pkgname, ok := info.Uses[x].(*types.PkgName); ok {
 			return pkgname.Imported().Path() == contextPackage
 		}
-		// Import failed, so we can't check package path.
-		// Just check the local package name (heuristic).
+		// Import failed, so we can't check package path. check the local package name (heuristic).
 		return x.Name == "context"
 	}
 	return false
@@ -250,8 +231,7 @@ func lostCancelPath(pass *analysis.Pass, g *cfg.CFG, v *types.Var, stmt ast.Node
 		return res
 	}
 
-	// Find the var's defining block in the CFG,
-	// plus the rest of the statements of that block.
+	// Find the var's defining block in the CFG, plus the rest of the statements of that block.
 	var defblock *cfg.Block
 	var rest []ast.Node
 outer:
@@ -278,8 +258,7 @@ outer:
 		return ret
 	}
 
-	// Search the CFG depth-first for a path, from defblock to a
-	// return block, in which v is never "used".
+	// Search the CFG depth-first for a path, from defblock to a return block, in which v is never "used".
 	seen := make(map[*cfg.Block]bool)
 	var search func(blocks []*cfg.Block) *ast.ReturnStmt
 	search = func(blocks []*cfg.Block) *ast.ReturnStmt {

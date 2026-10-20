@@ -1,10 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Except for this comment, this file is a verbatim copy of the file
-// with the same name in $GOROOT/src/go/internal/gccgoimporter, with
-// a small modification in parseInterface to support older Go versions.
+// Except for this comment, this file is a verbatim copy of the file with the
+// same name in $GOROOT/src/go/internal/gccgoimporter. That comment is with a
+// small modification in parseInterface to support older Go versions.
 
 package gccgoimporter
 
@@ -40,20 +39,8 @@ type parser struct {
 	aliases  map[int]string            // maps saved type number to alias name
 }
 
-// When reading export data it's possible to encounter a defined type
-// N1 with an underlying defined type N2 while we are still reading in
-// that defined type N2; see issues #29006 and #29198 for instances
-// of this. Example:
-//
-//   type N1 N2
-//   type N2 struct {
-//      ...
-//      p *N1
-//   }
-//
-// To handle such cases, the parser generates a fixup record (below) and
-// delays setting of N1's underlying type until parsing is complete, at
-// which point fixups are applied.
+// When reading export data it is possible to encounter a defined type N1 with
+// an underlying defined type N2.
 
 type fixupRecord struct {
 	toUpdate *types.Named // type to modify when fixup is processed
@@ -65,7 +52,7 @@ func (p *parser) init(filename string, src io.Reader, imports map[string]*types.
 	p.initScanner(filename, src)
 	p.imports = imports
 	p.aliases = make(map[int]string)
-	p.typeList = make([]types.Type, 1 /* type numbers start at 1 */, 16)
+	p.typeList = make([]types.Type, 1 /* type numbers start at */, 16)
 }
 
 func (p *parser) initScanner(filename string, src io.Reader) {
@@ -282,7 +269,7 @@ func (p *parser) parseParam(pkg *types.Package) (param *types.Var, isVariadic bo
 		name = ""
 	}
 	if p.tok == '<' && p.scanner.Peek() == 'e' {
-		// EscInfo = "<esc:" int ">" . (optional and ignored)
+		// EscInfo = "<esc:" int ">". (optional and ignored)
 		p.next()
 		p.expectKeyword("esc")
 		p.expect(':')
@@ -311,9 +298,7 @@ func (p *parser) parseVar(pkg *types.Package) *types.Var {
 	v := types.NewVar(token.NoPos, pkg, name, p.parseType(pkg))
 	typesinternal.SetVarKind(v, typesinternal.PackageVar)
 	if name[0] == '.' || name[0] == '<' {
-		// This is an unexported variable,
-		// or a variable defined in a different package.
-		// We only want to record exported variables.
+		// This is an unexported variable, or a variable defined in a different package.
 		return nil
 	}
 	return v
@@ -409,7 +394,7 @@ func (p *parser) parseConstValue(pkg *types.Package) (val constant.Value, typ ty
 			im = "-" + p.expect(scanner.Float)
 
 		case scanner.Ident:
-			// re is in fact the imaginary component. Expect "i" below.
+			// re is the imaginary component. Expect "i" below.
 			im = re
 			re = "0"
 
@@ -458,22 +443,13 @@ func (p *parser) parseConst(pkg *types.Package) *types.Const {
 	return types.NewConst(token.NoPos, pkg, name, typ, val)
 }
 
-// reserved is a singleton type used to fill type map slots that have
-// been reserved (i.e., for which a type number has been parsed) but
-// which don't have their actual type yet. When the type map is updated,
-// the actual type must replace a reserved entry (or we have an internal
-// error). Used for self-verification only - not required for correctness.
+// reserved is a singleton type used to fill type map slots that have been reserved.
 var reserved = new(struct{ types.Type })
 
 // reserve reserves the type map entry n for future use.
 func (p *parser) reserve(n int) {
-	// Notes:
-	// - for pre-V3 export data, the type numbers we see are
-	//   guaranteed to be in increasing order, so we append a
-	//   reserved entry onto the list.
-	// - for V3+ export data, type numbers can appear in
-	//   any order, however the 'types' section tells us the
-	//   total number of types, hence typeList is pre-allocated.
+	// Notes: - for pre-V3 export data. guaranteed to be in increasing order, so
+	// we append a reserved entry onto the list.
 	if len(p.typeData) == 0 {
 		if n != len(p.typeList) {
 			p.errorf("invalid type number %d (out of sync)", n)
@@ -487,11 +463,10 @@ func (p *parser) reserve(n int) {
 	}
 }
 
-// update sets the type map entries for the entries in nlist to t.
-// An entry in nlist can be a type number in p.typeList,
-// used to resolve named types, or it can be a *types.Pointer,
-// used to resolve pointers to named types in case they are referenced
-// by embedded fields.
+// update sets the type map entries for the entries in nlist to t. An entry in
+// nlist can be a type number in p.typeList, used to resolve named types.
+// Otherwise, it can be a *types.Pointer, used to resolve pointers to named
+// types in case they are referenced by embedded fields.
 func (p *parser) update(t types.Type, nlist []any) {
 	if t == reserved {
 		p.errorf("internal error: update(%v) invoked on reserved", nlist)
@@ -539,9 +514,6 @@ func (p *parser) parseNamedType(nlist []any) types.Type {
 
 	if p.tok == scanner.Ident && p.lit == "notinheap" {
 		p.next()
-		// The go/types package has no way of recording that
-		// this type is marked notinheap. Presumably no user
-		// of this package actually cares.
 	}
 
 	// type alias
@@ -549,7 +521,7 @@ func (p *parser) parseNamedType(nlist []any) types.Type {
 		p.next()
 		p.aliases[nlist[len(nlist)-1].(int)] = name
 		if obj != nil {
-			// use the previously imported (canonical) type
+			// use the imported (canonical) type
 			t := obj.Type()
 			p.update(t, nlist)
 			p.parseType(pkg) // discard
@@ -563,15 +535,14 @@ func (p *parser) parseNamedType(nlist []any) types.Type {
 
 	// defined type
 	if obj == nil {
-		// A named type may be referred to before the underlying type
-		// is known - set it up.
+		// A named type may be referred to before the underlying type is known - set it up.
 		tname := types.NewTypeName(token.NoPos, pkg, name, nil)
 		types.NewNamed(tname, nil, nil)
 		scope.Insert(tname)
 		obj = tname
 	}
 
-	// use the previously imported (canonical), or newly created type
+	// use the imported (canonical), or newly created type
 	t := obj.Type()
 	p.update(t, nlist)
 
@@ -824,10 +795,7 @@ func (p *parser) parseFunc(pkg *types.Package) *types.Func {
 	p.skipInlineBody()
 
 	if name[0] == '.' || name[0] == '<' || strings.ContainsRune(name, '$') {
-		// This is an unexported function,
-		// or a function defined in a different package,
-		// or a type$equal or type$hash function.
-		// We only want to record exported functions.
+		// This is an unexported function, or a function defined in a different package.
 		return nil
 	}
 
@@ -923,9 +891,7 @@ func (p *parser) parseTypeSpec(pkg *types.Package, nlist []any) types.Type {
 }
 
 const (
-	// From gofrontend/go/export.h
-	// Note that these values are negative in the gofrontend and have been made positive
-	// in the gccgoimporter.
+	// From gofrontend/go/export.h these values are negative in the gofrontend.
 	gccgoBuiltinINT8       = 1
 	gccgoBuiltinINT16      = 2
 	gccgoBuiltinINT32      = 3
@@ -1036,8 +1002,7 @@ func (p *parser) parseTypeExtended(pkg *types.Package, n ...any) (t types.Type, 
 	return
 }
 
-// InlineBody = "<inl:NN>" .{NN}
-// Reports whether a body was skipped.
+// InlineBody = "<inl:NN>" .{NN} Reports whether a body was skipped.
 func (p *parser) skipInlineBody() {
 	// We may or may not have seen the '<' already, depending on
 	// whether the function had a result type or not.
@@ -1095,8 +1060,7 @@ func (p *parser) parseTypes(pkg *types.Package) {
 	}(p.scanner.Whitespace)
 	p.scanner.Whitespace = 0
 
-	// We should now have p.tok pointing to the final newline.
-	// The next runes from the scanner should be the type data.
+	// We should now have p.tok pointing to the final newline. The next runes from the scanner should be the type data.
 
 	var sb strings.Builder
 	for sb.Len() < total {
@@ -1108,7 +1072,7 @@ func (p *parser) parseTypes(pkg *types.Package) {
 	}
 	allTypeData := sb.String()
 
-	p.typeData = []string{""} // type 0, unused
+	p.typeData = []string{""} // The first type, unused
 	for _, to := range typeOffsets {
 		p.typeData = append(p.typeData, allTypeData[to.offset:to.offset+to.length])
 	}
@@ -1198,7 +1162,7 @@ func (p *parser) parseInitDataDirective() {
 
 	case "init_graph":
 		p.next()
-		// The graph data is thrown away for now.
+		// The graph data is thrown away.
 		for p.tok != '\n' && p.tok != ';' && p.tok != scanner.EOF {
 			p.parseInt64()
 			p.parseInt64()

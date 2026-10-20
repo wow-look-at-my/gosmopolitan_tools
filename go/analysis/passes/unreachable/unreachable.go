@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package unreachable
 
@@ -123,9 +122,8 @@ func (d *deadState) findLabels(stmt ast.Stmt) {
 		d.labels[x.Label.Name] = x.Stmt
 		d.findLabels(x.Stmt)
 
-	// These cases are all the same, but the x.Body only works
-	// when the specific type of x is known, so the cases cannot
-	// be merged.
+	// These cases are all the same, but the x.Body only works when the specific
+	// type of x is known. The cases cannot be merged.
 	case *ast.ForStmt:
 		outer := d.breakTarget
 		d.breakTarget = x
@@ -168,18 +166,12 @@ func (d *deadState) findLabels(stmt ast.Stmt) {
 	}
 }
 
-// findDead walks the statement looking for dead code.
-// If d.reachable is false on entry, stmt itself is dead.
-// When findDead returns, d.reachable tells whether the
-// statement following stmt is reachable.
+// findDead walks the statement looking for dead code. If d.reachable is false
+// on entry, stmt itself is dead. When findDead returns, d.reachable tells
+// whether the statement following stmt is reachable.
 func (d *deadState) findDead(stmt ast.Stmt) {
-	// Is this a labeled goto target?
-	// If so, assume it is reachable due to the goto.
-	// This is slightly conservative, in that we don't
-	// check that the goto is reachable, so
-	//	L: goto L
-	// will not provoke a warning.
-	// But it's good enough.
+	// Is this a labeled goto target? If so, assume it is reachable due to the
+	// goto.
 	if x, isLabel := stmt.(*ast.LabeledStmt); isLabel && d.hasGoto[x.Label.Name] {
 		d.reachable = true
 	}
@@ -194,9 +186,6 @@ func (d *deadState) findDead(stmt ast.Stmt) {
 				curStmt, _ = inspect.Root().FindNode(stmt)
 				tokFile    = d.pass.Fset.File(stmt.Pos())
 			)
-			// (This call to pass.Report is a frequent source
-			// of diagnostics beyond EOF in a truncated file;
-			// see #71659.)
 			d.pass.Report(analysis.Diagnostic{
 				Pos:     stmt.Pos(),
 				End:     stmt.End(),
@@ -235,11 +224,6 @@ func (d *deadState) findDead(stmt ast.Stmt) {
 			d.reachable = false
 		case token.CONTINUE:
 			// NOTE: We accept "continue" statements as terminating.
-			// They are not necessary in the spec definition of terminating,
-			// because a continue statement cannot be the final statement
-			// before a return. But for the more general problem of syntactically
-			// identifying dead code, continue redirects control flow just
-			// like the other terminating statements.
 			d.reachable = false
 		}
 
@@ -280,11 +264,7 @@ func (d *deadState) findDead(stmt ast.Stmt) {
 		d.reachable = false
 
 	case *ast.SelectStmt:
-		// NOTE: Unlike switch and type switch below, we don't care
-		// whether a select has a default, because a select without a
-		// default blocks until one of the cases can run. That's different
-		// from a switch without a default, which behaves like it has
-		// a default with an empty body.
+		// NOTE: Unlike switch and type switch below, we don't care whether a select has a default.
 		anyReachable := false
 		for _, comm := range x.Body.List {
 			d.reachable = true

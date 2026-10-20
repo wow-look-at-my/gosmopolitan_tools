@@ -1,17 +1,15 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
-// The generate command reads all the GOROOT/api/go1.*.txt files and
-// generates a single combined manifest.go file containing the Go
+// The generate command reads all the GOROOT/api/go1.*.txt files. The generate
+// command generates a single combined manifest.go file containing the Go
 // standard library API symbols along with versions.
 //
 // It also runs "go list -deps std" and records the import graph. This
-// information may be used, for example, to ensure that tools don't
-// suggest fixes that import package P when analyzing one of P's
-// dependencies.
+// information may be used, for example, to ensure that tools don't suggest
+// fixes that import package P when analyzing one of P's dependencies.
 package main
 
 import (
@@ -55,11 +53,7 @@ func manifest(apidir string) {
 		Mode: packages.LoadTypes,
 		Env:  append(os.Environ(), "CGO_ENABLED=0", "GOOS=linux", "GOARCH=amd64"),
 	}
-	// find the source. This is not totally reliable: different
-	// systems may get different versions of unreleased APIs.
-	// The result depends on the toolchain.
-	// The x/tools release process regenerates the table
-	// with the canonical toolchain.
+	// find the source. This is not totally reliable: different systems may get different versions of unreleased APIs.
 	stdpkgs, err := packages.Load(&cfg, "std")
 	if err != nil {
 		log.Fatal(err)
@@ -75,11 +69,9 @@ func manifest(apidir string) {
 		}
 		for _, name := range pkg.Types.Scope().Names() {
 			fixer := func(p *types.Package) string {
-				// fn.Signature() would have produced
-				// "func(fi io/fs.FileInfo, link string) (*archive/tar.Header, error)"},
-				// This produces
-				// "func FileInfoHeader(fi fs.FileInfo, link string) (*Header, error)""
-				// Note that the function name is superfluous, so it is removed below
+				// fn.Signature() would have produced "func(fi io/fs.FileInfo, link string) (*archive/tar.Header, error)"}, This
+				// produces "func FileInfoHeader(fi fs.FileInfo, link string) (*Header, error)"" the function name is superfluous,
+				// so it is removed below
 				if p != pkg.Types {
 					return p.Name()
 				}
@@ -126,8 +118,7 @@ func manifest(apidir string) {
 				sym = recv + "." + sym // (*T).m
 
 			} else if method, ok := strings.CutPrefix(rest, " interface, "); ok && kind == "type" {
-				// e.g. "pkg reflect, type Type interface, Comparable() bool"
-				// or   "pkg net, type Error interface, Temporary //deprecated"
+				// e.g. "pkg reflect, type Type interface, Comparable() bool" or "pkg net, type Error interface, Temporary //deprecated"
 
 				kind = "method" // (abstract)
 
@@ -149,9 +140,8 @@ func manifest(apidir string) {
 				kind = "field"
 				name, typ, _ := strings.Cut(field, " ")
 
-				// The api script uses the name
-				// "embedded" (ambiguously) for
-				// the name of an anonymous field.
+				// The api script uses the name "embedded" (ambiguously) for the name of
+				// an anonymous field.
 				if name == "embedded" {
 					// Strip "*pkg.T" down to "T".
 					typ = strings.TrimPrefix(typ, "*")
@@ -171,13 +161,8 @@ func manifest(apidir string) {
 				pkgs[path] = symbols
 			}
 
-			// Don't overwrite earlier entries:
-			// enums are redeclared in later versions
-			// as their encoding changes;
-			// deprecations count as updates too.
-			// TODO(adonovan): it would be better to mark
-			// deprecated as a boolean without changing the
-			// version.
+			// Don't overwrite earlier entries: enums are redeclared in later versions
+			// as their encoding changes; deprecations count as updates too.
 			if _, ok := symbols[sym]; !ok {
 				var sig string
 				if kind == "func" {
@@ -202,10 +187,7 @@ func manifest(apidir string) {
 		data, err := os.ReadFile(filename)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				// All caught up.
-				// Synthesize one final file from any api/next/*.txt fragments.
-				// (They are consolidated into a go1.%d file some time between
-				// the freeze and the first release candidate.)
+				// All caught up. Synthesize one final file from any api/next/*.txt fragments.
 				filenames, err := filepath.Glob(filepath.Join(apidir, "next", "*.txt"))
 				if err != nil {
 					log.Fatal(err)
@@ -226,8 +208,7 @@ func manifest(apidir string) {
 		parse(filename, data, minor)
 	}
 
-	// The APIs of the syscall/js and unsafe packages need to be computed explicitly,
-	// because they're not included in the GOROOT/api/go1.*.txt files at this time.
+	// The APIs of the syscall/js and unsafe packages need to be computed explicitly.
 	pkgs["syscall/js"] = loadSymbols("syscall/js", "GOOS=js", "GOARCH=wasm")
 	pkgs["unsafe"] = exportedSymbols(types.Unsafe) // TODO(adonovan): set correct versions
 
@@ -375,7 +356,6 @@ func deps() {
 	}
 
 	// Sort and number the packages.
-	// There are 344 as of Mar 2025.
 	slices.Sort(keys)
 	for i, name := range keys {
 		pkgs[name].index = i
@@ -423,8 +403,7 @@ var deps = [...]pkginfo{
 	}
 	fmt.Fprintln(&buf, "}")
 
-	// Also write the list of bootstrap packages.
-	// (We can't use indices because it is not a subset of std.)
+	// Also write the list of bootstrap packages. (We can't use indices because it is not a subset of std.)
 	bootstrap, version := bootstrap()
 	minor := strings.Split(version, ".")[1] // "go1.2.3" -> "2"
 	buf.WriteString(`
@@ -470,13 +449,12 @@ const BootstrapVersion = Version(%s) // %s
 	}
 }
 
-// bootstrap returns the list of bootstrap packages out of the
-// source of the dist command, along with the minimum toolchain
-// version.
+// bootstrap returns the list of bootstrap packages out of the source of the
+// dist command, along with the minimum toolchain version.
 //
-// We assume it is "var bootstrapDirs []string" in buildtool.go, and
-// is a list of string literals, either package names or "dir/...".
-// TODO(adonovan): find a more robust solution.
+// We assume it is "var bootstrapDirs []string" in buildtool.go, and is a list
+// of string literals, either package names or "dir/...". TODO(adonovan): find
+// a more robust solution.
 func bootstrap() ([]string, string) {
 	fset := token.NewFileSet()
 	filename := strings.TrimSpace(runGo("list", "-f={{.Dir}}/buildtool.go", "cmd/dist").String())

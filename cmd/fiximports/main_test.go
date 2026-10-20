@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -20,20 +19,9 @@ import (
 	"golang.org/x/tools/internal/testenv"
 )
 
-// TODO(adonovan):
-// - test introduction of renaming imports.
-// - test induced failures of rewriteFile.
+// TODO(adonovan): - test introduction of renaming imports.
 
-// Guide to the test packages:
-//
-// new.com/one		-- canonical name for old.com/one
-// old.com/one		-- non-canonical; has import comment "new.com/one"
-// old.com/bad		-- has a parse error
-// fruit.io/orange	\
-// fruit.io/banana	 } orange -> pear -> banana -> titanic.biz/bar
-// fruit.io/pear	/
-// titanic.biz/bar	-- domain is sinking; package has jumped ship to new.com/bar
-// titanic.biz/foo	-- domain is sinking but package has no import comment yet
+// Guide to the test packages:.
 
 var gopath = filepath.Join(cwd, "testdata")
 
@@ -42,9 +30,8 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// This test currently requires GOPATH mode.
-	// Explicitly disabling module mode should suffix, but
-	// we'll also turn off GOPROXY just for good measure.
+	// This test requires GOPATH mode. Explicitly disabling module mode should
+	// suffix, but we'll also turn off GOPROXY for good measure.
 	if err := os.Setenv("GO111MODULE", "off"); err != nil {
 		log.Fatal(err)
 	}

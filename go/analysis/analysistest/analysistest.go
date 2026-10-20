@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package analysistest provides utilities for testing analyzers.
 package analysistest
@@ -41,10 +40,8 @@ import (
 // directory and a cleanup function to delete it.
 //
 // TODO(adonovan): provide a newer version that accepts a testing.T,
-// calls T.TempDir, and calls T.Fatal on any error, avoiding the need
-// to return cleanup or err:
-//
-//	func WriteFilesToTmp(t *testing.T filemap map[string]string) string
+// calls T.TempDir, and calls T.Fatal on any error. That
+// TODO(adonovan is avoiding the need to return cleanup or err:
 func WriteFiles(filemap map[string]string) (dir string, cleanup func(), err error) {
 	gopath, err := os.MkdirTemp("", "analysistest")
 	if err != nil {
@@ -63,11 +60,8 @@ func WriteFiles(filemap map[string]string) (dir string, cleanup func(), err erro
 	return gopath, cleanup, nil
 }
 
-// TestData returns the effective filename of
-// the program's "testdata" directory.
-// This function may be overridden by projects using
-// an alternative build system (such as Blaze) that
-// does not run a test in its package directory.
+// TestData returns the effective filename of the program's "testdata"
+// directory.
 var TestData = func() string {
 	testdata, err := filepath.Abs("testdata")
 	if err != nil {
@@ -81,72 +75,21 @@ type Testing interface {
 	Errorf(format string, args ...any)
 }
 
-// RunWithSuggestedFixes behaves like Run, but additionally applies
-// suggested fixes and verifies their output.
+// RunWithSuggestedFixes behaves like Run, but additionally applies suggested
+// fixes and verifies their output.
 //
-// It uses golden files, placed alongside each source file, to express
-// the desired output: the expected transformation of file example.go
-// is specified in file example.go.golden.
+// It uses golden files, placed alongside each source file, to express the
+// desired output. The expected transformation of file example.go is specified
+// in file example.go.golden.
 //
-// Golden files may be of two forms: a plain Go source file, or a
-// txtar archive.
+// Golden files may be of forms: a plain Go source file, or a txtar archive.
 //
-// A plain Go source file indicates the expected result of applying
-// all suggested fixes to the original file.
-//
-// A txtar archive specifies, in each section, the expected result of
-// applying all suggested fixes of a given message to the original
-// file; the name of the archive section is the fix's message. In this
-// way, the various alternative fixes offered by a single diagnostic
-// can be tested independently. Here's an example:
-//
-//	-- turn into single negation --
-//	package pkg
-//
-//	func fn(b1, b2 bool) {
-//		if !b1 { // want `negating a boolean twice`
-//			println()
-//		}
-//	}
-//
-//	-- remove double negation --
-//	package pkg
-//
-//	func fn(b1, b2 bool) {
-//		if b1 { // want `negating a boolean twice`
-//			println()
-//		}
-//	}
-//
-// # Conflicts
-//
-// Regardless of the form of the golden file, it is possible for
-// multiple fixes to conflict, either because they overlap, or are
-// close enough together that the particular diff algorithm cannot
-// separate them.
-//
-// RunWithSuggestedFixes uses a simple three-way merge to accumulate
-// fixes, similar to a git merge. The merge algorithm may be able to
-// coalesce identical edits, for example duplicate imports of the same
-// package. (Bear in mind that this is an editorial decision. In
-// general, coalescing identical edits may not be correct: consider
-// two statements that increment the same counter.)
-//
-// If there are conflicts, the test fails. In any case, the
-// non-conflicting edits will be compared against the expected output.
-// In this situation, we recommend that you increase the textual
-// separation between conflicting parts or, if that fails, split
-// your tests into smaller parts.
-//
-// If a diagnostic offers multiple fixes for the same problem, they
-// are almost certain to conflict, so in this case you should define
-// the expected output using a multi-section txtar file as described
-// above.
+// A plain Go source file indicates the expected result of applying all
+// suggested fixes to the original file.
 func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns ...string) []*Result {
 	results := Run(t, dir, a, patterns...)
 
-	// If the immediate caller of RunWithSuggestedFixes is in
-	// x/tools, we apply stricter checks as required by gopls.
+	// If the immediate caller of RunWithSuggestedFixes is in x/tools, we apply stricter checks as required by gopls.
 	inTools := false
 	{
 		var pcs [1]uintptr
@@ -160,23 +103,21 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 
 	generated := make(map[*token.File]bool)
 
-	// Process each result (package) separately, matching up the suggested
-	// fixes into a diff, which we will compare to the .golden file.  We have
-	// to do this per-result in case a file appears in two packages, such as in
-	// packages with tests, where mypkg/a.go will appear in both mypkg and
-	// mypkg.test.  In that case, the analyzer may suggest the same set of
-	// changes to a.go for each package.  If we merge all the results, those
-	// changes get doubly applied, which will cause conflicts or mismatches.
-	// Validating the results separately means as long as the two analyses
-	// don't produce conflicting suggestions for a single file, everything
-	// should match up.
+	// Process each result (package) separately, matching up the suggested fixes
+	// into a diff, which we will compare to the .golden file. We have to do this
+	// per-result in case a file appears in packages, such as in packages with
+	// tests. This happens where mypkg/a.go will appear in both mypkg and
+	// mypkg.test. In that case, the analyzer may suggest the same set of changes
+	// to a.go for each package. If we merge all the results, those changes get
+	// doubly applied, which will cause conflicts or mismatches. Validating the
+	// results separately means as long as both analyses don't produce
+	// conflicting suggestions for a single file, everything should match up.
 	for _, result := range results {
 		act := result.Action
 
 		// Compute set of generated files.
 		for _, file := range internal.ActionPass(act).Files {
-			// Memoize, since there may be many actions
-			// for the same package (list of files).
+			// Memoize, since there may be many actions for the same package (list of files).
 			tokFile := act.Package.Fset.File(file.Pos())
 			if _, seen := generated[tokFile]; !seen {
 				generated[tokFile] = ast.IsGenerated(file)
@@ -185,11 +126,7 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 
 		// For each fix, split its edits by file and convert to diff form.
 		var (
-			// fixEdits: message -> fixes -> filename -> edits
-			//
-			// TODO(adonovan): this mapping assumes fix.Messages
-			// are unique across analyzers, whereas they are only
-			// unique within a given Diagnostic.
+			// fixEdits: message -> fixes -> filename -> edits.
 			fixEdits     = make(map[string][]map[string][]diff.Edit)
 			allFilenames = make(map[string]bool)
 		)
@@ -197,7 +134,6 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 			// Fixes are validated upon creation in Pass.Report.
 		fixloop:
 			for _, fix := range diag.SuggestedFixes {
-				// Assert that lazy fixes have a Category (#65578, #65087).
 				if inTools && len(fix.TextEdits) == 0 && diag.Category == "" {
 					t.Errorf("missing Diagnostic.Category for SuggestedFix without TextEdits (gopls requires the category for the name of the fix command")
 				}
@@ -210,8 +146,7 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 					}
 				}
 
-				// Convert edits to diff form.
-				// Group fixes by message and file.
+				// Convert edits to diff form. Group fixes by message and file.
 				edits := make(map[string][]diff.Edit)
 				for _, edit := range fix.TextEdits {
 					file := act.Package.Fset.File(edit.Pos)
@@ -235,9 +170,8 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 			return z
 		}
 
-		// Because the checking is driven by original
-		// filenames, there is no way to express that a fix
-		// (e.g. extract declaration) creates a new file.
+		// Because the checking is driven by original filenames, there is no way to
+		// express that a fix (e.g. extract declaration) creates a new file.
 		for _, filename := range slices.Sorted(maps.Keys(allFilenames)) {
 			// Read the original file.
 			content, err := os.ReadFile(filename)
@@ -254,28 +188,23 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 				}
 			}
 
-			// Read the golden file. It may have one of two forms:
-			// (1) A txtar archive with one section per fix title,
-			//     including all fixes of just that title.
-			// (2) The expected output for file.Name after all (?) fixes are applied.
-			//     This form requires that no diagnostic has multiple fixes.
+			// Read the golden file.
 			ar, err := txtar.ParseFile(filename + ".golden")
 			if err != nil {
 				t.Errorf("error reading %s.golden: %v", filename, err)
 				continue
 			}
 			if len(ar.Files) > 0 {
-				// Form #1: one archive section per kind of suggested fix.
 				if len(ar.Comment) > 0 {
 					// Disallow the combination of comment and archive sections.
 					t.Errorf("%s.golden has leading comment; we don't know what to do with it", filename)
 					continue
 				}
 
-				// Each archive section is named for a fix.Message.
-				// Accumulate the parts of the fix that apply to the current file,
-				// using a simple three-way merge, discarding conflicts,
-				// then apply the merged edits and compare to the archive section.
+				// Each archive section is named for a fix.Message. Accumulate the
+				// parts of the fix that apply to the current file, using a simple
+				// three-way merge and discarding conflicts. Also accumulate then
+				// apply the merged edits and compare to the archive section.
 				for _, section := range ar.Files {
 					message, want := section.Name, section.Data
 					var accumulated []diff.Edit
@@ -286,7 +215,6 @@ func RunWithSuggestedFixes(t Testing, dir string, a *analysis.Analyzer, patterns
 				}
 
 			} else {
-				// Form #2: all suggested fixes are represented by a single file.
 				want := ar.Comment
 				var accumulated []diff.Edit
 				for _, message := range slices.Sorted(maps.Keys(fixEdits)) {
@@ -357,46 +285,16 @@ func applyDiffsAndCompare(pkg *types.Package, filename string, original, want []
 
 // Run applies an analysis to the packages denoted by the "go list" patterns.
 //
-// It loads the packages from the specified
-// directory using golang.org/x/tools/go/packages, runs the analysis on
-// them, and checks that each analysis emits the expected diagnostics
-// and facts specified by the contents of '// want ...' comments in the
-// package's source files. It treats a comment of the form
-// "//...// want..." or "/*...// want... */" as if it starts at 'want'.
+// It loads the packages from the specified directory using
+// golang.org/x/tools/go/packages, runs the analysis on them, and checks. That
+// each analysis emits the expected diagnostics and facts specified by the
+// contents of '// want ...' comments in the package's source files. It treats
+// a comment of the form "//...// want..." or "/*...// want... */" as if it
+// starts at 'want'.
 //
 // If the directory contains a go.mod file, Run treats it as the root of the
 // Go module in which to work. Otherwise, Run treats it as the root of a
 // GOPATH-style tree, with package contained in the src subdirectory.
-//
-// An expectation of a Diagnostic is specified by a string literal
-// containing a regular expression that must match the diagnostic
-// message. For example:
-//
-//	fmt.Printf("%s", 1) // want `cannot provide int 1 to %s`
-//
-// An expectation of a Fact associated with an object is specified by
-// 'name:"pattern"', where name is the name of the object, which must be
-// declared on the same line as the comment, and pattern is a regular
-// expression that must match the string representation of the fact,
-// fmt.Sprint(fact). For example:
-//
-//	func panicf(format string, args interface{}) { // want panicf:"printfWrapper"
-//
-// Package facts are specified by the name "package" and appear on
-// line 1 of the first source file of the package.
-//
-// A single 'want' comment may contain a mixture of diagnostic and fact
-// expectations, including multiple facts about the same object:
-//
-//	// want "diag" "diag2" x:"fact1" x:"fact2" y:"fact3"
-//
-// Unexpected diagnostics and facts, and unmatched expectations, are
-// reported as errors to the Testing.
-//
-// Run reports an error to the Testing if loading or analysis failed.
-// Run also returns a Result for each package for which analysis was
-// attempted, even if unsuccessful. It is safe for a test to ignore all
-// the results, but a test may use it to perform additional checks.
 func Run(t Testing, dir string, a *analysis.Analyzer, patterns ...string) []*Result {
 	if t, ok := t.(testing.TB); ok {
 		testenv.NeedsGoPackages(t)
@@ -408,9 +306,8 @@ func Run(t Testing, dir string, a *analysis.Analyzer, patterns ...string) []*Res
 		return nil
 	}
 
-	// Print parse and type errors to the test log.
-	// (Do not print them to stderr, which would pollute
-	// the log in cases where the tests pass.)
+	// Print parse and type errors to the test log. (Do not print them to stderr,
+	// which would pollute the log in cases where the tests pass.)
 	if t, ok := t.(testing.TB); ok && !a.RunDespiteErrors {
 		packages.Visit(pkgs, nil, func(pkg *packages.Package) {
 			for _, err := range pkg.Errors {
@@ -446,7 +343,7 @@ func Run(t Testing, dir string, a *analysis.Analyzer, patterns ...string) []*Res
 			}
 		}
 
-		// Construct the legacy result.
+		// Construct the result.
 		results = append(results, &Result{
 			Pass:        internal.ActionPass(act), // may be nil
 			Diagnostics: act.Diagnostics,
@@ -462,12 +359,6 @@ func Run(t Testing, dir string, a *analysis.Analyzer, patterns ...string) []*Res
 // A Result holds the result of applying an analyzer to a package.
 //
 // Facts contains only facts associated with the package and its objects.
-//
-// This internal type was inadvertently and regrettably exposed
-// through a public type alias. It is essentially redundant with
-// [checker.Action], but must be retained for compatibility. Clients may
-// access the public fields of the Pass but must not invoke any of
-// its "verbs", since the pass is already complete.
 type Result struct {
 	Action *checker.Action
 
@@ -491,12 +382,9 @@ func loadPackages(dir string, patterns ...string) ([]*packages.Package, error) {
 		env = []string{"GO111MODULE=on", "GOPROXY=off"} // module mode
 	}
 
-	// packages.Load loads the real standard library, not a minimal
-	// fake version, which would be more efficient, especially if we
-	// have many small tests that import, say, net/http.
-	// However there is no easy way to make go/packages to consume
-	// a list of packages we generate and then do the parsing and
-	// typechecking, though this feature seems to be a recurring need.
+	// packages.Load loads the real standard library, not a minimal fake version,
+	// which would be more efficient, especially if we have many small tests.
+	// That import, say, net/http.
 
 	mode := packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports |
 		packages.NeedTypes | packages.NeedTypesSizes | packages.NeedSyntax | packages.NeedTypesInfo |
@@ -528,7 +416,7 @@ func loadPackages(dir string, patterns ...string) ([]*packages.Package, error) {
 }
 
 // check inspects an analysis pass on which the analysis has already
-// been run, and verifies that all reported diagnostics and facts match
+// been run. Verifies that all reported diagnostics and facts match
 // specified by the contents of "// want ..." comments in the package's
 // source files, which must have been parsed with comments enabled.
 func check(t Testing, gopath string, act *checker.Action) {
@@ -568,19 +456,13 @@ func check(t Testing, gopath string, act *checker.Action) {
 					text = strings.TrimSuffix(text, "*/")
 				}
 
-				// Hack: treat a comment of the form "//...// want..."
-				// or "/*...// want... */
-				// as if it starts at 'want'.
-				// This allows us to add comments on comments,
-				// as required when testing the buildtag analyzer.
+				// Hack: treat a comment of the form "//...// want..." or "/*...// want...
+				// */ as if it starts at 'want'.
 				if i := strings.Index(text, "// want"); i >= 0 {
 					text = text[i+len("// "):]
 				}
 
-				// It's tempting to compute the filename
-				// once outside the loop, but it's
-				// incorrect because it can change due
-				// to //line directives.
+				// It is tempting to compute the filename once outside the loop.
 				posn := act.Package.Fset.Position(c.Pos())
 				filename := sanitize(gopath, posn.Filename)
 				processComment(filename, posn.Line, text)
@@ -588,14 +470,11 @@ func check(t Testing, gopath string, act *checker.Action) {
 		}
 	}
 
-	// Extract 'want' comments from non-Go files.
-	// TODO(adonovan): we may need to handle //line directives.
+	// Extract 'want' comments from non-Go files. TODO(adonovan): we may need to handle //line directives.
 	files := act.Package.OtherFiles
 
-	// Hack: these analyzers need to extract expectations from
-	// all configurations, so include the files are usually
-	// ignored. (This was previously a hack in the respective
-	// analyzers' tests.)
+	// Hack: these analyzers need to extract expectations from all
+	// configurations, so include the files are usually ignored.
 	switch act.Analyzer.Name {
 	case "buildtag", "directive", "plusbuild":
 		files = slices.Concat(files, act.Package.IgnoredFiles)
@@ -612,11 +491,8 @@ func check(t Testing, gopath string, act *checker.Action) {
 		for line := range strings.SplitSeq(string(data), "\n") {
 			linenum++
 
-			// Hack: treat a comment of the form "//...// want..."
-			// or "/*...// want... */
-			// as if it starts at 'want'.
-			// This allows us to add comments on comments,
-			// as required when testing the buildtag analyzer.
+			// Hack: treat a comment of the form "//...// want..." or "/*...// want...
+			// */ as if it starts at 'want'.
 			if i := strings.Index(line, "// want"); i >= 0 {
 				line = line[i:]
 			}
@@ -662,11 +538,6 @@ func check(t Testing, gopath string, act *checker.Action) {
 
 	// Check the facts match expectations.
 	// We check only facts relating to the current package.
-	//
-	// We report errors in lexical order for determinism.
-	// (It's only deterministic within each file, not across files,
-	// because go/packages does not guarantee file.Pos is ascending
-	// across the files of a single compilation unit.)
 
 	// package facts: reported at start of first file
 	for _, pkgFact := range act.AllPackageFacts() {
@@ -690,12 +561,6 @@ func check(t Testing, gopath string, act *checker.Action) {
 	}
 
 	// Reject surplus expectations.
-	//
-	// Sometimes an Analyzer reports two similar diagnostics on a
-	// line with only one expectation. The reader may be confused by
-	// the error message.
-	// TODO(adonovan): print a better error:
-	// "got 2 diagnostics here; each one needs its own expectation".
 	var surplus []string
 	for key, expects := range want {
 		for _, exp := range expects {
@@ -719,9 +584,8 @@ func (ex expectation) String() string {
 	return fmt.Sprintf("%s %s:%q", ex.kind, ex.name, ex.rx) // for debugging
 }
 
-// parseExpectations parses the content of a "// want ..." comment
-// and returns the expectations, a mixture of diagnostics ("rx") and
-// facts (name:"rx").
+// parseExpectations parses the content of a "// want ..." comment and returns
+// the expectations, a mixture of diagnostics ("rx") and facts (name:"rx").
 func parseExpectations(text string) (lineDelta int, expects []expectation, err error) {
 	var scanErr string
 	sc := new(scanner.Scanner).Init(strings.NewReader(text))

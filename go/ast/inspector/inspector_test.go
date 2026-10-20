@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector_test
 
@@ -76,8 +75,8 @@ func TestInspectAllNodes(t *testing.T) {
 }
 
 func TestInspectGenericNodes(t *testing.T) {
-	// src is using the 16 identifiers i0, i1, ... i15 so
-	// we can easily verify that we've found all of them.
+	// src is using the identifiers i0, i1, ... i15 so we
+	// can easily verify that we've found all of them.
 	const src = `package a
 
 type I interface { ~i0|i1 }
@@ -121,7 +120,7 @@ var _ i13[i14, i15]
 		}
 	}
 
-	// Verify that we can filter to IndexListExprs that we found in the first
+	// Verify that we can filter to indexListExprs that we found in the first
 	// step.
 	if len(indexListExprs) == 0 {
 		t.Fatal("no index list exprs found")
@@ -241,15 +240,8 @@ func typeOf(n ast.Node) string {
 	return strings.TrimPrefix(reflect.TypeOf(n).String(), "*ast.")
 }
 
-// The numbers show a marginal improvement (ASTInspect/Inspect) of 3.5x,
-// but a break-even point (NewInspector/(ASTInspect-Inspect)) of about 5
-// traversals.
-//
-// BenchmarkASTInspect     1.0 ms
-// BenchmarkNewInspector   2.2 ms
-// BenchmarkInspect        0.39ms
-// BenchmarkInspectFilter  0.01ms
-// BenchmarkInspectCalls   0.14ms
+// The numbers show a marginal improvement (ASTInspect/Inspect) of 3.5x, but a
+// break-even point (NewInspector/(ASTInspect-Inspect)) of multiple traversals.
 
 func BenchmarkNewInspector(b *testing.B) {
 	// Measure one-time construction overhead.

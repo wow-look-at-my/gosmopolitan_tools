@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package shift defines an Analyzer that checks for shifts that exceed
 // the width of an integer.
@@ -80,8 +79,6 @@ func run(pass *analysis.Pass) (any, error) {
 func checkLongShift(pass *analysis.Pass, node ast.Node, x, y ast.Expr) {
 	if pass.TypesInfo.Types[x].Value != nil {
 		// Ignore shifts of constants.
-		// These are frequently used for bit-twiddling tricks
-		// like ^uint(0) >> 63 for 32/64 bit detection and compatibility.
 		return
 	}
 

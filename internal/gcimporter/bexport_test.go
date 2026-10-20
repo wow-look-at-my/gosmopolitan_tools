@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter_test
 
@@ -38,34 +37,8 @@ func equalType(x, y types.Type) error {
 	switch x := x.(type) {
 	case *types.Interface:
 		y := y.(*types.Interface)
-		// TODO(gri): enable separate emission of Embedded interfaces
-		// and ExplicitMethods then use this logic.
-		// if x.NumEmbeddeds() != y.NumEmbeddeds() {
-		// 	return fmt.Errorf("unequal number of embedded interfaces: %d vs %d",
-		// 		x.NumEmbeddeds(), y.NumEmbeddeds())
-		// }
-		// for i := 0; i < x.NumEmbeddeds(); i++ {
-		// 	xi := x.Embedded(i)
-		// 	yi := y.Embedded(i)
-		// 	if xi.String() != yi.String() {
-		// 		return fmt.Errorf("mismatched %th embedded interface: %s vs %s",
-		// 			i, xi, yi)
-		// 	}
-		// }
-		// if x.NumExplicitMethods() != y.NumExplicitMethods() {
-		// 	return fmt.Errorf("unequal methods: %d vs %d",
-		// 		x.NumExplicitMethods(), y.NumExplicitMethods())
-		// }
-		// for i := 0; i < x.NumExplicitMethods(); i++ {
-		// 	xm := x.ExplicitMethod(i)
-		// 	ym := y.ExplicitMethod(i)
-		// 	if xm.Name() != ym.Name() {
-		// 		return fmt.Errorf("mismatched %th method: %s vs %s", i, xm, ym)
-		// 	}
-		// 	if err := equalType(xm.Type(), ym.Type()); err != nil {
-		// 		return fmt.Errorf("mismatched %s method: %s", xm.Name(), err)
-		// 	}
-		// }
+		// TODO(gri): enable separate emission of Embedded interfaces and
+		// ExplicitMethods then use this logic.
 		if x.NumMethods() != y.NumMethods() {
 			return fmt.Errorf("unequal methods: %d vs %d",
 				x.NumMethods(), y.NumMethods())
@@ -136,13 +109,6 @@ func equalType(x, y types.Type) error {
 			return fmt.Errorf("unequal receivers: %s vs %s", x.Recv(), y.Recv())
 		}
 		if x.Recv() != nil {
-			// TODO(adonovan): fix: this assertion fires for interface methods.
-			// The type of the receiver of an interface method is a named type
-			// if the Package was loaded from export data, or an unnamed (interface)
-			// type if the Package was produced by type-checking ASTs.
-			// if err := equalType(x.Recv().Type(), y.Recv().Type()); err != nil {
-			// 	return fmt.Errorf("receiver: %s", err)
-			// }
 		}
 		if err := equalTypeParams(x.TypeParams(), y.TypeParams()); err != nil {
 			return fmt.Errorf("type params: %s", err)
@@ -190,11 +156,7 @@ func equalType(x, y types.Type) error {
 		if x.String() != y.String() {
 			return fmt.Errorf("unequal named types: %s vs %s", x, y)
 		}
-		// For now, just compare constraints by type string to short-circuit
-		// cycles. We have to make interfaces explicit as export data currently
-		// doesn't support marking interfaces as implicit.
-		// TODO(rfindley): remove makeExplicit once export data contains an
-		// implicit bit.
+		// Compare constraints by type string to short-circuit cycles.
 		xc := makeExplicit(x.Constraint()).String()
 		yc := makeExplicit(y.Constraint()).String()
 		if xc != yc {
@@ -207,8 +169,7 @@ func equalType(x, y types.Type) error {
 	return nil
 }
 
-// cmpNamed compares two named types x and y, returning an error for any
-// discrepancies. It does not compare their underlying types.
+// It does not compare their underlying types.
 func cmpNamed(x, y *types.Named) error {
 	xOrig := x.Origin()
 	yOrig := y.Origin()
@@ -241,8 +202,7 @@ func cmpNamed(x, y *types.Named) error {
 		if xm.Name() != ym.Name() {
 			return fmt.Errorf("mismatched %dth method: %s vs %s", i, xm, ym)
 		}
-		// Calling equalType here leads to infinite recursion, so just compare
-		// strings.
+		// Calling equalType here leads to infinite recursion, so compare strings.
 		if xm.String() != ym.String() {
 			return fmt.Errorf("unequal methods: %s vs %s", xm, ym)
 		}
@@ -291,9 +251,9 @@ func equalTypeParams(x, y *types.TypeParamList) error {
 	return nil
 }
 
-// TestVeryLongFile tests the position of an import object declared in
-// a very long input file.  Line numbers greater than maxlines are
-// reported as line 1, not garbage or token.NoPos.
+// TestVeryLongFile tests the position of an import object declared in a long
+// input file. Line numbers greater than maxlines are reported as one line,
+// not garbage or token.NoPos.
 func TestVeryLongFile(t *testing.T) {
 	// parse and typecheck
 	longFile := "package foo" + strings.Repeat("\n", 123456) + "var X int"

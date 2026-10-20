@@ -1,12 +1,9 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package eg
 
 // This file defines the AST rewriting pass.
-// Most of it was plundered directly from
-// $GOROOT/src/cmd/gofmt/rewrite.go (after convergent evolution).
 
 import (
 	"fmt"
@@ -24,9 +21,9 @@ import (
 
 // transformItem takes a reflect.Value representing a variable of type ast.Node
 // transforms its child elements recursively with apply, and then transforms the
-// actual element if it contains an expression.
+// actual element. This happens if it contains an expression.
 func (tr *Transformer) transformItem(rv reflect.Value) (reflect.Value, bool, map[string]ast.Expr) {
-	// don't bother if val is invalid to start with
+	// don't bother if val is invalid to start.
 	if !rv.IsValid() {
 		return reflect.Value{}, false, nil
 	}
@@ -39,7 +36,7 @@ func (tr *Transformer) transformItem(rv reflect.Value) (reflect.Value, bool, map
 	}
 
 	savedEnv := tr.env
-	tr.env = make(map[string]ast.Expr) // inefficient!  Use a slice of k/v pairs
+	tr.env = make(map[string]ast.Expr) // inefficient! Use a slice of k/v pairs
 
 	if tr.matchExpr(tr.before, e) {
 		if tr.verbose {
@@ -68,13 +65,12 @@ func (tr *Transformer) transformItem(rv reflect.Value) (reflect.Value, bool, map
 	return rv, changed, newEnv
 }
 
-// Transform applies the transformation to the specified parsed file,
-// whose type information is supplied in info, and returns the number
-// of replacements that were made.
+// Transform applies the transformation to the specified parsed file, whose
+// type information is supplied in info, and returns the number of
+// replacements that were made.
 //
-// It mutates the AST in place (the identity of the root node is
-// unchanged), and may add nodes for which no type information is
-// available in info.
+// It mutates the AST in place (the identity of the root node is unchanged),
+// and may add nodes for which no type information is available in info.
 //
 // Derived from rewriteFile in $GOROOT/src/cmd/gofmt/rewrite.go.
 func (tr *Transformer) Transform(info *types.Info, pkg *types.Package, file *ast.File) int {
@@ -116,8 +112,7 @@ func (tr *Transformer) Transform(info *types.Info, pkg *types.Package, file *ast
 		}
 		delete(pkgs, pkg.Path()) // don't import self
 
-		// NB: AddImport may completely replace the AST!
-		// It thus renders info and tr.info no longer relevant to file.
+		// NB: AddImport may completely replace the AST! It thus renders info and tr.info no longer relevant to file.
 		var paths []string
 		for path := range pkgs {
 			paths = append(paths, path)
@@ -133,10 +128,10 @@ func (tr *Transformer) Transform(info *types.Info, pkg *types.Package, file *ast
 	return tr.nsubsts
 }
 
-// setValue is a wrapper for x.SetValue(y); it protects
+// setValue is a wrapper for x.setValue(y); it protects
 // the caller from panics if x cannot be changed to y.
 func setValue(x, y reflect.Value) {
-	// don't bother if y is invalid to start with
+	// don't bother if y is invalid to start.
 	if !y.IsValid() {
 		return
 	}
@@ -166,12 +161,12 @@ var (
 	scopePtrType     = reflect.TypeFor[*ast.Scope]()
 )
 
-// apply replaces each AST field x in val with f(x), returning val.
-// To avoid extra conversions, f operates on the reflect.Value form.
-// f takes a reflect.Value representing the variable to modify of type ast.Node.
-// It returns a reflect.Value containing the transformed value of type ast.Node,
-// whether any change was made, and a map of identifiers to ast.Expr (so we can
-// do contextually correct substitutions in the parent statements).
+// apply replaces each AST field x in val with f(x), returning val. To avoid
+// extra conversions, f operates on the reflect.Value form. f takes a
+// reflect.Value representing the variable to modify of type ast.Node. It
+// returns a reflect.Value containing the transformed value of type ast.Node,
+// whether any change was made. A map of identifiers to ast.Expr (so we can do
+// contextually correct substitutions in the parent statements).
 func (tr *Transformer) apply(f func(reflect.Value) (reflect.Value, bool, map[string]ast.Expr), val reflect.Value) (reflect.Value, bool, map[string]ast.Expr) {
 	if !val.IsValid() {
 		return reflect.Value{}, false, nil
@@ -200,10 +195,7 @@ func (tr *Transformer) apply(f func(reflect.Value) (reflect.Value, bool, map[str
 				o, localchanged, env := f(e)
 				if localchanged {
 					changed = true
-					// we clobber envp here,
-					// which means if we have two successive
-					// replacements inside the same statement
-					// we will only generate the setup for one of them.
+					// we clobber envp here.
 					envp = env
 				}
 				setValue(e, o)
@@ -248,10 +240,10 @@ func (tr *Transformer) apply(f func(reflect.Value) (reflect.Value, bool, map[str
 	return val, false, nil
 }
 
-// subst returns a copy of (replacement) pattern with values from env
-// substituted in place of wildcards and pos used as the position of
-// tokens from the pattern. If env == nil, subst returns a copy of
-// pattern and doesn't change the line number information.
+// subst returns a copy of (replacement) pattern with values from env. That
+// env is substituted in place of wildcards and pos used as the position of
+// tokens from the pattern. If env == nil, subst returns a copy of pattern and
+// doesn't change the line number information.
 func (tr *Transformer) subst(env map[string]ast.Expr, pattern, pos reflect.Value) reflect.Value {
 	if !pattern.IsValid() {
 		return reflect.Value{}
@@ -277,22 +269,9 @@ func (tr *Transformer) subst(env map[string]ast.Expr, pattern, pos reflect.Value
 		}
 	}
 
-	// Emit qualified identifiers in the pattern by appropriate
-	// (possibly qualified) identifier in the input.
-	//
-	// The template cannot contain dot imports, so all identifiers
-	// for imported objects are explicitly qualified.
-	//
-	// We assume (unsoundly) that there are no dot or named
-	// imports in the input code, nor are any imported package
-	// names shadowed, so the usual normal qualified identifier
-	// syntax may be used.
-	// TODO(adonovan): fix: avoid this assumption.
-	//
-	// A refactoring may be applied to a package referenced by the
-	// template.  Objects belonging to the current package are
-	// denoted by unqualified identifiers.
-	//
+	// Emit qualified identifiers in the pattern by appropriate (possibly
+	// qualified) identifier in the input. The template cannot contain dot
+	// imports, so all identifiers for imported objects are explicitly qualified.
 	if tr.importedObjs != nil && pattern.Type() == selectorExprType {
 		obj := isRef(pattern.Interface().(*ast.SelectorExpr), tr.info)
 		if obj != nil {
@@ -344,9 +323,8 @@ func (tr *Transformer) subst(env map[string]ast.Expr, pattern, pos reflect.Value
 			v.Set(tr.subst(env, elem, pos).Addr())
 		}
 
-		// Duplicate type information for duplicated ast.Expr.
-		// All ast.Node implementations are *structs,
-		// so this case catches them all.
+		// Duplicate type information for duplicated ast.Expr. All ast.Node
+		// implementations are *structs, so this case catches them all.
 		if e := rvToExpr(v); e != nil {
 			updateTypeInfo(tr.info, e, p.Interface().(ast.Expr))
 		}

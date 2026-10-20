@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package present
 
@@ -116,10 +115,9 @@ func addrToByteRange(addr string, start int, data []byte) (lo, hi int, err error
 
 // addrNumber applies the given dir, n, and charOffset to the address lo, hi.
 // dir is '+' or '-', n is the count, and charOffset is true if the syntax
-// used was #n.  Applying +n (or +#n) means to advance n lines
-// (or characters) after hi.  Applying -n (or -#n) means to back up n lines
-// (or characters) before lo.
-// The return value is the new lo, hi.
+// used was #n. Applying +n (or +#n) means to advance n lines (or characters)
+// after hi. Applying -n (or -#n) means to back up n lines (or characters)
+// before lo. The return value is the new lo, hi.
 func addrNumber(data []byte, lo, hi int, dir byte, n int, charOffset bool) (int, int, error) {
 	switch dir {
 	case 0:
@@ -209,8 +207,7 @@ func addrRegexp(data []byte, hi int, dir byte, pattern string) (int, int, error)
 		return 0, 0, err
 	}
 	if dir == '-' {
-		// Could implement reverse search using binary search
-		// through file, but that seems like overkill.
+		// Could implement reverse search using binary search through file, but that seems like overkill.
 		return 0, 0, errors.New("reverse search not implemented")
 	}
 	m := re.FindIndex(data[hi:])
@@ -218,7 +215,7 @@ func addrRegexp(data []byte, hi int, dir byte, pattern string) (int, int, error)
 		m[0] += hi
 		m[1] += hi
 	} else if hi > 0 {
-		// No match.  Wrap to beginning of data.
+		// No match. Wrap to beginning of data.
 		m = re.FindIndex(data)
 	}
 	if len(m) == 0 {

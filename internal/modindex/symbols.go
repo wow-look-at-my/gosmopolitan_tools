@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modindex
 
@@ -21,14 +20,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// The name of a symbol contains information about the symbol:
-// <name> T for types, TD if the type is deprecated
-// <name> C for consts, CD if the const is deprecated
-// <name> V for vars, VD if the var is deprecated
-// and for funcs: <name> F <num of return values> (<arg-name> <arg-type>)*
-// any spaces in <arg-type> are replaced by $s so that the fields
-// of the name are space separated. F is replaced by FD if the func
-// is deprecated.
+// The name of a symbol contains information about the symbol: <name> T for
+// types, TD if the type is deprecated <name> C for consts, CD.
 type symbol struct {
 	pkg  string // name of the symbols's package
 	name string // declared name
@@ -108,8 +101,7 @@ func getFileExports(f *ast.File) []symbol {
 			}
 			name := decl.Name.Name
 			dtype := decl.Type
-			// not looking at dtype.TypeParams. That is, treating
-			// generic functions just like non-generic ones.
+			// not looking at dtype.TypeParams. That is, treating generic functions like non-generic ones.
 			sig := dtype.Params
 			kind := "F"
 			if isDeprecated(decl.Doc) {
@@ -117,14 +109,10 @@ func getFileExports(f *ast.File) []symbol {
 			}
 			result := []string{fmt.Sprintf("%d", dtype.Results.NumFields())}
 			for _, x := range sig.List {
-				// This code creates a string representing the type.
-				// TODO(pjw): it may be fragile:
-				// 1. x.Type could be nil, perhaps in ill-formed code
-				// 2. ExprString might someday change incompatibly to
-				//    include struct tags, which can be arbitrary strings
+				// This code creates a string representing the type. x.Type could be nil,
+				// perhaps in ill-formed a later code.
 				if x.Type == nil {
-					// Can this happen without a parse error? (Files with parse
-					// errors are ignored in getSymbols)
+					// Can this happen without a parse error?
 					continue // maybe report this someday
 				}
 				tp := types.ExprString(x.Type)
@@ -132,13 +120,8 @@ func getFileExports(f *ast.File) []symbol {
 					// Can this happen?
 					continue // maybe report this someday
 				}
-				// This is only safe if ExprString never returns anything with a $
-				// The only place a $ can occur seems to be in a struct tag, which
-				// can be an arbitrary string literal, and ExprString does not presently
-				// print struct tags. So for this to happen the type of a formal parameter
-				// has to be a explicit struct, e.g. foo(x struct{a int "$"}) and ExprString
-				// would have to show the struct tag. Even testing for this case seems
-				// a waste of effort, but let's remember the possibility
+				// This is only safe if ExprString never returns anything with a $ The
+				// only place a $ can occur seems to be in a struct tag.
 				if strings.Contains(tp, "$") {
 					continue
 				}
@@ -228,8 +211,7 @@ func processSyms(syms []symbol) (string, []string) {
 	var names []string
 	for _, s := range syms {
 		if s.pkg != pkg {
-			// Symbols came from two files in same dir
-			// with different package declarations.
+			// Symbols came from files in same dir with different package declarations.
 			continue
 		}
 		var nx string

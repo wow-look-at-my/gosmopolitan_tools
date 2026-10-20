@@ -1,10 +1,9 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package multichecker defines the main function for an analysis driver
-// with several analyzers. This package makes it easy for anyone to build
-// an analysis tool containing just the analyzers they need.
+// Package multichecker defines the main function for an analysis driver with
+// several analyzers. This package makes it easy for anyone to build an
+// analysis tool containing the analyzers they need.
 package multichecker
 
 import (

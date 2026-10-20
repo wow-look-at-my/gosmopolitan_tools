@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -65,7 +64,7 @@ func createInstance(fn *Function, rtargs, targs []types.Type) *Function {
 			obj = prog.canon.instantiateMethod(fn.object, rtargs, prog.ctxt)
 		} else {
 			// generic method on non-generic type
-			obj = fn.object // instantiation does not exist yet
+			obj = fn.object // instantiation does not exist.
 		}
 		if len(targs) > 0 {
 			// generic method
@@ -77,10 +76,7 @@ func createInstance(fn *Function, rtargs, targs []types.Type) *Function {
 			if !ok {
 				panic("Instantiate of a Signature returned a non-signature")
 			}
-			// Do not canonicalize generic methods, because the receiver is not
-			// part of a Signature's type identity. For example,
-			// (*G[int]).m[int] and (G[int]).n[int] may be identical types even
-			// though their receiver types differ.
+			// Do not canonicalize generic methods, because the receiver is not part of a Signature's type identity.
 			sig = instance
 		} else {
 			// non-generic method on generic type
@@ -96,7 +92,7 @@ func createInstance(fn *Function, rtargs, targs []types.Type) *Function {
 		if !ok {
 			panic("Instantiate of a Signature returned a non-signature")
 		}
-		obj = fn.object // instantiation does not exist yet
+		obj = fn.object // instantiation does not exist.
 		sig = prog.canon.Type(instance).(*types.Signature)
 	}
 
@@ -152,9 +148,7 @@ func (prog *Program) isParameterized(ts ...types.Type) bool {
 	prog.hasParamsMu.Lock()
 	defer prog.hasParamsMu.Unlock()
 
-	// TODO(adonovan): profile. If this operation is expensive,
-	// handle the most common but shallow cases such as T, pkg.T,
-	// *T without consulting the cache under the lock.
+	// TODO(adonovan): profile.
 
 	return slices.ContainsFunc(ts, prog.hasParams.Has)
 }

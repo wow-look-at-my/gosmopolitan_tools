@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages
 
@@ -12,26 +11,10 @@ import (
 	"golang.org/x/tools/internal/moremaps"
 )
 
-// Visit visits all the packages in the import graph whose roots are
-// pkgs, calling the optional pre function the first time each package
-// is encountered (preorder), and the optional post function after a
+// Visit visits all the packages in the import graph whose roots are pkgs.
+// That Visit is calling the optional pre function the first time each package
+// is encountered (preorder), and the optional post. Function after a
 // package's dependencies have been visited (postorder).
-// The boolean result of pre(pkg) determines whether
-// the imports of package pkg are visited.
-//
-// Example:
-//
-//	pkgs, err := Load(...)
-//	if err != nil { ... }
-//	Visit(pkgs, nil, func(pkg *Package) {
-//		log.Println(pkg)
-//	})
-//
-// In most cases, it is more convenient to use [Postorder]:
-//
-//	for pkg := range Postorder(pkgs) {
-//		log.Println(pkg)
-//	}
 func Visit(pkgs []*Package, pre func(*Package) bool, post func(*Package)) {
 	seen := make(map[*Package]bool)
 	var visit func(*Package)
@@ -78,9 +61,8 @@ func PrintErrors(pkgs []*Package) int {
 	return n
 }
 
-// Postorder returns an iterator over the packages in
-// the import graph whose roots are pkg.
-// Packages are enumerated in dependencies-first order.
+// Postorder returns an iterator over the packages in the import graph whose
+// roots are pkg. Packages are enumerated in dependencies-first order.
 func Postorder(pkgs []*Package) iter.Seq[*Package] {
 	return func(yield func(*Package) bool) {
 		seen := make(map[*Package]bool)

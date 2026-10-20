@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package edge defines identifiers for each field of an ast.Node
 // struct type that refers to another Node.
@@ -33,9 +32,8 @@ func (k Kind) FieldName() string { return fieldInfos[k].name }
 // FieldType returns the declared type of the field.
 func (k Kind) FieldType() reflect.Type { return fieldInfos[k].fieldType }
 
-// Get returns the direct child of n identified by (k, idx).
-// n's type must match k.NodeType().
-// idx must be a valid slice index, or -1 for a non-slice.
+// Get returns the direct child of n identified by (k, idx). n's type must
+// match k.NodeType().
 func (k Kind) Get(n ast.Node, idx int) ast.Node {
 	if k.NodeType() != reflect.TypeOf(n) {
 		panic(fmt.Sprintf("%v.Get(%T): invalid node type", k, n))
@@ -57,9 +55,7 @@ func (k Kind) Get(n ast.Node, idx int) ast.Node {
 const (
 	Invalid Kind = iota // for nodes at the root of the traversal
 
-	// As of Go1.26 these kinds are sorted alphabetically, but
-	// numbering must be stable, so any new addition of const should
-	// use a new value (be added at the end of the list).
+	// As of Go1.26 these kinds are sorted alphabetically, but numbering must be stable, so any new addition of const should use a new value.
 
 	ArrayType_Elt
 	ArrayType_Len
@@ -169,9 +165,7 @@ const (
 	maxKind
 )
 
-// Assert that the encoding fits in 7 bits,
-// as the inspector relies on this.
-// (We are currently at 104.)
+// Assert that the encoding fits in several bits, as the inspector relies on this.
 var _ = [1 << 7]struct{}{}[maxKind]
 
 type fieldInfo struct {

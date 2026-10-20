@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package callgraph
 
@@ -19,10 +18,9 @@ func CalleesOf(caller *Node) map[*Node]bool {
 	return callees
 }
 
-// GraphVisitEdges visits all the edges in graph g in depth-first order.
-// The edge function is called for each edge in postorder.  If it
-// returns non-nil, visitation stops and GraphVisitEdges returns that
-// value.
+// GraphVisitEdges visits all the edges in graph g in depth-first order. The
+// edge function is called for each edge in postorder. If it returns non-nil,
+// visitation stops and GraphVisitEdges returns that value.
 func GraphVisitEdges(g *Graph, edge func(*Edge) error) error {
 	seen := make(map[*Node]bool)
 	var visit func(n *Node) error
@@ -48,10 +46,9 @@ func GraphVisitEdges(g *Graph, edge func(*Edge) error) error {
 	return nil
 }
 
-// PathSearch finds an arbitrary path starting at node start and
-// ending at some node for which isEnd() returns true.  On success,
-// PathSearch returns the path as an ordered list of edges; on
-// failure, it returns nil.
+// PathSearch finds an arbitrary path starting at node start and ending at
+// some node for which isEnd() returns true. On success, PathSearch returns
+// the path as an ordered list of edges; on failure, it returns nil.
 func PathSearch(start *Node, isEnd func(*Node) bool) []*Edge {
 	stack := make([]*Edge, 0, 32)
 	seen := make(map[*Node]bool)
@@ -75,24 +72,13 @@ func PathSearch(start *Node, isEnd func(*Node) bool) []*Edge {
 	return search(start)
 }
 
-// DeleteSyntheticNodes removes from call graph g all nodes for
-// functions that do not correspond to source syntax. For historical
-// reasons, nodes for g.Root and package initializers are always
-// kept.
+// DeleteSyntheticNodes removes from call graph g all nodes for functions that
+// do not correspond to source syntax. For historical reasons, nodes for
+// g.Root and package initializers are always kept.
 //
-// As nodes are removed, edges are created to preserve the
-// reachability relation of the remaining nodes.
+// As nodes are removed, edges are created to preserve the reachability
+// relation of the remaining nodes.
 func (g *Graph) DeleteSyntheticNodes() {
-	// Measurements on the standard library and go.tools show that
-	// resulting graph has ~15% fewer nodes and 4-8% fewer edges
-	// than the input.
-	//
-	// Inlining a wrapper of in-degree m, out-degree n adds m*n
-	// and removes m+n edges.  Since most wrappers are monomorphic
-	// (n=1) this results in a slight reduction.  Polymorphic
-	// wrappers (n>1), e.g. from embedding an interface value
-	// inside a struct to satisfy some interface, cause an
-	// increase in the graph, but they seem to be uncommon.
 
 	// Hash all existing edges to avoid creating duplicates.
 	edges := make(map[Edge]bool)
@@ -101,7 +87,6 @@ func (g *Graph) DeleteSyntheticNodes() {
 			edges[*e] = true
 		}
 	}
-	// Note: these cross-products can exceed 100 x 100.
 	for fn, cgn := range g.Nodes {
 		if cgn == g.Root || isInit(cgn.Func) || fn.Syntax() != nil {
 			continue // keep

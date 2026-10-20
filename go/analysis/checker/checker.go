@@ -1,31 +1,13 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package checker provides an analysis driver based on the
-// [golang.org/x/tools/go/packages] representation of a set of
-// packages and all their dependencies, as produced by
-// [packages.Load].
+// Package checker provides an analysis. Driver based on the
+// [golang.org/x/tools/go/packages] representation of a set of packages and
+// all their dependencies, as produced by [packages.Load].
 //
-// It is the core of multichecker (the multi-analyzer driver),
-// singlechecker (the single-analyzer driver often used to provide a
-// convenient command alongside each analyzer), and analysistest, the
-// test driver.
-//
-// By contrast, the 'go vet' command is based on unitchecker, an
-// analysis driver that uses separate analysis--analogous to separate
-// compilation--with file-based intermediate results. Like separate
-// compilation, it is more scalable, especially for incremental
-// analysis of large code bases. Commands based on multichecker and
-// singlechecker are capable of detecting when they are being invoked
-// by "go vet -vettool=exe" and instead dispatching to unitchecker.
-//
-// Programs built using this package will, in general, not be usable
-// in that way. This package is intended only for use in applications
-// that invoke the analysis driver as a subroutine, and need to insert
-// additional steps before or after the analysis.
-//
-// See the Example of how to build a complete analysis driver program.
+// It is the core of multichecker (the multi-analyzer driver), singlechecker
+// (the single-analyzer driver often used to provide a convenient command
+// alongside each analyzer), and analysistest, the test driver.
 package checker
 
 import (
@@ -56,34 +38,15 @@ type Options struct {
 	SanityCheck bool      // check fact encoding is ok and deterministic
 	FactLog     io.Writer // if non-nil, log each exported fact to it
 
-	// TODO(adonovan): expose ReadFile so that an Overlay specified
-	// in the [packages.Config] can be communicated via
-	// Pass.ReadFile to each Analyzer.
+	// TODO(adonovan).
 	readFile driverutil.ReadFileFunc
 }
 
-// Graph holds the results of a round of analysis, including the graph
-// of requested actions (analyzers applied to packages) plus any
-// dependent actions that it was necessary to compute.
+// Graph holds the results of a round of analysis, including the graph of
+// requested actions (analyzers applied to packages) plus any dependent
+// actions.
 type Graph struct {
 	// Roots contains the roots of the action graph.
-	// Each node (a, p) in the action graph represents the
-	// application of one analyzer a to one package p.
-	// (A node thus corresponds to one analysis.Pass instance.)
-	// Roots holds one action per element of the product
-	// of the analyzers × packages arguments to Analyze,
-	// in unspecified order.
-	//
-	// Each element of Action.Deps represents an edge in the
-	// action graph: a dependency from one action to another.
-	// An edge of the form (a, p) -> (a, p2) indicates that the
-	// analysis of package p requires information ("facts") from
-	// the same analyzer applied to one of p's dependencies, p2.
-	// An edge of the form (a, p) -> (a2, p) indicates that the
-	// analysis of package p requires information ("results")
-	// from a different analyzer a2 applied to the same package.
-	// These two kind of edges are called "vertical" and "horizontal",
-	// respectively.
 	Roots []*Action
 }
 
@@ -108,10 +71,6 @@ func (g *Graph) All() iter.Seq[*Action] {
 // An Action represents one unit of analysis work by the driver: the
 // application of one analysis to one package. It provides the inputs
 // to and records the outputs of a single analysis.Pass.
-//
-// Actions form a DAG, both within a package (as different analyzers
-// are applied, either in sequence or parallel), and across packages
-// (as dependencies are analyzed).
 type Action struct {
 	Analyzer    *analysis.Analyzer
 	Package     *packages.Package
@@ -135,13 +94,12 @@ func (act *Action) String() string {
 
 // Analyze runs the specified analyzers on the initial packages.
 //
-// The initial packages and all dependencies must have been loaded
-// using the [packages.LoadAllSyntax] flag, Analyze may need to run
-// some analyzer (those that consume and produce facts) on
-// dependencies too.
+// The initial packages and all dependencies must have been loaded using the
+// [packages.LoadAllSyntax] flag. Analyze may need to run some analyzer (those
+// that consume and produce facts) on dependencies too.
 //
-// On success, it returns a Graph of actions whose Roots hold one
-// item per (a, p) in the cross-product of analyzers and pkgs.
+// On success, it returns a Graph of actions whose Roots hold one item per (a,
+// p) in the cross-product of analyzers and pkgs.
 //
 // If opts is nil, it is equivalent to new(Options).
 func Analyze(analyzers []*analysis.Analyzer, pkgs []*packages.Package, opts *Options) (*Graph, error) {
@@ -154,10 +112,6 @@ func Analyze(analyzers []*analysis.Analyzer, pkgs []*packages.Package, opts *Opt
 	}
 
 	// Construct the action graph.
-	//
-	// Each graph node (action) is one unit of analysis.
-	// Edges express package-to-package (vertical) dependencies,
-	// and analysis-to-analysis (horizontal) dependencies.
 	type key struct {
 		a   *analysis.Analyzer
 		pkg *packages.Package
@@ -208,10 +162,8 @@ func Analyze(analyzers []*analysis.Analyzer, pkgs []*packages.Package, opts *Opt
 	// Execute the graph in parallel.
 	execAll(roots)
 
-	// Ensure that only root Results are visible to caller.
-	// (The others are considered temporary intermediaries.)
-	// TODO(adonovan): opt: clear them earlier, so we can
-	// release large data structures like SSA sooner.
+	// Ensure that only root Results are visible to caller. (The others are
+	// considered temporary intermediaries.)
 	for _, act := range actions {
 		if !act.IsRoot {
 			act.Result = nil
@@ -222,9 +174,7 @@ func Analyze(analyzers []*analysis.Analyzer, pkgs []*packages.Package, opts *Opt
 }
 
 func init() {
-	// Allow analysistest to access Action.pass,
-	// for the legacy analysistest.Result data type,
-	// and for internal/checker.ApplyFixes to access pass.ReadFile.
+	// Allow analysistest to access Action.pass, for the analysistest.Result data type.
 	internal.ActionPass = func(x any) *analysis.Pass { return x.(*Action).pass }
 }
 
@@ -262,10 +212,6 @@ func (act *Action) execOnce() {
 	execAll(act.Deps)
 
 	// Record time spent in this node but not its dependencies.
-	// In parallel mode, due to GC/scheduler contention, the
-	// time is 5x higher than in sequential mode, even with a
-	// semaphore limiting the number of threads here.
-	// So use -debug=tp.
 	t0 := time.Now()
 	defer func() { act.Duration = time.Since(t0) }()
 
@@ -282,21 +228,16 @@ func (act *Action) execOnce() {
 		return
 	}
 
-	// Plumb the output values of the dependencies
-	// into the inputs of this action.  Also facts.
+	// Plumb the output values of the dependencies into the inputs of this action. Also facts.
 	inputs := make(map[*analysis.Analyzer]any)
 	act.objectFacts = make(map[objectFactKey]analysis.Fact)
 	act.packageFacts = make(map[packageFactKey]analysis.Fact)
 	for _, dep := range act.Deps {
 		if dep.Package == act.Package {
-			// Same package, different analysis (horizontal edge):
-			// in-memory outputs of prerequisite analyzers
-			// become inputs to this analysis pass.
+			// Same package, different analysis (horizontal edge).
 			inputs[dep.Analyzer] = dep.Result
 		} else if dep.Analyzer == act.Analyzer { // (always true)
-			// Same analysis, different package (vertical edge):
-			// serialized facts produced by prerequisite analysis
-			// become available to this analysis pass.
+			// Same analysis, different package (vertical edge).
 			inheritFacts(act, dep)
 		}
 	}
@@ -386,8 +327,7 @@ func (act *Action) execOnce() {
 // those it obtains from its dependency, dep.
 func inheritFacts(act, dep *Action) {
 	for key, fact := range dep.objectFacts {
-		// Filter out facts related to objects
-		// that are irrelevant downstream
+		// Filter out facts related to objects that are irrelevant downstream
 		// (equivalently: not in the compiler export data).
 		if !exportedFrom(key.obj, dep.Package.Types) {
 			if false {
@@ -413,25 +353,11 @@ func inheritFacts(act, dep *Action) {
 	}
 
 	for key, fact := range dep.packageFacts {
-		// TODO: filter out facts that belong to
-		// packages not mentioned in the export data
-		// to prevent side channels.
-		//
-		// The Pass.All{Object,Package}Facts accessors expose too much:
-		// all facts, of all types, for all dependencies in the action
-		// graph. Not only does the representation grow quadratically,
-		// but it violates the separate compilation paradigm, allowing
-		// analysis implementations to communicate with indirect
-		// dependencies that are not mentioned in the export data.
-		//
-		// It's not clear how to fix this short of a rather expensive
-		// filtering step after each action that enumerates all the
-		// objects that would appear in export data, and deletes
-		// facts associated with objects not in this set.
+		// TODO: filter out facts that belong to packages not mentioned in the
+		// export data to prevent side channels.
 
-		// Optionally serialize/deserialize fact
-		// to verify that it works across address spaces
-		// and is deterministic.
+		// Optionally serialize/deserialize fact to verify that it works across
+		// address spaces and is deterministic.
 		if act.opts.SanityCheck {
 			encodedFact, err := codeFact(fact)
 			if err != nil {
@@ -447,19 +373,15 @@ func inheritFacts(act, dep *Action) {
 	}
 }
 
-// codeFact encodes then decodes a fact,
-// just to exercise that logic.
+// codeFact encodes then decodes a fact, to exercise that logic.
 func codeFact(fact analysis.Fact) (analysis.Fact, error) {
 	// We encode facts one at a time.
-	// A real modular driver would emit all facts
-	// into one encoder to improve gob efficiency.
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(fact); err != nil {
 		return nil, err
 	}
 
 	// Encode it twice and assert that we get the same bits.
-	// This helps detect nondeterministic Gob encoding (e.g. of maps).
 	var buf2 bytes.Buffer
 	if err := gob.NewEncoder(&buf2).Encode(fact); err != nil {
 		return nil, err
@@ -475,14 +397,10 @@ func codeFact(fact analysis.Fact) (analysis.Fact, error) {
 	return new, nil
 }
 
-// exportedFrom reports whether obj may be visible to a package that imports pkg.
-// This includes not just the exported members of pkg, but also unexported
-// constants, types, fields, and methods, perhaps belonging to other packages,
-// that find there way into the API.
-// This is an overapproximation of the more accurate approach used by
-// gc export data, which walks the type graph, but it's much simpler.
-//
-// TODO(adonovan): do more accurate filtering by walking the type graph.
+// exportedFrom reports whether obj may be visible to a package that imports
+// pkg. This includes not the exported members of pkg, but also unexported
+// constants, types, fields, and methods, perhaps belonging to other packages.
+// That find there way into the API.
 func exportedFrom(obj types.Object, pkg *types.Package) bool {
 	switch obj := obj.(type) {
 	case *types.Func:
@@ -492,9 +410,7 @@ func exportedFrom(obj types.Object, pkg *types.Package) bool {
 		if obj.IsField() {
 			return true
 		}
-		// we can't filter more aggressively than this because we need
-		// to consider function parameters exported, but have no way
-		// of telling apart function parameters from local variables.
+		// we cannot filter more aggressively than this.
 		return obj.Pkg() == pkg
 	case *types.TypeName, *types.Const:
 		return true
@@ -502,9 +418,8 @@ func exportedFrom(obj types.Object, pkg *types.Package) bool {
 	return false // Nil, Builtin, Label, or PkgName
 }
 
-// ObjectFact retrieves a fact associated with obj,
-// and returns true if one was found.
-// Given a value ptr of type *T, where *T satisfies Fact,
+// ObjectFact retrieves a fact associated with obj, and returns true if one
+// was found. Given a value ptr of type *T, where *T satisfies Fact,
 // ObjectFact copies the value to *ptr.
 //
 // See documentation at ImportObjectFact field of [analysis.Pass].

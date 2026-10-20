@@ -1,6 +1,5 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package edit implements buffered position-based editing of byte slices.
 package edit
@@ -35,9 +34,8 @@ func (x edits) Less(i, j int) bool {
 	return x[i].end < x[j].end
 }
 
-// NewBuffer returns a new buffer to accumulate changes to an initial data slice.
-// The returned buffer maintains a reference to the data, so the caller must ensure
-// the data is not modified until after the Buffer is done being used.
+// NewBuffer returns a new buffer to accumulate changes to an initial data
+// slice.
 func NewBuffer(old []byte) *Buffer {
 	return &Buffer{old: old}
 }
@@ -70,8 +68,6 @@ func (b *Buffer) Replace(start, end int, new string) {
 // with the queued edits applied.
 func (b *Buffer) Bytes() []byte {
 	// Sort edits by starting position and then by ending position.
-	// Breaking ties by ending position allows insertions at point x
-	// to be applied before a replacement of the text at [x, y).
 	sort.Stable(b.q)
 
 	var new []byte

@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -29,11 +28,7 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// TODO(adonovan): more tests:
-// - of command-line tool
-// - of all parts of syntax
-// - of applying a template to a package it imports:
-//   the replacement syntax should use unqualified names for its objects.
+// TODO(adonovan).
 
 var (
 	updateFlag  = flag.Bool("update", false, "update the golden files")
@@ -48,10 +43,9 @@ func Test(t *testing.T) {
 		t.Skipf("skipping test on %q (no /usr/bin/diff)", runtime.GOOS)
 	}
 
-	// Each txtar defines a package example.com/template and zero
-	// or more input packages example.com/in/... on which to apply
-	// it. The outputs are compared with the corresponding files
-	// in example.com/out/...
+	// Each txtar defines a package example.com/template and zero or more input
+	// packages example.com/in/... on which to apply it. The outputs are compared
+	// with the corresponding files in example.com/out/...
 	for _, filename := range []string{
 		"testdata/a.txtar",
 		"testdata/b.txtar",
@@ -131,8 +125,7 @@ func Test(t *testing.T) {
 						got = out.Bytes()
 					}
 
-					// Compare formatted output with out/<filename>
-					// Errors here are not fatal, so we can proceed to -update.
+					// Compare formatted output with out/<filename> Errors here are not fatal, so we can proceed to -update.
 					outfile := strings.Replace(filename, "in", "out", 1)
 					updated[outfile] = got
 					want, err := os.ReadFile(filepath.Join(dir, outfile))

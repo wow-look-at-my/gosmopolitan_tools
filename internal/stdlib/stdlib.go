@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:generate go run generate.go
 
@@ -20,17 +19,10 @@ type Symbol struct {
 	Kind    Kind
 	Version Version // Go version that first included the symbol
 	// Signature provides the type of a function (defined only for Kind=Func).
-	// Imported types are denoted as pkg.T; pkg is not fully qualified.
-	// TODO(adonovan): use an unambiguous encoding that is parseable.
-	//
-	// Example2:
-	//    func[M ~map[K]V, K comparable, V any](m M) M
-	//    func(fi fs.FileInfo, link string) (*Header, error)
 	Signature string // if Kind == stdlib.Func
 }
 
-// A Kind indicates the kind of a symbol:
-// function, variable, constant, type, and so on.
+// A Kind indicates the kind of a symbol: function, variable, constant, type, and so on.
 type Kind int8
 
 const (
@@ -98,8 +90,6 @@ func HasPackage(path string) bool {
 
 // SplitField splits the field symbol name into type and field
 // components. It must be called only on Field symbols.
-//
-// Example: "File.Package" -> ("File", "Package")
 func (sym *Symbol) SplitField() (typename, name string) {
 	if sym.Kind != Field {
 		panic("not a field")

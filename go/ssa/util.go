@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -42,7 +41,7 @@ func isBlankIdent(e ast.Expr) bool {
 	return ok && id.Name == "_"
 }
 
-//// Type utilities.  Some of these belong in go/types.
+/// / Type utilities. Some of these belong in go/types.
 
 // isNonTypeParamInterface reports whether t is an interface type but not a type parameter.
 func isNonTypeParamInterface(t types.Type) bool {
@@ -84,10 +83,7 @@ func isRuneSlice(t types.Type) bool {
 }
 
 // isBasicConvTypes returns true when the type set of a type
-// can be one side of a Convert operation. This is when:
-// - All are basic, []byte, or []rune.
-// - At least 1 is basic.
-// - At most 1 is []byte or []rune.
+// can be one side of a Convert operation.
 func isBasicConvTypes(typ types.Type) bool {
 	basics, cnt := 0, 0
 	ok := underIs(typ, func(t types.Type) bool {
@@ -107,9 +103,6 @@ func isPointer(t types.Type) bool {
 }
 
 // isPointerCore reports whether t's core type is a pointer.
-//
-// (Most pointer manipulation is related to receivers, in which case
-// isPointer is appropriate. tecallers can use isPointer(t).
 func isPointerCore(t types.Type) bool {
 	return is[*types.Pointer](typeparams.CoreType(t))
 }
@@ -224,8 +217,6 @@ func recvAsFirstArg(sig *types.Signature) *types.Signature {
 // instance returns whether an expression is a simple or qualified identifier
 // that is a generic instantiation.
 func instance(info *types.Info, expr ast.Expr) bool {
-	// Compare the logic here against go/types.instantiatedIdent,
-	// which also handles  *IndexExpr and *IndexListExpr.
 	var id *ast.Ident
 	switch x := expr.(type) {
 	case *ast.Ident:
@@ -304,9 +295,6 @@ func (c *canonizer) List(ts []types.Type) *typeList {
 
 // Type returns a canonical representative of type T.
 // Removes top-level aliases.
-//
-// For performance, reasons the canonical instance is order-dependent,
-// and may contain deeply nested aliases.
 func (c *canonizer) Type(T types.Type) types.Type {
 	T = types.Unalias(T) // remove the top level alias.
 
@@ -401,7 +389,5 @@ func (canon *canonizer) instantiateMethod(m *types.Func, targs []types.Type, ctx
 	return obj.(*types.Func)
 }
 
-// Exposed to ssautil using the linkname hack.
-//
 //go:linkname isSyntactic golang.org/x/tools/go/ssa.isSyntactic
 func isSyntactic(pkg *Package) bool { return pkg.syntax }

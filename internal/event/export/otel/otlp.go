@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package otel
 
@@ -10,17 +9,8 @@ import (
 )
 
 // OTLP JSON types for telemetry export.
-//
-// Specification
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/docs/specification.md
 
 // intAsString is an int64 that marshals to/from a JSON string.
-//
-// int64 values are encoded as strings because JSON numbers are IEEE 754
-// double-precision floats, which can only represent integers exactly up to
-// 2^53. Timestamps in nanoseconds and large counts would lose precision.
-// See: https://github.com/open-telemetry/opentelemetry-proto/issues/268
-// And: https://protobuf.dev/programming-guides/json/
 type intAsString int64
 
 func (i intAsString) MarshalJSON() ([]byte, error) {
@@ -28,8 +18,7 @@ func (i intAsString) MarshalJSON() ([]byte, error) {
 }
 
 func (i *intAsString) UnmarshalJSON(data []byte) error {
-	// Strip quotes if present. Per the spec, both JSON strings ("123")
-	// and JSON numbers (123) must be accepted for decoding int64 values.
+	// Strip quotes if present.
 	if len(data) >= 2 && data[0] == '"' && data[len(data)-1] == '"' {
 		data = data[1 : len(data)-1]
 	}
@@ -44,12 +33,10 @@ func (i *intAsString) UnmarshalJSON(data []byte) error {
 // Common oltp types
 
 // otlpResource corresponds to Resource.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/resource/v1/resource.proto#L28
 type otlpResource struct {
 	Attributes []otlpAttribute `json:"attributes"`
 }
 
-// otlpScope corresponds to InstrumentationScope.
 // https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/common/v1/common.proto#L76
 type otlpScope struct {
 	Name    string `json:"name,omitempty"`
@@ -57,7 +44,6 @@ type otlpScope struct {
 }
 
 // otlpAttribute corresponds to KeyValue.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/common/v1/common.proto#L66
 type otlpAttribute struct {
 	Key   string             `json:"key"`
 	Value otlpAttributeValue `json:"value"`
@@ -74,21 +60,18 @@ type otlpAttributeValue struct {
 
 // Trace types
 
-// otlpTraceExportRequest is the payload for ExportTraceServiceRequest.
 // https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/collector/trace/v1/trace_service.proto#L34
 type otlpTraceExportRequest struct {
 	ResourceSpans []otlpResourceSpans `json:"resourceSpans"`
 }
 
 // otlpResourceSpans corresponds to ResourceSpans.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/trace/v1/trace.proto#L48
 type otlpResourceSpans struct {
 	Resource   otlpResource     `json:"resource"`
 	ScopeSpans []otlpScopeSpans `json:"scopeSpans"`
 }
 
 // otlpScopeSpans corresponds to ScopeSpans.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/trace/v1/trace.proto#L68
 type otlpScopeSpans struct {
 	Scope otlpScope  `json:"scope"`
 	Spans []otlpSpan `json:"spans"`
@@ -109,7 +92,6 @@ type otlpSpan struct {
 }
 
 // otlpSpanStatus corresponds to Status.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/trace/v1/trace.proto#L308
 type otlpSpanStatus struct {
 	Code    int    `json:"code"`
 	Message string `json:"message,omitempty"`
@@ -117,21 +99,18 @@ type otlpSpanStatus struct {
 
 // Metrics types
 
-// otlpMetricsRequest is the payload for ExportMetricsServiceRequest.
 // https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/collector/metrics/v1/metrics_service.proto#L34
 type otlpMetricsRequest struct {
 	ResourceMetrics []otlpResourceMetrics `json:"resourceMetrics"`
 }
 
 // otlpResourceMetrics corresponds to ResourceMetrics.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/metrics/v1/metrics.proto#L66
 type otlpResourceMetrics struct {
 	Resource     otlpResource       `json:"resource"`
 	ScopeMetrics []otlpScopeMetrics `json:"scopeMetrics"`
 }
 
 // otlpScopeMetrics corresponds to ScopeMetrics.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/metrics/v1/metrics.proto#L86
 type otlpScopeMetrics struct {
 	Scope   otlpScope    `json:"scope"`
 	Metrics []otlpMetric `json:"metrics"`
@@ -149,7 +128,6 @@ type otlpMetric struct {
 }
 
 // otlpGauge corresponds to Gauge.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/metrics/v1/metrics.proto#L232
 type otlpGauge struct {
 	DataPoints []otlpNumberDataPoint `json:"dataPoints"`
 }
@@ -158,12 +136,11 @@ type otlpGauge struct {
 // https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/metrics/v1/metrics.proto#L240
 type otlpSum struct {
 	DataPoints             []otlpNumberDataPoint `json:"dataPoints"`
-	AggregationTemporality int                   `json:"aggregationTemporality"` // 1=delta, 2=cumulative
+	AggregationTemporality int                   `json:"aggregationTemporality"`
 	IsMonotonic            bool                  `json:"isMonotonic"`
 }
 
 // otlpHistogram corresponds to Histogram.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.9.0/opentelemetry/proto/metrics/v1/metrics.proto#L255
 type otlpHistogram struct {
 	DataPoints             []otlpHistogramDataPoint `json:"dataPoints"`
 	AggregationTemporality int                      `json:"aggregationTemporality"`

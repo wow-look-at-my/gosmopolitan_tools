@@ -1,8 +1,7 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package proxydir provides functions for writing module data to a directory
+// Package proxydir provides functions. For writing module data to a directory
 // in proxy format, so that it can be used as a module proxy by setting
 // GOPROXY="file://<dir>".
 package proxydir
@@ -23,9 +22,7 @@ func WriteModuleVersion(rootDir, module, ver string, files map[string][]byte) (r
 		return err
 	}
 
-	// The go command checks for versions by looking at the "list" file.  Since
-	// we are supporting multiple versions, create this file if it does not exist
-	// or append the version number to the preexisting file.
+	// The go command checks for versions by looking at the "list" file.
 	f, err := os.OpenFile(filepath.Join(dir, "list"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -35,8 +32,7 @@ func WriteModuleVersion(rootDir, module, ver string, files map[string][]byte) (r
 		return err
 	}
 
-	// Serve the go.mod file on the <version>.mod url, if it exists. Otherwise,
-	// serve a stub.
+	// Serve the go.mod file on the <version>.mod url, if it exists. Otherwise, serve a stub.
 	modContents, ok := files["go.mod"]
 	if !ok {
 		modContents = []byte("module " + module)
@@ -45,7 +41,7 @@ func WriteModuleVersion(rootDir, module, ver string, files map[string][]byte) (r
 		return err
 	}
 
-	// info file, just the bare bones.
+	// info file, the bare bones.
 	infoContents := fmt.Appendf(nil, `{"Version": "%v", "Time":"2017-12-14T13:08:43Z"}`, ver)
 	if err := os.WriteFile(filepath.Join(dir, ver+".info"), infoContents, 0644); err != nil {
 		return err

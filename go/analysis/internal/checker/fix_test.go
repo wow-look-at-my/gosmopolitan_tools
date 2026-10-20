@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package checker_test
 
@@ -34,9 +33,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// If the CHECKER_TEST_CHILD environment variable is set,
-	// this process should behave like a multichecker.
-	// Analyzers are selected by flags.
+	// If the CHECKER_TEST_CHILD environment variable is set, this process should
+	// behave like a multichecker. Analyzers are selected by flags.
 	if _, ok := os.LookupEnv("CHECKER_TEST_CHILD"); ok {
 		multichecker.Main(
 			markerAnalyzer,
@@ -76,7 +74,7 @@ func TestReportInvalidDiagnostic(t *testing.T) {
 		want string
 		diag func(pos token.Pos) analysis.Diagnostic
 	}{
-		// Diagnostic has two alternative fixes with the same Message.
+		// Diagnostic has alternative fixes with the same Message.
 		{
 			"duplicate message",
 			`analyzer "a" suggests two fixes with same Message \(fix\)`,
@@ -128,7 +126,7 @@ func TestReportInvalidDiagnostic(t *testing.T) {
 				}
 			},
 		},
-		// Two TextEdits overlap.
+		// TextEdits overlap.
 		{
 			"overlapping edits",
 			`analyzer "a" suggests invalid fix .*: overlapping edits to .*errors.go \(1:1-1:3 and 1:2-1:4\)`,
@@ -182,19 +180,6 @@ func TestReportInvalidDiagnostic(t *testing.T) {
 //	skip k=v...
 //		Skip the test if any k=v string is a substring of the string
 //		"GOOS=darwin GOARCH=arm64" appropriate to the current build.
-//	checker args...
-//		Run the checker command with the specified space-separated
-//		arguments; this fork+execs the [TestMain] function above.
-//		If the archive has a "stdout" section, its contents must
-//		match the stdout output of the checker command.
-//		Do NOT use this for testing -diff: tests should not
-//		rely on the particulars of the diff algorithm.
-//	exit int
-//		Assert that previous checker command had this exit code.
-//	stderr regexp
-//		Assert that stderr output from previous checker run matches this pattern.
-//
-// The script must include at least one 'checker' command.
 func TestScript(t *testing.T) {
 	testenv.NeedsExec(t)
 	testenv.NeedsGoPackages(t)
@@ -243,7 +228,6 @@ func TestScript(t *testing.T) {
 					if err := cmd.Run(); err != nil {
 						if err, ok := err.(*exec.ExitError); ok {
 							lastExitCode = err.ExitCode()
-							// fall through
 						} else {
 							t.Fatalf("%s: failed to execute checker: %v (%s)", prefix, err, cmd)
 						}
@@ -256,9 +240,7 @@ func TestScript(t *testing.T) {
 						s := fmt.Sprint(x)
 						pwd, _ := os.Getwd()
 						if realDir, err := filepath.EvalSymlinks(dir); err == nil {
-							// Work around checker's packages.Load failing to
-							// set Config.Dir to dir, causing the filenames
-							// of loaded packages not to be a subdir of dir.
+							// Work around checker's packages.Load failing to set Config.Dir to dir, causing the filenames of loaded packages not to be a subdir of dir.
 							s = strings.ReplaceAll(s, realDir, dir)
 						}
 						s = strings.ReplaceAll(s, dir, string(os.PathSeparator)+"TMP")
@@ -270,8 +252,7 @@ func TestScript(t *testing.T) {
 					lastStderr = clean(cmd.Stderr)
 					stdout := clean(cmd.Stdout)
 
-					// Detect bad markers out of band:
-					// though they cause a non-zero exit,
+					// Detect bad markers out of band: though they cause a non-zero exit,
 					// that may be expected.
 					if strings.Contains(lastStderr, badMarker) {
 						t.Errorf("marker analyzer encountered errors; stderr=%s", lastStderr)
@@ -353,7 +334,6 @@ func TestScript(t *testing.T) {
 						t.Fatalf("%s: requires one numeric operand", prefix)
 					}
 					if want != lastExitCode {
-						// plan9 ExitCode() currently only returns 0 for success or 1 for failure
 						if !(runtime.GOOS == "plan9" && want != exitCodeSuccess && lastExitCode != exitCodeSuccess) {
 							t.Errorf("%s: exit code was %d, want %d", prefix, lastExitCode, want)
 						}
@@ -382,40 +362,28 @@ func TestScript(t *testing.T) {
 
 const badMarker = "[bad marker]"
 
-// The marker analyzer generates fixes from @marker annotations in the
-// source. Each marker is of the form:
+// The marker analyzer generates fixes from @marker annotations in the source.
+// Each marker is of the form:
 //
 //	@message("pattern", "replacement)
 //
 // The "message" is used for both the Diagnostic.Message and
-// SuggestedFix.Message field. Multiple markers with the same
-// message form a single diagnostic and fix with a list of textedits.
-//
-// The "pattern" is a regular expression that must match on the
-// current line (though it may extend beyond if the pattern starts
-// with "(?s)"), and whose extent forms the TextEdit.{Pos,End}
-// deletion. If the pattern contains one subgroup, its range will be
-// used; this allows contextual matching.
-//
-// The "replacement" is a literal string that forms the
-// TextEdit.NewText.
-//
-// Fixes are applied in the order they are first mentioned in the
-// source.
+// SuggestedFix.Message field. Multiple markers with the same message form a
+// single diagnostic and fix with a list of textedits.
+// The "pattern" is a regular expression that must match on the current line
+// (though it may extend beyond if the pattern starts with "(?s)"), and whose
+// extent forms the TextEdit.{Pos,End} deletion. If the pattern contains one
+// subgroup, its range will be used; this allows contextual matching.
+// The "replacement" is a literal string that forms the TextEdit.NewText.
+// Fixes are applied in the order they are first mentioned in the source.
 var markerAnalyzer = &analysis.Analyzer{
 	Name:     "marker",
 	Doc:      "doc",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run: func(pass *analysis.Pass) (_ any, err error) {
-		// Errors returned by this analyzer cause the
-		// checker command to exit non-zero, but that
-		// may be the expected outcome for other reasons
-		// (e.g. there were diagnostics).
-		//
-		// So, we report these errors out of band by logging
-		// them with a special badMarker string that the
-		// TestScript harness looks for, to ensure that the
-		// test fails in that case.
+		// Errors returned by this analyzer cause the checker command to exit
+		// non-zero, but that may be the expected outcome for other reasons (e.g.
+		// there were diagnostics).
 		defer func() {
 			if err != nil {
 				log.Printf("%s: %v", badMarker, err)
@@ -504,8 +472,7 @@ func markerEdit(tokFile *token.File, content []byte, note *expect.Note) (analysi
 		return analysis.TextEdit{}, fmt.Errorf("invalid location regexp %q: expect either 0 or 1 subgroups, got %d", rx, len(matches)/2-1)
 	}
 	if start > lineEndOff-lineStartOff {
-		// The start of the match must be between the start of the line and the
-		// marker position (inclusive).
+		// The start of the match must be between the start of the line and the marker position (inclusive).
 		return analysis.TextEdit{}, fmt.Errorf("no matching range found starting on the current line")
 	}
 

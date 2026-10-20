@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package unsafeptr defines an Analyzer that checks for invalid
 // conversions of uintptr to unsafe.Pointer.
@@ -76,18 +75,7 @@ func isSafeUintptr(info *types.Info, x ast.Expr) bool {
 		if x.Sel.Name != "Data" {
 			break
 		}
-		// reflect.SliceHeader and reflect.StringHeader are okay,
-		// but only if they are pointing at a real slice or string.
-		// It's not okay to do:
-		//	var x SliceHeader
-		//	x.Data = uintptr(unsafe.Pointer(...))
-		//	... use x ...
-		//	p := unsafe.Pointer(x.Data)
-		// because in the middle the garbage collector doesn't
-		// see x.Data as a pointer and so x.Data may be dangling
-		// by the time we get to the conversion at the end.
-		// For now approximate by saying that *Header is okay
-		// but Header is not.
+		// StringHeader are okay, but only if they are pointing at a real slice or string. use x ...
 		pt, ok := types.Unalias(info.Types[x.X].Type).(*types.Pointer)
 		if ok && isReflectHeader(pt.Elem()) {
 			return true
@@ -126,14 +114,11 @@ func isSafeArith(info *types.Info, x ast.Expr) bool {
 			hasBasicType(info, x.Args[0], types.UnsafePointer)
 
 	case *ast.BinaryExpr:
-		// "It is valid both to add and to subtract offsets from a
-		// pointer in this way. It is also valid to use &^ to round
-		// pointers, usually for alignment."
+		// "It is valid both to add and to subtract offsets from a pointer in this
+		// way.
 		switch x.Op {
 		case token.ADD, token.SUB, token.AND_NOT:
-			// TODO(mdempsky): Match compiler
-			// semantics. ADD allows a pointer on either
-			// side; SUB and AND_NOT don't care about RHS.
+			// TODO(mdempsky): Match compiler semantics.
 			return isSafeArith(info, x.X) && !isSafeArith(info, x.Y)
 		}
 	}

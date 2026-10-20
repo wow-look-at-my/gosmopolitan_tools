@@ -1,13 +1,9 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector
 
 // This file defines func typeOf(ast.Node) uint64.
-//
-// The initial map-based implementation was too slow;
-// see https://go-review.googlesource.com/c/tools/+/135655/1/go/ast/inspector/inspector.go#196
 
 import (
 	"go/ast"
@@ -74,7 +70,6 @@ const (
 )
 
 // typeOf returns a distinct single-bit value that represents the type of n.
-//
 // Various implementations were benchmarked with BenchmarkNewInspector:
 //
 //	                                                                GOGC=off
@@ -84,12 +79,9 @@ const (
 //	- linear scan, unordered list			6.4ms		2.7ms
 //	- hash table					6.5ms		3.1ms
 //
-// A perfect hash seemed like overkill.
-//
-// The compiler's switch statement is the clear winner
-// as it produces a binary tree in code,
-// with constant conditions and good branch prediction.
-// (Sadly it is the most verbose in source code.)
+// A perfect hash seemed like overkill. The compiler's switch statement is the
+// clear winner as it produces a binary tree in code, with constant conditions
+// and good branch prediction. (Sadly it is the most verbose in source code.)
 // Binary search suffered from poor branch prediction.
 func typeOf(n ast.Node) uint64 {
 	// Fast path: nearly half of all nodes are identifiers.

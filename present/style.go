@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package present
 
@@ -13,18 +12,8 @@ import (
 	"unicode/utf8"
 )
 
-/*
-	Fonts are demarcated by an initial and final char bracketing a
-	space-delimited word, plus possibly some terminal punctuation.
-	The chars are
-		_ for italic
-		* for bold
-		` (back quote) for fixed width.
-	Inner appearances of the char become spaces. For instance,
-		_this_is_italic_!
-	becomes
-		<i>this is italic</i>!
-*/
+/* Fonts are demarcated by an initial and final char bracketing a
+   space-delimited word, plus possibly some terminal punctuation. */
 
 func init() {
 	funcs["style"] = Style
@@ -109,10 +98,9 @@ Word:
 				b.WriteRune(' ')
 				continue
 			}
-			// Doubled char becomes real char.
-			// Not worth worrying about "_x__".
+			// Doubled char becomes real char. Not worth worrying about "_x__".
 			b.WriteByte(char)
-			wid++ // Consumed two chars, both ASCII.
+			wid++ // Consumed chars, both ASCII.
 		}
 		b.WriteString(close) // Write closing tag.
 		b.WriteString(tail)  // Restore trailing punctuation.
@@ -129,10 +117,10 @@ func split(s string) []string {
 		start = 0
 	)
 
-	// appendWord appends the string s[start:end] to the words slice.
-	// If the word contains the beginning of a link, the non-link portion
-	// of the word and the entire link are appended as separate words,
-	// and the start index is advanced to the end of the link.
+	// appendWord appends the string s[start:end] to the words slice. If
+	// the word contains the beginning of a link, the non-link portion of
+	// the word and the entire link are appended as separate words. The
+	// start index is advanced to the end of the link.
 	appendWord := func(end int) {
 		if j := strings.Index(s[start:end], "[["); j > -1 {
 			if _, l := parseInlineLink(s[start+j:]); l > 0 {
@@ -147,7 +135,7 @@ func split(s string) []string {
 				return
 			}
 		}
-		// No link; just add the word.
+		// No link; add the word.
 		words = append(words, s[start:end])
 		start = end
 	}

@@ -1,13 +1,11 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package findcall defines an Analyzer that serves as a trivial
-// example and test of the Analysis API. It reports a diagnostic for
-// every call to a function or method of the name specified by its
-// -name flag. It also exports a fact for each declaration that
-// matches the name, plus a package-level fact if the package contained
-// one or more such declarations.
+// Package findcall defines an Analyzer that serves as a trivial example and
+// test of the Analysis API. It reports a diagnostic for every call to a
+// function or method of the name specified by its -name flag. It also exports
+// a fact for each declaration that matches the name. Plus a package-level
+// fact if the package contained one or more such declarations.
 package findcall
 
 import (
@@ -70,9 +68,8 @@ func run(pass *analysis.Pass) (any, error) {
 
 	// Export a fact for each matching function.
 	//
-	// These facts are produced only to test the testing
-	// infrastructure in the analysistest package.
-	// They are not consumed by the findcall Analyzer
+	// These facts are produced only to test the testing infrastructure in the
+	// analysistest package. They are not consumed by the findcall Analyzer
 	// itself, as would happen in a more realistic example.
 	for _, f := range pass.Files {
 		for _, decl := range f.Decls {
@@ -91,8 +88,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// foundFact is a fact associated with functions that match -name.
-// We use it to exercise the fact machinery in tests.
+// foundFact is a fact associated with functions that match -name. We use it to exercise the fact machinery in tests.
 type foundFact struct{}
 
 func (*foundFact) String() string { return "found" }

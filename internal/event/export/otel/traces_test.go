@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package otel
 
@@ -91,7 +90,7 @@ func TestE2E_SpanExport(t *testing.T) {
 		t.Fatal("no data received")
 	}
 
-	// Just verify it's valid JSON with a span
+	// Verify it's valid JSON with a span
 	var req otlpTraceExportRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("invalid JSON: %v", err)

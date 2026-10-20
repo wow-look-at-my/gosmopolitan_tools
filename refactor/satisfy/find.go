@@ -1,44 +1,19 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package satisfy inspects the type-checked ASTs of Go packages and
-// reports the set of discovered type constraints of the form (lhs, rhs
-// Type) where lhs is a non-trivial interface, rhs satisfies this
-// interface, and this fact is necessary for the package to be
-// well-typed.
+// Package satisfy inspects the type-checked ASTs of Go packages. It reports
+// the set of discovered type constraints of the form (lhs, rhs Type) where
+// lhs is a non-trivial interface, rhs satisfies this interface. This fact is
+// necessary for the package to be well-typed.
 //
 // It requires well-typed inputs, and may panic otherwise.
 //
 // This package reimplements parts of the type checker. See
-// https://go.dev/issue/70638 for a proposal to expose the work
-// already done by the type checker, which would make this package
-// redundant.
+// https://go.dev/issue/70638 for a proposal to expose the work already done
+// by the type checker, which would make this package redundant.
 package satisfy
 
-// NOTES:
-//
-// We don't care about numeric conversions, so we don't descend into
-// types or constant expressions.  This is unsound because
-// constant expressions can contain arbitrary statements, e.g.
-//   const x = len([1]func(){func() {
-//     ...
-//   }})
-//
-// Assignability conversions are possible in the following places:
-// - in assignments y = x, y := x, var y = x.
-// - from call argument types to formal parameter types
-// - in append and delete calls
-// - from return operands to result parameter types
-// - in composite literal T{k:v}, from k and v to T's field/element/key type
-// - in map[key] from key to the map's key type
-// - in comparisons x==y and switch x { case y: }.
-// - in explicit conversions T(x)
-// - in sends ch <- x, from x to the channel element type
-// - in type assertions x.(T) and switch x.(type) { case T: }
-//
-// The results of this pass provide information equivalent to the
-// ssa.MakeInterface and ssa.ChangeInterface instructions.
+// NOTES:.
 
 import (
 	"fmt"
@@ -51,24 +26,13 @@ import (
 	"golang.org/x/tools/internal/typeparams"
 )
 
-// A Constraint records the fact that the RHS type does and must
-// satisfy the LHS type, which is an interface.
-// The names are suggestive of an assignment statement LHS = RHS.
-//
-// The constraint is implicitly universally quantified over any type
-// parameters appearing within the two types.
+// A Constraint records the fact that the RHS type does and must satisfy the
+// LHS type, which is an interface.
 type Constraint struct {
 	LHS, RHS types.Type
 }
 
-// A Finder inspects the type-checked ASTs of Go packages and
-// accumulates the set of type constraints (x, y) such that x is
-// assignable to y, y is an interface, and both x and y have methods.
-//
-// In other words, it returns the subset of the "implements" relation
-// that is checked during compilation of a package.  Refactoring tools
-// will need to preserve at least this part of the relation to ensure
-// continued compilation.
+// A Finder inspects the type-checked ASTs of Go packages.
 type Finder struct {
 	Result    map[Constraint]bool
 	msetcache typeutil.MethodSetCache
@@ -172,7 +136,7 @@ func (f *Finder) call(sig *types.Signature, args []ast.Expr) {
 		return
 	}
 
-	// Ellipsis call?  e.g. f(x, y, z...)
+	// Ellipsis call? g.
 	if _, ok := args[len(args)-1].(*ast.Ellipsis); ok {
 		for i, arg := range args {
 			// The final arg is a slice, and so is the final param.
@@ -230,7 +194,7 @@ func (f *Finder) builtin(obj *types.Builtin, sig *types.Signature, args []ast.Ex
 	case "append":
 		s := f.expr(args[0])
 		if _, ok := args[len(args)-1].(*ast.Ellipsis); ok && len(args) == 2 {
-			// append(x, y...)   including append([]byte, "foo"...)
+			// append(x, y...) including append([]byte, "foo"...)
 			f.expr(args[1])
 		} else {
 			// append(x, y, z)
@@ -285,14 +249,8 @@ func (f *Finder) valueSpec(spec *ast.ValueSpec) {
 	}
 }
 
-// assign records pairs of distinct types that are related by
-// assignability, where the left-hand side is an interface and both
-// sides have methods.
-//
-// It should be called for all assignability checks, type assertions,
-// explicit conversions and comparisons between two types, unless the
-// types are uninteresting (e.g. lhs is a concrete type, or the empty
-// interface; rhs has no methods).
+// assign records pairs of distinct types that are related by assignability,
+// where the left-hand side is an interface and both sides have methods.
 func (f *Finder) assign(lhs, rhs types.Type) {
 	if types.Identical(lhs, rhs) {
 		return
@@ -314,19 +272,8 @@ func (f *Finder) assign(lhs, rhs types.Type) {
 // typeAssert must be called for each type assertion x.(T) where x has
 // interface type I.
 func (f *Finder) typeAssert(I, T types.Type) {
-	// Type assertions are slightly subtle, because they are allowed
-	// to be "impossible", e.g.
-	//
-	// 	var x interface{f()}
-	//	_ = x.(interface{f()int}) // legal
-	//
-	// (In hindsight, the language spec should probably not have
-	// allowed this, but it's too late to fix now.)
-	//
-	// This means that a type assert from I to T isn't exactly a
-	// constraint that T is assignable to I, but for a refactoring
-	// tool it is a conditional constraint that, if T is assignable
-	// to I before a refactoring, it should remain so after.
+	// Type assertions are slightly subtle, because they are allowed to be
+	// "impossible".
 
 	if types.AssignableTo(T, I) {
 		f.assign(I, T)
@@ -450,7 +397,6 @@ func (f *Finder) expr(e ast.Expr) types.Type {
 
 	case *ast.IndexExpr:
 		if instance(f.info, e.X) {
-			// f[T] or C[T] -- generic instantiation
 		} else {
 			// x[i] or m[k] -- index or lookup operation
 			x := f.expr(e.X)
@@ -580,7 +526,7 @@ func (f *Finder) stmt(s ast.Stmt) {
 	case *ast.AssignStmt:
 		switch s.Tok {
 		case token.ASSIGN, token.DEFINE:
-			// y := x   or   y = x
+			// y := x or y = x
 			var rhsTuple types.Type
 			if len(s.Lhs) != len(s.Rhs) {
 				rhsTuple = f.exprN(s.Rhs[0])
@@ -588,7 +534,7 @@ func (f *Finder) stmt(s ast.Stmt) {
 			for i := range s.Lhs {
 				var lhs, rhs types.Type
 				if rhsTuple == nil {
-					rhs = f.expr(s.Rhs[i]) // 1:1 assignment
+					rhs = f.expr(s.Rhs[i])
 				} else {
 					rhs = f.extract(rhsTuple, i) // n:1 assignment
 				}
@@ -627,7 +573,7 @@ func (f *Finder) stmt(s ast.Stmt) {
 		}
 		formals := f.sig.Results()
 		switch len(s.Results) {
-		case formals.Len(): // 1:1
+		case formals.Len():
 			for i, result := range s.Results {
 				f.assign(formals.At(i).Type(), f.expr(result))
 			}
@@ -725,8 +671,8 @@ func (f *Finder) stmt(s ast.Stmt) {
 		if s.Tok == token.ASSIGN {
 			if s.Key != nil {
 				k := f.expr(s.Key)
-				// Keys of array, *array, slice, string aren't interesting
-				// since the RHS key type is just an int.
+				// Keys of array, *array, slice, string aren't interesting since the RHS
+				// key type is an int.
 				for term := range terms(x) {
 					switch term := term.Underlying().(type) {
 					case *types.Chan:
@@ -738,8 +684,8 @@ func (f *Finder) stmt(s ast.Stmt) {
 			}
 			if s.Value != nil {
 				val := f.expr(s.Value)
-				// Values of type strings aren't interesting because
-				// the RHS value type is just a rune.
+				// Values of type strings aren't interesting because the RHS value type is
+				// a rune.
 				for term := range terms(x) {
 					switch term := term.Underlying().(type) {
 					case *types.Pointer:
@@ -783,17 +729,9 @@ func instance(info *types.Info, expr ast.Expr) bool {
 
 // -- type-set helpers --
 
-// hasUnderlyingTermOf reports whether terms(t) contains a
-// term whose underlying type has top-level type constructor T
-// (e.g. *types.Map for a map).
-// If so, it returns an arbitrary one.
-// Otherwise it returns the zero value (nil).
-//
-// This arbitrariness would be a hazard if this function were
-// published more widely, but in this package it is used only for
-// structural operations (indexing, etc) that require the relevant
-// component types to be identical across all terms in the operand's
-// type set.
+// hasUnderlyingTermOf reports whether terms(t) contains a term whose
+// underlying type has top-level type constructor T (e.g. *types.Map for a
+// map).
 func hasUnderlyingTermOf[T types.Type](t types.Type) T {
 	for term := range terms(t) {
 		if under, ok := term.Underlying().(T); ok {

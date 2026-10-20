@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -58,8 +57,7 @@ func main() {
 		path, name := splitPathIdent(arg)
 		logf("\tprocessing %q: path = %q, name = %s\n", arg, path, name)
 
-		// generate possible package path prefixes
-		// (at the moment we do this for each argument - should probably cache the generated prefixes)
+		// generate possible package path prefixes (at the moment we do this for each argument - should probably cache the generated prefixes)
 		prefixes := make(chan string)
 		go genPrefixes(prefixes, !filepath.IsAbs(path) && !build.IsLocalImport(path))
 
@@ -112,9 +110,7 @@ func tryPrefixes(prefixes chan string, path string, imp types.Importer) (pkg *ty
 	for prefix := range prefixes {
 		actual := path
 		if prefix == "" {
-			// don't use filepath.Join as it will sanitize the path and remove
-			// a leading dot and then the path is not recognized as a relative
-			// package path by the importers anymore
+			// do not use filepath.Join as it will sanitize the path.
 			logf("\ttrying no prefix\n")
 		} else {
 			actual = filepath.Join(prefix, path)
@@ -129,8 +125,7 @@ func tryPrefixes(prefixes chan string, path string, imp types.Importer) (pkg *ty
 	return
 }
 
-// tryImporters is an importer that tries all registered importers
-// successively until one of them succeeds or all of them failed.
+// tryImporters is an importer that tries all registered importers successively until one of them succeeds or all of them failed.
 type tryImporters struct{}
 
 func (t *tryImporters) Import(path string) (pkg *types.Package, err error) {

@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil_test
 
@@ -65,9 +64,8 @@ func TestPurgeFuncBodiesCases(t *testing.T) {
 			in:   "package p\nfunc F() func() int { return nil }\n",
 			want: "package p\nfunc F() func() int {}\n",
 		},
-		// Length-elided array literals ([...]T) are preserved: the
-		// element count is part of the type. (Nested elements are
-		// preserved verbatim along with the outer body.)
+		// Length-elided array literals ([...]T) are preserved: the element count is
+		// part of the type.
 		{
 			name: "auto-sized array",
 			in:   "package p\nvar X = [...]int{1, 2, 3}\n",
@@ -189,9 +187,7 @@ func TestPurgeFuncBodies(t *testing.T) {
 				case *ast.CompositeLit:
 					if at, _ := n.Type.(*ast.ArrayType); at != nil {
 						if _, ok := at.Len.(*ast.Ellipsis); ok {
-							// [...]T literal: preserve verbatim
-							// (don't recur, since nested elements
-							// are preserved too).
+							// [...]T literal: preserve verbatim (don't recur, since nested elements are preserved too).
 							return false
 						}
 					}

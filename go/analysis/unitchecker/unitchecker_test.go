@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package unitchecker_test
 
@@ -34,7 +33,7 @@ func TestMain(m *testing.M) {
 		minivet()
 		panic("unreachable")
 	case "worker":
-		worker() // see ExampleSeparateAnalysis
+		worker()
 		panic("unreachable")
 	}
 
@@ -52,9 +51,8 @@ func minivet() {
 	)
 }
 
-// This is a very basic integration test of modular
-// analysis with facts using unitchecker under "go vet".
-// It fork/execs the main function above.
+// This is a basic integration test of modular analysis with facts using
+// unitchecker under "go vet". It fork/execs the main function above.
 func TestIntegration(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skipf("skipping fork/exec test on this platform")
@@ -145,8 +143,7 @@ func _() {
 			exitcode = exitErr.ExitCode()
 		}
 
-		// Sanitize filenames; this is imperfect due to
-		// (e.g.) /private/tmp -> /tmp symlink on macOS.
+		// Sanitize filenames; this is imperfect due to (e.g.) /private/tmp -> /tmp symlink on macOS.
 		stdout = strings.ReplaceAll(fmt.Sprint(cmd.Stdout), tmpdir, "TMPDIR")
 		stderr = strings.ReplaceAll(fmt.Sprint(cmd.Stderr), tmpdir, "TMPDIR")
 
@@ -244,14 +241,14 @@ func _() {
 	t.Run("a-json", func(t *testing.T) {
 		code, stdout, _ := vet(t, "-json", "golang.org/fake/a")
 		exitcode(t, code, 0)
-		testenv.NeedsGo1Point(t, 26) // depends on CL 702815 (go vet -json => stdout)
+		testenv.NeedsGo1Point(t, 26) // depends on a later CL (go vet -json => stdout)
 		json := parseJSON(t, stdout)
 		substring(t, "json", json, "a/a.go:4:11: [findcall@golang.org/fake/a] call of MyFunc123")
 	})
 	t.Run("c-json", func(t *testing.T) {
 		code, stdout, _ := vet(t, "-json", "golang.org/fake/c")
 		exitcode(t, code, 0)
-		testenv.NeedsGo1Point(t, 26) // depends on CL 702815 (go vet -json => stdout)
+		testenv.NeedsGo1Point(t, 26) // depends on a later CL (go vet -json => stdout)
 		json := parseJSON(t, stdout)
 		substring(t, "json", json, "c/c.go:5:5: [assign@golang.org/fake/c] self-assignment of i")
 	})
@@ -276,8 +273,7 @@ func _() {
 	t.Run("e", func(t *testing.T) {
 		code, _, stderr := vet(t, "golang.org/fake/e")
 		exitcode(t, code, 1)
-		// There should be no log.Prefix (e.g. "vet: " or "unitchecker.test:")
-		// after the newline; see go.dev/issue/34142.
+		// There should be no log.Prefix (e.g. "vet: " or "unitchecker.test:") after the newline; see go.dev/issue/34142.
 		substring(t, "stderr", stderr, "\ne/e.go:4:2: undefined: undefined")
 	})
 }

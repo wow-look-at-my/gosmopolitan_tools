@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package prometheus
 
@@ -37,8 +36,7 @@ func (e *Exporter) ProcessEvent(ctx context.Context, ev core.Event, lm label.Map
 	for _, data := range metrics {
 		name := data.Handle()
 		// We keep the metrics in name sorted order so the page is stable and easy
-		// to read. We do this with an insertion sort rather than sorting the list
-		// each time
+		// to read.
 		index := sort.Search(len(e.metrics), func(i int) bool {
 			return e.metrics[i].Handle() >= name
 		})

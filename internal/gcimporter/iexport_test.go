@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This is a copy of bexport_test.go for iexport.go.
 
@@ -75,9 +74,6 @@ func TestIExportData_stdlib(t *testing.T) {
 	}
 
 	// Load types from syntax for all std packages.
-	//
-	// Append a file to package errors containing type and
-	// value errors to ensure they are properly encoded/decoded.
 	const bad = `package errors
 const UnknownValue = "" + 0
 type UnknownType undefined
@@ -199,9 +195,9 @@ func testPkg(t *testing.T, fset *token.FileSet, version int, pkg *types.Package,
 	}
 }
 
-// TestIExportData_long tests the position of an import object declared in
-// a very long input file.  Line numbers greater than maxlines are
-// reported as line 1, not garbage or token.NoPos.
+// TestIExportData_long tests the position of an import object declared in a
+// long input file. Line numbers greater than maxlines are reported as one
+// line, not garbage or token.NoPos.
 func TestIExportData_long(t *testing.T) {
 	// parse and typecheck
 	longFile := "package foo" + strings.Repeat("\n", 123456) + "var X int"
@@ -258,8 +254,7 @@ func TestIExportData_typealiases(t *testing.T) {
 	}
 	checkPkg(t, pkg1, "export")
 
-	// export
-	// use a nil fileset here to confirm that it doesn't panic
+	// export use a nil fileset here to confirm that it doesn't panic
 	exportdata, err := iexport(nil, gcimporter.IExportVersion, pkg1)
 	if err != nil {
 		t.Fatal(err)
@@ -276,8 +271,7 @@ func TestIExportData_typealiases(t *testing.T) {
 }
 
 // cmpObj reports how x and y differ. They are assumed to belong to different
-// universes so cannot be compared directly. It is an adapted version of
-// equalObj in bexport_test.go.
+// universes so cannot be compared directly.
 func cmpObj(x, y types.Object) error {
 	if reflect.TypeOf(x) != reflect.TypeOf(y) {
 		return fmt.Errorf("%T vs %T", x, y)
@@ -312,12 +306,7 @@ func cmpObj(x, y types.Object) error {
 			return fmt.Errorf("mismatching IsAlias(): %s vs %s", x, y)
 		}
 
-		// equalType does not recurse into the underlying types of named types, so
-		// we must pass the underlying type explicitly here. However, in doing this
-		// we may skip checking the features of the named types themselves, in
-		// situations where the type name is not referenced by the underlying or
-		// any other top-level declarations. Therefore, we must explicitly compare
-		// named types here, before passing their underlying types into equalType.
+		// equalType does not recurse into the underlying types of named types.
 		xn, _ := types.Unalias(xt).(*types.Named)
 		yn, _ := types.Unalias(yt).(*types.Named)
 		if (xn == nil) != (yn == nil) {
@@ -336,8 +325,6 @@ func cmpObj(x, y types.Object) error {
 	return equalType(xt, yt)
 }
 
-// Use the same floating-point precision (512) as cmd/compile
-// (see Mpprec in cmd/compile/internal/gc/mpfloat.go).
 const mpprec = 512
 
 // same compares non-complex numeric values and reports if they are approximately equal.
@@ -346,7 +333,7 @@ func same(x, y constant.Value) bool {
 	yf := constantToFloat(y)
 	d := new(big.Float).Sub(xf, yf)
 	d.Abs(d)
-	eps := big.NewFloat(1.0 / (1 << (mpprec - 1))) // allow for 1 bit of error
+	eps := big.NewFloat(1.0 / (1 << (mpprec - 1)))
 	return d.Cmp(eps) < 0
 }
 
@@ -363,8 +350,7 @@ func constantToFloat(x constant.Value) *big.Float {
 		d := valueToRat(denom)
 		f.SetRat(n.Quo(n, d))
 	} else {
-		// Value too large to represent as a fraction => inaccessible.
-		// TODO(gri): add big.Float accessor to constant.Value.
+		// Value too large to represent as a fraction => inaccessible. TODO(gri): add big.Float accessor to constant.Value.
 		_, ok := f.SetString(x.ExactString())
 		if !ok {
 			panic("should not reach here")
@@ -375,8 +361,7 @@ func constantToFloat(x constant.Value) *big.Float {
 
 // copy of the function with the same name in iexport.go.
 func valueToRat(x constant.Value) *big.Rat {
-	// Convert little-endian to big-endian.
-	// I can't believe this is necessary.
+	// Convert little-endian to big-endian. I can't believe this is necessary.
 	bytes := constant.Bytes(x)
 	for i := 0; i < len(bytes)/2; i++ {
 		bytes[i], bytes[len(bytes)-1-i] = bytes[len(bytes)-1-i], bytes[i]
@@ -419,9 +404,7 @@ func TestUnexportedStructFields(t *testing.T) {
 		export[path] = out.Bytes()
 	}
 
-	// Historically this led to a spurious error:
-	// "cannot convert a.M (variable of type a.MyTime) to type time.Time"
-	// because the private fields of Time and MyTime were not identical.
+	// Historically this led to a spurious error: "cannot convert a.M (variable of type a.MyTime) to type time.Time".
 	process("time", `package time; type Time struct { x, y int }`)
 	process("a", `package a; import "time"; type MyTime time.Time; var M MyTime`)
 	process("b", `package b; import ("a"; "time"); var _ = time.Time(a.M)`)
@@ -441,7 +424,7 @@ func TestIExportDataTypeParameterizedAliases(t *testing.T) {
 	}
 
 	// High level steps:
-	// * parse  and typecheck
+	// * parse and typecheck
 	// * export the data for the importer (via IExportData),
 	// * import the data (via either x/tools or GOROOT's gcimporter), and
 	// * check the imported types.
@@ -468,8 +451,7 @@ type Chained = C[Named] // B[Named, A[Named]] = B[Named, *Named] = []*Named
 		t.Fatal(err)
 	}
 
-	// Read the result of IExportData through x/tools/internal/gcimporter.IImportData.
-	// export
+	// Read the result of IExportData through x/tools/internal/gcimporter.IImportData. export
 	exportdata, err := iexport(fset1, gcimporter.IExportVersion, pkg1)
 	if err != nil {
 		t.Fatal(err)
@@ -505,13 +487,13 @@ type Chained = C[Named] // B[Named, A[Named]] = B[Named, *Named] = []*Named
 }
 
 // TestIssue73854 verifies that writing export data for a constant whose type is
-// an instantiated generic type (such as Generic[interface{}], Generic[func()],
+// an instantiated generic type. (such as Generic[interface{}], Generic[func()],
 // or Generic[struct{}]) does not panic.
 //
-// In golang/go#73854, exportWriter.value passed pkg=nil to exportWriter.typ
-// under the assumption that constant types cannot contain named objects or
-// packages. However, with generics, a constant's type may be instantiated with
-// type arguments such as interfaces, signatures, or structs that require a
+// In golang/go#exportWriter.value passed pkg=nil to exportWriter.typ under the
+// assumption that constant types cannot contain named objects or packages.
+// However, with generics, a constant's type may be instantiated with type
+// arguments such as interfaces, signatures, or structs that require a
 // qualifying package during export.
 func TestIssue73854(t *testing.T) {
 	const src = `package pkg

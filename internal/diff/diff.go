@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package diff computes differences between text files or strings.
 package diff
@@ -60,9 +59,8 @@ func ApplyBytes(src []byte, edits []Edit) ([]byte, error) {
 	return []byte(res), err
 }
 
-// validate checks that edits are consistent with src,
-// and returns the size of the patched output.
-// It may return a different slice.
+// validate checks that edits are consistent with src, and returns the size of
+// the patched output. It may return a different slice.
 func validate(src string, edits []Edit) ([]Edit, int, error) {
 	if !sort.IsSorted(editsSort(edits)) {
 		edits = slices.Clone(edits)
@@ -87,10 +85,6 @@ func validate(src string, edits []Edit) ([]Edit, int, error) {
 }
 
 // SortEdits orders a slice of Edits by (start, end) offset.
-// This ordering puts insertions (end = start) before deletions
-// (end > start) at the same point, but uses a stable sort to preserve
-// the order of multiple insertions at the same point.
-// (Apply detects multiple deletions at the same point as an error.)
 func SortEdits(edits []Edit) {
 	sort.Stable(editsSort(edits))
 }
@@ -106,18 +100,16 @@ func (a editsSort) Less(i, j int) bool {
 }
 func (a editsSort) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
-// lineEdits expands and merges a sequence of edits so that each
-// resulting edit replaces one or more complete lines.
-// See ApplyEdits for preconditions.
+// lineEdits expands and merges a sequence of edits so that each resulting
+// edit replaces one or more complete lines. See ApplyEdits for preconditions.
 func lineEdits(src string, edits []Edit) ([]Edit, error) {
 	edits, _, err := validate(src, edits)
 	if err != nil {
 		return nil, err
 	}
 
-	// Do all deletions begin and end at the start of a line,
-	// and all insertions end with a newline?
-	// (This is merely a fast path.)
+	// Do all deletions begin and end at the start of a line, and all insertions
+	// end with a newline? (This is merely a fast path.)
 	for _, edit := range edits {
 		if edit.Start >= len(src) || // insertion at EOF
 			edit.Start > 0 && src[edit.Start-1] != '\n' || // not at line start
@@ -153,8 +145,7 @@ expand:
 
 // expandEdit returns edit expanded to complete whole lines.
 func expandEdit(edit Edit, src string) Edit {
-	// Expand start left to start of line.
-	// (delta is the zero-based column number of start.)
+	// Expand start left to start of line. (delta is the zero-based column number of start.)
 	start := edit.Start
 	if delta := start - 1 - strings.LastIndex(src[:start], "\n"); delta > 0 {
 		edit.Start -= delta

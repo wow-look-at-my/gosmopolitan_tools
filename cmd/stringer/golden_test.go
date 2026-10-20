@@ -1,11 +1,10 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// This file contains simple golden tests for various examples.
-// Besides validating the results when the implementation changes,
-// it provides a way to look at the generated code without having
-// to execute the print statements in one's head.
+// This file contains simple golden tests for various examples. Besides
+// validating the results when the implementation changes, it provides a way
+// to look at the generated code without having to execute the print
+// statements. Those statements are in one's head.
 
 package main
 
@@ -42,7 +41,7 @@ var golden = []Golden{
 
 // Each example starts with "type XXX [u]int", with a single space separating them.
 
-// Simple test: enumeration of type int starting at 0.
+// Simple test: enumeration of type int starting at `O0`.
 const day_in = `type Day int
 const (
 	Monday Day = iota
@@ -81,8 +80,7 @@ func (i Day) String() string {
 }
 `
 
-// Enumeration with an offset.
-// Also includes a duplicate.
+// Enumeration with an offset. Also includes a duplicate.
 const offset_in = `type Number int
 const (
 	_ Number = iota

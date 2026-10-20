@@ -1,40 +1,13 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// The linecount command shows the number of lines of code in a set of
-// Go packages plus their dependencies. It serves as a working
-// illustration of the [packages.Load] operation.
+// The linecount command shows the number of lines of code in a set of Go
+// packages plus their dependencies. It serves as a working illustration of
+// the [packages.Load] operation.
 //
-// Example: show gopls' total source line count, and its breakdown
-// between gopls, x/tools, and the std go/* packages. (The balance
-// comes from other std packages, other x/ repos, and external
-// dependencies.)
-//
-//	$ linecount -mode=total ./gopls
-//	752124
-//	$ linecount -mode=total -module=golang.org/x/tools/gopls ./gopls
-//	103519
-//	$ linecount -mode=total -module=golang.org/x/tools ./gopls
-//	99504
-//	$ linecount -mode=total -prefix=go -module=std ./gopls
-//	47502
-//
-// Example: show the top 5 modules contributing to gopls' source line count:
-//
-//	$ linecount -mode=module ./gopls | head -n 5
-//	440274	std
-//	103519	golang.org/x/tools/gopls
-//	99504	golang.org/x/tools
-//	40220	honnef.co/go/tools
-//	17707	golang.org/x/text
-//
-// Example: show the top 3 largest files in the gopls module:
-//
-//	$ linecount -mode=file -module=golang.org/x/tools/gopls ./gopls | head -n 3
-//	6841	gopls/internal/protocol/tsprotocol.go
-//	3769	gopls/internal/golang/completion/completion.go
-//	2202	gopls/internal/cache/snapshot.go
+// Example: show gopls' total source line count, and its breakdown between
+// gopls, x/tools, and the std go/* packages. (The balance comes from other
+// std packages, other x/ repos, and external dependencies.)
 package main
 
 import (
@@ -209,8 +182,7 @@ func count(nonblank bool, src []byte) int {
 			if tok == token.EOF {
 				break
 			}
-			// This may be slow because it binary
-			// searches the newline offset table.
+			// This may be slow because it binary searches the newline offset table.
 			line := f.PositionFor(pos, false).Line // ignore //line directives
 			if line > prevLine {
 				prevLine = line

@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package testinggoroutine
 
@@ -45,10 +44,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	toDecl := localFunctionDecls(pass.TypesInfo, pass.Files)
 
-	// asyncs maps nodes whose statements will be executed concurrently
-	// with respect to some test function, to the call sites where they
-	// are invoked asynchronously. There may be multiple such call sites
-	// for e.g. test helpers.
+	// asyncs maps nodes whose statements will be executed concurrently some test function.
 	asyncs := make(map[ast.Node][]*asyncCall)
 	var regions []ast.Node
 	addCall := func(c *asyncCall) {
@@ -164,8 +160,7 @@ func typeIsTestingDotTOrB(expr ast.Expr) (string, bool) {
 }
 
 // asyncCall describes a region of code that needs to be checked for
-// t.Forbidden() calls as it is started asynchronously from an async
-// node go fun() or t.Run(name, fun).
+// t.Forbidden() calls as it is started asynchronously.
 type asyncCall struct {
 	region ast.Node // region of code to check for t.Forbidden() calls.
 	async  ast.Node // *ast.GoStmt or *ast.CallExpr (for t.Run)
@@ -223,8 +218,7 @@ func tRunAsyncCall(info *types.Info, call *ast.CallExpr) *asyncCall {
 		}
 	}
 
-	// Check within t.Run(name, fun) for calls to t.Forbidden,
-	// e.g. t.Run(name, func(t *testing.T){ t.Forbidden() })
+	// Check within t.Run(name, fun) for calls to t.Forbidden, e.g. t.Run(name, func(t *testing.T){ t.Forbidden() })
 	return &asyncCall{region: call, async: call, scope: fun, fun: fun}
 }
 
@@ -237,8 +231,8 @@ var forbidden = []string{
 	"SkipNow",
 }
 
-// forbiddenMethod decomposes a call x.m() into (x, x.m, m) where
-// x is a variable, x.m is a selection, and m is the static callee m.
+// forbiddenMethod decomposes a call x.m() into (x, x.m, m) where x
+// is a variable, x.m is a selection. And m is the static callee m.
 // Returns (nil, nil, nil) if call is not of this form.
 func forbiddenMethod(info *types.Info, call *ast.CallExpr) (*types.Var, *types.Selection, *types.Func) {
 	// Compare to typeutil.StaticCallee.

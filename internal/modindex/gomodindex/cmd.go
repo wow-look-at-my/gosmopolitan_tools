@@ -1,14 +1,11 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// A command for building and maintaining the module cache
-// a.out <flags> <command> <args>
-// The commands are:
-// 'update', which attempts to update an existing index,
-// 'query', which looks up things in the index.
-// 'clean', which remove obsolete index files.
-// If the command is invoked with no arguments, it defaults to 'update'.
+// A command for building. Maintaining the module cache a.out <flags>
+// <command> <args> The commands are: 'update', which attempts to update an
+// existing index, 'query', which looks up things. Those things are in the
+// index. 'clean', which remove obsolete index files. If the command is
+// invoked with no arguments, it defaults to 'update'.
 package main
 
 import (
@@ -92,10 +89,7 @@ func query(dir string) {
 
 func clean(_ string) {
 	des := modindex.IndexDir
-	// look at the files starting with 'index'
-	// the current ones of each version are pointed to by
-	// index-name-%d files. Any others more than an hour old
-	// are deleted.
+	// look at the files starting with 'index' the current ones of each version are pointed to by index-name-%d files.
 	dis, err := os.ReadDir(des)
 	if err != nil {
 		log.Fatal(err)

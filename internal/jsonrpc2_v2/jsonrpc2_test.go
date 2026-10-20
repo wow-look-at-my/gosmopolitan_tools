@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2_test
 
@@ -41,7 +40,7 @@ var callTests = []invoker{
 		notify{"add", 2},
 		notify{"add", 3},
 		notify{"add", 4},
-		call{"peek", nil, 0}, // accumulator will not have any adds yet
+		call{"peek", nil, 0}, // accumulator will not have any adds.
 		notify{"unblock", "a"},
 		collect{"a", true, false},
 		call{"get", nil, 10}, // accumulator now has all the adds
@@ -216,7 +215,7 @@ func (test sequence) Invoke(t *testing.T, ctx context.Context, h *handler) {
 	}
 }
 
-// newResults makes a new empty copy of the expected type to put the results into
+// newResults makes a new empty copy of the expected type to put the results.
 func newResults(expect any) any {
 	switch e := expect.(type) {
 	case []any:

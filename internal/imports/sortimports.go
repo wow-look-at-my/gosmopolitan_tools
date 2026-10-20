@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Hacked up copy of go/ast/import.go
 // Modified to use a single token.File in preference to a FileSet.
@@ -24,8 +23,7 @@ func sortImports(localPrefix string, tokFile *token.File, f *ast.File) {
 	for i, d := range f.Decls {
 		d, ok := d.(*ast.GenDecl)
 		if !ok || d.Tok != token.IMPORT {
-			// Not an import declaration, so we're done.
-			// Imports are always first.
+			// Not an import declaration, so we're done. Imports are always first.
 			break
 		}
 
@@ -44,7 +42,7 @@ func sortImports(localPrefix string, tokFile *token.File, f *ast.File) {
 		specs := d.Specs[:0]
 		for j, s := range d.Specs {
 			if j > i && tokFile.Line(s.Pos()) > 1+tokFile.Line(d.Specs[j-1].End()) {
-				// j begins a new run.  End this one.
+				// j begins a new run. End this.
 				specs = append(specs, sortSpecs(localPrefix, tokFile, f, d.Specs[i:j])...)
 				i = j
 			}
@@ -84,8 +82,7 @@ func mergeImports(f *ast.File) {
 			first = gen
 			continue // Don't touch the first one.
 		}
-		// We now know there is more than one package in this import
-		// declaration. Ensure that it ends up parenthesized.
+		// We now know there is more than one package in this import declaration. Ensure that it ends up parenthesized.
 		first.Lparen = first.Pos()
 		// Move the imports of the other import declaration to the first one.
 		for _, spec := range gen.Specs {
@@ -152,9 +149,8 @@ type posSpan struct {
 // sortSpecs sorts the import specs within each import decl.
 // It may mutate the token.File.
 func sortSpecs(localPrefix string, tokFile *token.File, f *ast.File, specs []ast.Spec) []ast.Spec {
-	// Can't short-circuit here even if specs are already sorted,
-	// since they might yet need deduplication.
-	// A lone import, however, may be safely ignored.
+	// Can't short-circuit here even if specs are already sorted, since they
+	// might yet need deduplication.
 	if len(specs) <= 1 {
 		return specs
 	}
@@ -165,8 +161,7 @@ func sortSpecs(localPrefix string, tokFile *token.File, f *ast.File, specs []ast
 		pos[i] = posSpan{s.Pos(), s.End()}
 	}
 
-	// Identify comments in this range.
-	// Any comment from pos[0].Start to the final line counts.
+	// Identify comments in this range. Any comment from pos[0].Start to the final line counts.
 	lastLine := tokFile.Line(pos[len(pos)-1].End)
 	cstart := len(f.Comments)
 	cend := len(f.Comments)
@@ -195,15 +190,10 @@ func sortSpecs(localPrefix string, tokFile *token.File, f *ast.File, specs []ast
 		importComment[s] = append(importComment[s], g)
 	}
 
-	// Sort the import specs by import path.
-	// Remove duplicates, when possible without data loss.
-	// Reassign the import paths to have the same position sequence.
-	// Reassign each comment to abut the end of its spec.
-	// Sort the comments by new position.
+	// Sort the import specs by import path. Remove duplicates, when possible without data loss.
 	sort.Sort(byImportSpec{localPrefix, specs})
 
-	// Dedup. Thanks to our sorting, we can just consider
-	// adjacent pairs of imports.
+	// Dedup. Thanks to our sorting, we can consider adjacent pairs of imports.
 	deduped := specs[:0]
 	for i, s := range specs {
 		if i == len(specs)-1 || !collapse(s, specs[i+1]) {
@@ -240,14 +230,12 @@ func sortSpecs(localPrefix string, tokFile *token.File, f *ast.File, specs []ast
 	sort.Sort(byCommentPos(comments))
 
 	// Fixup comments can insert blank lines, because import specs are on different lines.
-	// We remove those blank lines here by merging import spec to the first import spec line.
 	firstSpecLine := tokFile.Line(specs[0].Pos())
 	for _, s := range specs[1:] {
 		p := s.Pos()
 		line := tokFile.Line(p)
 		for previousLine := line - 1; previousLine >= firstSpecLine; {
-			// MergeLine can panic. Avoid the panic at the cost of not removing the blank line
-			// golang/go#50329
+			// MergeLine can panic.
 			if previousLine > 0 && previousLine < tokFile.LineCount() {
 				tokFile.MergeLine(previousLine) // has side effects!
 				previousLine--
@@ -297,9 +285,8 @@ func (x byCommentPos) Len() int           { return len(x) }
 func (x byCommentPos) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x byCommentPos) Less(i, j int) bool { return x[i].Pos() < x[j].Pos() }
 
-// updateBasicLitPos updates lit.Pos,
-// ensuring that lit.End is displaced by the same amount.
-// (See https://go.dev/issue/76395.)
+// updateBasicLitPos updates lit.Pos, ensuring that lit.End is displaced by
+// the same amount. (See https://go.dev/issue/76395.)
 func updateBasicLitPos(lit *ast.BasicLit, pos token.Pos) {
 	len := lit.End() - lit.Pos()
 	lit.ValuePos = pos

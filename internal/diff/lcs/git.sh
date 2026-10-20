@@ -1,21 +1,17 @@
 #!/bin/bash
 #
-# Copyright 2022 The Go Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
+# Copyright The Go Authors. All rights reserved. Use of this source code is
+# governed by a BSD-style license that can be found in the LICENSE file.
 #
-# Creates a zip file containing all numbered versions
-# of the commit history of a large source file, for use
-# as input data for the tests of the diff algorithm.
+# Creates a zip file containing all numbered versions of the commit history of
+# a large source file. That file is for use as input data for the tests of the
+# diff algorithm.
 #
 # Run script from root of the x/tools repo.
 
 set -eu
 
-# WARNING: This script will install the latest version of $file
-# The largest real source file in the x/tools repo.
-# file=internal/golang/completion/completion.go
-# file=internal/golang/diagnostics.go
+# WARNING: This script will install the latest version of $file The largest real source file in the x/tools repo.
 file=internal/protocol/tsprotocol.go
 
 tmp=$(mktemp -d)

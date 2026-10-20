@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package unusedwrite
 
@@ -31,8 +30,6 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	for _, pkg := range pass.Pkg.Imports() {
 		if pkg.Path() == "unsafe" {
-			// See golang/go#67684, or testdata/src/importsunsafe: the unusedwrite
-			// analyzer may have false positives when used with unsafe.
 			return nil, nil
 		}
 	}
@@ -144,11 +141,9 @@ func isStructOrArray(tp types.Type) bool {
 func hasStructOrArrayType(v ssa.Value) bool {
 	if instr, ok := v.(ssa.Instruction); ok {
 		if alloc, ok := instr.(*ssa.Alloc); ok {
-			// Check the element type of an allocated register (which always has pointer type)
-			// e.g., for
-			//   func (t T) f() { ...}
-			// the receiver object is of type *T:
-			//   t0 = local T (t)   *T
+			// Check the element type of an allocated register (which always has
+			// pointer type) e.g., for func (t T) f() { ...} the receiver object is of
+			// type *T.
 			if tp, ok := types.Unalias(alloc.Type()).(*types.Pointer); ok {
 				return isStructOrArray(tp.Elem())
 			}

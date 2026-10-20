@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typesinternal_test
 
@@ -46,9 +45,7 @@ func (U) method() uint32
 `
 
 func TestForEachElement(t *testing.T) {
-	// Add generic method, if go1.27.
-	// It doesn't change the outcome:
-	// complex64 is not expected in the result.
+	// Add generic method, if go1.27. It doesn't change the outcome: complex64 is not expected in the result.
 	elementSrc := elementSrc
 	if testenv.Go1Point() >= 27 {
 		elementSrc += `
@@ -60,7 +57,6 @@ type H[T any] uintptr
 func (H[T]) m(T) uint16
 type Hf64 = H[float64]
 `
-		// (still available: uint8 uint64 float32)
 	}
 
 	fset := token.NewFileSet()
@@ -95,10 +91,6 @@ type Hf64 = H[float64]
 		}},
 
 		// defined struct type with methods, incl. pointer methods.
-		// Observe that it descends into the field type, but
-		// the result does not include the struct type itself.
-		// (This follows the Go toolchain behavior, and finesses the need
-		// to create wrapper methods for that struct type.)
 		{"C", []string{"T", "*T", "int", "uint", "complex128", "!complex64", "!struct{x int}"}},
 
 		// alias type

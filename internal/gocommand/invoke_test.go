@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gocommand_test
 
@@ -32,15 +31,8 @@ func TestGoVersion(t *testing.T) {
 	}
 }
 
-// This is not a test of go/packages at all: it's a test of whether it
-// is possible to delete the directory used by go list once it has
-// finished. It is intended to evaluate the hypothesis (to explain
-// issue #71544) that the go command, on Windows, occasionally fails
-// to release all its handles to the temporary directory even when it
-// should have finished.
-//
-// If this test ever fails, the combination of the gocommand package
-// and the go command itself has a bug; this has been observed (#73503).
+// This is not a test of go/packages at all. It's a test of whether it is
+// possible to delete the directory used by go list once it has finished.
 func TestRmdirAfterGoList_Runner(t *testing.T) {
 	t.Skip("flaky; see https://github.com/golang/go/issues/73736#issuecomment-2885407104")
 
@@ -65,14 +57,9 @@ func TestRmdirAfterGoList_Runner(t *testing.T) {
 // TestRmdirAfterGoList_Runner that executes go list directly, to
 // control for the substantial logic of the gocommand package.
 //
-// It has two variants: the first does not set WaitDelay; the second
+// It has variants: the first does not set WaitDelay; the second
 // sets it to 30s. If the first variant ever fails, the go command
 // itself has a bug; as of May 2025 this has never been observed.
-//
-// If the second variant fails, it indicates that the WaitDelay
-// mechanism is responsible for causing Wait to return before the
-// child process has naturally finished. This is to confirm the
-// hypothesis at https://github.com/golang/go/issues/73736#issuecomment-2885407104.
 func TestRmdirAfterGoList_Direct(t *testing.T) {
 	for _, delay := range []time.Duration{0, 30 * time.Second} {
 		t.Run(delay.String(), func(t *testing.T) {
@@ -103,7 +90,6 @@ func testRmdirAfterGoList(t *testing.T, f func(ctx context.Context, dir string))
 		t.Fatalf("mkdir p: %v", err)
 	}
 
-	// Create a go.mod file and 100 trivial Go files for the go command to read.
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com"), 0666); err != nil {
 		t.Fatal(err)
 	}

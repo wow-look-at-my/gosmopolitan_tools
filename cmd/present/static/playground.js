@@ -1,43 +1,12 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 /*
-In the absence of any formal way to specify interfaces in JavaScript,
-here's a skeleton implementation of a playground transport.
-
-        function Transport() {
-                // Set up any transport state (eg, make a websocket connection).
-                return {
-                        Run: function(body, output, options) {
-                                // Compile and run the program 'body' with 'options'.
-				// Call the 'output' callback to display program output.
-                                return {
-                                        Kill: function() {
-                                                // Kill the running program.
-                                        }
-                                };
-                        }
-                };
-        }
-
-	// The output callback is called multiple times, and each time it is
-	// passed an object of this form.
-        var write = {
-                Kind: 'string', // 'start', 'stdout', 'stderr', 'end'
-                Body: 'string'  // content of write or end status message
-        }
-
-	// The first call must be of Kind 'start' with no body.
-	// Subsequent calls may be of Kind 'stdout' or 'stderr'
-	// and must have a non-null Body string.
-	// The final call should be of Kind 'end' with an optional
-	// Body string, signifying a failure ("killed", for example).
-
-	// The output callback must be of this form.
-	// See PlaygroundOutput (below) for an implementation.
-        function outputCallback(write) {
-        }
+In the absence of any formal way to specify interfaces in JavaScript, here's
+a skeleton implementation of a playground transport. function Transport() {
+// Set up any transport state (eg, make a websocket connection). return {
+Run: function(body, output, options) { // Compile and run the program 'body'
+with 'options'. // Call the 'output' callback to display program output.
 */
 
 // HTTPTransport is the default transport.
@@ -162,11 +131,9 @@ function HTTPTransport(enableVet) {
             return;
           }
 
-          // In case the server support doesn't support
-          // compile+vet in same request signaled by the
-          // 'withVet' parameter above, also try the old way.
-          // TODO: remove this when it falls out of use.
-          // It is 2019-05-13 now.
+          // In case the server support doesn't support compile+vet in same
+          // request signaled by the 'withVet' parameter above, also try the
+          // way. TODO: remove this when it falls out of use. It is now.
           $.ajax('/vet', {
             data: { body: body },
             type: 'POST',
@@ -322,20 +289,16 @@ function PlaygroundOutput(el) {
     $('.lineerror').removeClass('lineerror');
   }
 
-  // opts is an object with these keys
-  //  codeEl - code editor element
-  //  outputEl - program output element
-  //  runEl - run button element
-  //  fmtEl - fmt button element (optional)
-  //  fmtImportEl - fmt "imports" checkbox element (optional)
-  //  shareEl - share button element (optional)
-  //  shareURLEl - share URL text input element (optional)
-  //  shareRedirect - base URL to redirect to on share (optional)
-  //  toysEl - toys select element (optional)
-  //  enableHistory - enable using HTML5 history API (optional)
-  //  transport - playground transport to use (default is HTTPTransport)
-  //  enableShortcuts - whether to enable shortcuts (Ctrl+S/Cmd+S to save) (default is false)
-  //  enableVet - enable running vet and displaying its errors
+  // opts is an object with these keys codeEl - code editor element outputEl -
+  // program output element runEl - run button element fmtEl. This is fmt
+  // button element (optional) fmtImportEl - fmt "imports" checkbox element
+  // (optional) shareEl - share button element (optional) shareURLEl - share
+  // URL text input element (optional) shareRedirect - base URL to redirect to
+  // on share (optional) toysEl - toys select element (optional) enableHistory
+  // - enable using HTML5 history API (optional) transport - playground
+  // transport to use (default is HTTPTransport) enableShortcuts - whether to
+  // enable shortcuts (Ctrl+S/Cmd+S to save) (default is false) enableVet -
+  // enable running vet. It displaying its errors
   function playground(opts) {
     var code = $(opts.codeEl);
     var transport = opts['transport'] || new HTTPTransport(opts['enableVet']);
@@ -346,7 +309,6 @@ function PlaygroundOutput(el) {
       // find the selection start and end
       var start = code[0].selectionStart;
       var end = code[0].selectionEnd;
-      // split the textarea content into two, and insert n tabs
       var v = code[0].value;
       var u = v.substr(0, start);
       for (var i = 0; i < n; i++) {

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages_test
 
@@ -17,9 +16,7 @@ import (
 func Example() {
 	flag.Parse()
 
-	// Many tools pass their command-line arguments (after any flags)
-	// uninterpreted to packages.Load so that it can interpret them
-	// according to the conventions of the underlying build system.
+	// Many tools pass their command-line arguments.
 	cfg := &packages.Config{Mode: packages.NeedFiles | packages.NeedSyntax}
 	pkgs, err := packages.Load(cfg, flag.Args()...)
 	if err != nil {

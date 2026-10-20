@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package buildutil
 
@@ -16,19 +15,18 @@ import (
 	"time"
 )
 
-// FakeContext returns a build.Context for the fake file tree specified
-// by pkgs, which maps package import paths to a mapping from file base
-// names to contents.
+// FakeContext returns a build.Context for the fake file tree specified by
+// pkgs. This maps package import paths to a mapping from file base names to
+// contents.
 //
-// The fake Context has a GOROOT of "/go" and no GOPATH, and overrides
-// the necessary file access methods to read from memory instead of the
-// real file system.
+// The fake Context has a GOROOT of "/go" and no GOPATH. The fake Context
+// overrides the necessary file access methods to read from memory instead of
+// the real file system.
 //
-// Unlike a real file tree, the fake one has only two levels---packages
-// and files---so ReadDir("/go/src/") returns all packages under
-// /go/src/ including, for instance, "math" and "math/big".
-// ReadDir("/go/src/math/big") would return all the files in the
-// "math/big" package.
+// Unlike a real file tree, the fake one has levels---packages and files---so
+// ReadDir("/go/src/") returns all packages under /go/src/ including, for
+// instance, "math" and "math/big". ReadDir("/go/src/math/big") would return
+// all the files in the "math/big" package.
 func FakeContext(pkgs map[string]map[string]string) *build.Context {
 	clean := func(filename string) string {
 		f := path.Clean(filepath.ToSlash(filename))
@@ -79,8 +77,7 @@ func FakeContext(pkgs map[string]map[string]string) *build.Context {
 	}
 	ctxt.IsAbsPath = func(path string) bool {
 		path = filepath.ToSlash(path)
-		// Don't rely on the default (filepath.Path) since on
-		// Windows, it reports virtual paths as non-absolute.
+		// Don't rely on the default (filepath.Path) since on Windows, it reports virtual paths as non-absolute.
 		return strings.HasPrefix(path, "/")
 	}
 	return &ctxt

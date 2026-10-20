@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -58,8 +57,7 @@ func bloop(pass *analysis.Pass) (any, error) {
 	// (start, end) is the portion using b.N to delete.
 	edits := func(curLoop inspector.Cursor, b ast.Expr, start, end token.Pos) (edits []analysis.TextEdit) {
 		curFn, _ := enclosingFunc(curLoop)
-		// Within the same function, delete all calls to
-		// b.{Start,Stop,Timer} that precede the loop.
+		// Within the same function, delete all calls to b.{Start,Stop,Timer} that precede the loop.
 		filter := []ast.Node{(*ast.ExprStmt)(nil), (*ast.FuncLit)(nil)}
 		curFn.Inspect(filter, func(cur inspector.Cursor) (descend bool) {
 			node := cur.Node()
@@ -75,9 +73,8 @@ func bloop(pass *analysis.Pass) (any, error) {
 				// Check that this is the same b before deleting the timer call.
 				if typesinternal.IsMethodNamed(obj, "testing", "B", "StopTimer", "StartTimer", "ResetTimer") &&
 					astutil.EqualSyntax(ast.Unparen(call.Fun).(*ast.SelectorExpr).X, b) {
-					// Delete call statement.
-					// TODO(adonovan): delete following newline, or
-					// up to start of next stmt? (May delete a comment.)
+					// Delete call statement. TODO(adonovan): delete following newline, or up
+					// to start of next stmt? (May delete a comment.)
 					edits = append(edits, analysis.TextEdit{
 						Pos: stmt.Pos(),
 						End: stmt.End(),
@@ -112,10 +109,7 @@ func bloop(pass *analysis.Pass) (any, error) {
 
 						delStart, delEnd := n.Cond.Pos(), n.Cond.End()
 
-						// Eliminate variable i if no longer needed:
-						//  for i := 0; i < b.N; i++ {
-						//    ...no references to i...
-						//  }
+						// Eliminate variable i if no longer needed: for i := 0; i < b.N; i++ { ...no references to i... }
 						body, _ := curLoop.LastChild()
 						if v := isIncrementLoop(info, n); v != nil &&
 							!uses(index, body, v) {
@@ -179,15 +173,9 @@ func enclosingFunc(c inspector.Cursor) (inspector.Cursor, bool) {
 }
 
 // usesBenchmarkNOnce reports whether a b.N loop should be modernized to b.Loop().
-// Only modernize loops that are:
-// 1. Directly in a benchmark function (not in nested functions)
-//   - b.Loop() must be called in the same goroutine as the benchmark function
-//   - Function literals are often used with goroutines (go func(){...})
-//
-// 2. The only b.N loop in that benchmark function
-//   - b.Loop() can only be called once per benchmark execution
-//   - Multiple calls result in "B.Loop called with timer stopped" error
-//   - Multiple loops may have complex interdependencies that are hard to analyze
+// Directly in a benchmark function (not in nested functions) - b.Loop() must be
+// called in the same goroutine as the benchmark function. Function literals are
+// often used with goroutines (go func(){...})
 func usesBenchmarkNOnce(c inspector.Cursor, info *types.Info) bool {
 	// Find the enclosing benchmark function
 	curFunc, ok := enclosingFunc(c)
@@ -195,7 +183,7 @@ func usesBenchmarkNOnce(c inspector.Cursor, info *types.Info) bool {
 		return false
 	}
 
-	// Check if this is actually a benchmark function
+	// Check if this is a benchmark function
 	fdecl, ok := curFunc.Node().(*ast.FuncDecl)
 	if !ok {
 		return false // not in a function; or, inside a FuncLit

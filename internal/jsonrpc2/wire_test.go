@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2_test
 
@@ -93,8 +92,6 @@ func TestErrorEncode(t *testing.T) {
 }
 
 func TestErrorResponse(t *testing.T) {
-	// originally reported in #39719, this checks that result is not present if
-	// it is an error response
 	r, _ := jsonrpc2.NewResponse(jsonrpc2.NewIntID(3), nil, fmt.Errorf("computing fix edits"))
 	data, err := json.Marshal(r)
 	if err != nil {

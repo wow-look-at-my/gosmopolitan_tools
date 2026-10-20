@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 var PERMANENT_URL_PREFIX = '/static/';
 
@@ -73,8 +72,7 @@ if (
       (classListGetter = function() {
         return new ClassList(this);
       });
-    // Most DOMException implementations don't allow calling DOMException's toString()
-    // on non-DOMExceptions. Error's toString() is sufficient here.
+    // Most DOMException implementations don't allow calling DOMException's toString() on non-DOMExceptions.
     DOMEx[protoProp] = Error[protoProp];
     classListProto.item = function(i) {
       return this[i] || null;
@@ -119,7 +117,7 @@ if (
       try {
         objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
       } catch (ex) {
-        // IE 8 doesn't support enumerable:true
+        // IE doesn't support enumerable:true
         if (ex.number === -0x7ff5ec54) {
           classListPropDesc.enumerable = false;
           objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
@@ -470,7 +468,6 @@ function addEventListeners() {
   });
 
   // Force reset transform property of section.slides when printing page.
-  // Use both onbeforeprint and matchMedia for compatibility with different browsers.
   var beforePrint = function() {
     var el = document.querySelector('section.slides');
     el.style.transform = '';
@@ -562,7 +559,7 @@ if (!window['_DEBUG'] && document.location.href.indexOf('?debug') !== -1) {
   document.addEventListener(
     'DOMContentLoaded',
     function() {
-      // Avoid missing the DomContentLoaded event
+      // Avoid missing the DOMContentLoaded event
       window['_DCL'] = true;
     },
     false

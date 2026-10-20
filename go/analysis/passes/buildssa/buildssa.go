@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package buildssa defines an Analyzer that constructs the SSA
 // representation of an error-free package and returns the set of all
@@ -26,10 +25,7 @@ var Analyzer = &analysis.Analyzer{
 	Run:        run,
 	Requires:   []*analysis.Analyzer{ctrlflow.Analyzer},
 	ResultType: reflect.TypeFor[*SSA](),
-	// Do not add FactTypes here: SSA construction of P must not
-	// require SSA construction of all of P's dependencies.
-	// (That's why we enlist the cheaper ctrlflow pass to compute
-	// noreturn instead of having go/ssa + buildssa do it.)
+	// Do not add FactTypes here: SSA construction of P must not require SSA construction of all of P's dependencies.
 	FactTypes: nil,
 }
 
@@ -43,18 +39,9 @@ type SSA struct {
 func run(pass *analysis.Pass) (any, error) {
 	cfgs := pass.ResultOf[ctrlflow.Analyzer].(*ctrlflow.CFGs)
 
-	// We must create a new Program for each Package because the
-	// analysis API provides no place to hang a Program shared by
-	// all Packages. Consequently, SSA Packages and Functions do not
-	// have a canonical representation across an analysis session of
-	// multiple packages. This is unlikely to be a problem in
-	// practice because the analysis API essentially forces all
-	// packages to be analysed independently, so any given call to
-	// Analysis.Run on a package will see only SSA objects belonging
-	// to a single Program.
+	// We must create a new Program for each Package.
 
-	// Some Analyzers may need GlobalDebug, in which case we'll have
-	// to set it globally, but let's wait till we need it.
+	// Some Analyzers may need GlobalDebug, in which case we'll have to set it globally, but let's wait till we need it.
 	mode := ssa.BuilderMode(0)
 
 	prog := ssa.NewProgram(pass.Fset, mode)
@@ -71,13 +58,10 @@ func run(pass *analysis.Pass) (any, error) {
 	ssapkg := prog.CreatePackage(pass.Pkg, pass.Files, pass.TypesInfo, false)
 	ssapkg.Build()
 
-	// Compute list of source functions, including literals,
-	// in source order.
+	// Compute list of source functions, including literals, in source order.
 	var funcs []*ssa.Function
 	for _, fn := range allFunctions(pass) {
-		// (init functions have distinct Func
-		// objects named "init" and distinct
-		// ssa.Functions named "init#1", ...)
+		// (init functions have distinct Func objects named "init" and distinct ssa.Functions named "init#1", ...)
 
 		f := ssapkg.Prog.FuncValue(fn)
 		if f == nil {

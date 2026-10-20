@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package txtar
 
@@ -14,13 +13,9 @@ import (
 	"time"
 )
 
-// FS returns the file system form of an Archive.
-// It returns an error if any of the file names in the archive
-// are not valid file system names.
-// The archive must not be modified while the FS is in use.
+// FS returns the file system form of an Archive. It returns an error if any of the file names in the archive are not valid file system names. The archive must not be modified while the FS is in use.
 //
-// If the file system detects that it has been modified, calls to the
-// file system return an ErrModified error.
+// If the file system detects that it has been modified, calls to the file system return an ErrModified error.
 func FS(a *Archive) (fs.FS, error) {
 	// Create a filesystem with a root directory.
 	root := &node{fileinfo: fileinfo{path: ".", mode: readOnlyDir}}
@@ -37,20 +32,11 @@ const (
 	readOnlyDir             = readOnly | fs.ModeDir
 )
 
-// ErrModified indicates that file system returned by FS
-// noticed that the underlying archive has been modified
-// since the call to FS. Detection of modification is best effort,
-// to help diagnose misuse of the API, and is not guaranteed.
+// ErrModified indicates that file system returned by FS noticed that the underlying archive has been modified since the call to FS.
 var ErrModified error = errors.New("txtar.Archive has been modified during txtar.FS")
 
 // A filesystem is a simple in-memory file system for txtar archives,
-// represented as a map from valid path names to information about the
-// files or directories they represent.
-//
-// File system operations are read only. Modifications to the underlying
-// *Archive may race. To help prevent this, the filesystem tries
-// to detect modification during Open and return ErrModified if it
-// is able to detect a modification.
+// represented as a map from valid path names to information.
 type filesystem struct {
 	ar    *Archive
 	nodes map[string]*node

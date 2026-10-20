@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -22,14 +21,10 @@ var (
 )
 
 // okdiffs lists regular expressions for lines to consider minor mismatches.
-// If one of these regexps matches both of a pair of unequal lines, the mismatch
-// is reported but not treated as the one worth looking for.
-// For example, differences in the TEXT line are typically frame size
-// changes due to optimization decisions made in the body of the function.
-// Better to keep looking for the actual difference.
-// Similarly, forward jumps might have different offsets due to a
-// change in instruction encoding later on.
-// Better to find that change.
+// If one of these regexps matches both of a pair of unequal lines, the
+// mismatch is reported but not treated as the worth looking for. For example,
+// differences in the TEXT line are typically frame size changes due to
+// optimization decisions made in the body of the function.
 var okdiffs = []*regexp.Regexp{
 	regexp.MustCompile(`\)	TEXT[ 	].*,\$`),
 	regexp.MustCompile(`\)	WORD[ 	].*,\$`),

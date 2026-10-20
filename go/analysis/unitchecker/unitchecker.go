@@ -1,26 +1,20 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// The unitchecker package defines the main function for an analysis
-// driver that analyzes a single compilation unit during a build.
-// It is invoked by a build system such as "go vet":
+// The unitchecker package defines the main function for an analysis driver
+// that analyzes a single compilation unit during a build. A build system
+// such as "go vet" invokes it:
 //
 //	$ go vet -vettool=$(which vet)
 //
-// It supports the following command-line protocol:
+// It supports this command-line protocol:
 //
-//	-V=full         describe executable               (to the build tool)
-//	-flags          describe flags                    (to the build tool)
-//	foo.cfg         description of compilation unit (from the build tool)
+//	-flags   describe flags                    (to the build tool)
+//	foo.cfg  describe compilation unit         (from the build tool)
 //
-// This package does not depend on go/packages.
-// If you need a standalone tool, use multichecker,
-// which supports this mode but can also load packages
-// from source using go/packages.
-//
-// This tool must be run on the entire transitive closure of
-// dependencies, in bottom-up order.
+// This package does not depend on go/packages; multichecker supports this
+// mode too, and can load packages from source. Run it on the whole closure
+// of the unit's dependencies, in bottom-up order.
 package unitchecker
 
 import (
@@ -55,9 +49,8 @@ import (
 	"golang.org/x/tools/internal/gcimporter"
 )
 
-// A Config describes a compilation unit to be analyzed.
-// It is provided to the tool in a JSON-encoded file
-// whose name ends with ".cfg".
+// A Config describes a compilation unit to be analyzed. It is provided to the
+// tool in a JSON-encoded file whose name ends with ".cfg".
 type Config struct {
 	ID                        string // e.g. "fmt [fmt.test]"
 	Compiler                  string // (unused)
@@ -129,16 +122,15 @@ Usage of %[1]s:
 	Run(args[0], analyzers)
 }
 
-// Run reads the *.cfg file, runs the analysis,
-// and calls os.Exit with an appropriate error code.
-// It assumes flags have already been set.
+// Run reads the *.cfg file, runs the analysis, and calls os.Exit with an
+// appropriate error code. It assumes flags have already been set.
 func Run(configFile string, analyzers []*analysis.Analyzer) {
 	cfg, err := readConfig(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Redirect stdout to a file as requested.
+	// Redirect stdout to a file.
 	if cfg.Stdout != "" {
 		f, err := os.Create(cfg.Stdout)
 		if err != nil {
@@ -184,8 +176,6 @@ func readConfig(filename string) (*Config, error) {
 	}
 	if len(cfg.GoFiles) == 0 {
 		// The go command disallows packages with no files.
-		// The only exception is unsafe, but the go command
-		// doesn't call vet on it.
 		return nil, fmt.Errorf("package has no files: %s", cfg.ImportPath)
 	}
 	return cfg, nil
@@ -193,8 +183,7 @@ func readConfig(filename string) (*Config, error) {
 
 func processResults(fset *token.FileSet, id, fixArchive string, results []result) (exit int) {
 	if analysisflags.Fix {
-		// Don't print the diagnostics,
-		// but apply all fixes from the root actions.
+		// Don't print the diagnostics, but apply all fixes from the root actions.
 
 		// Convert results to form needed by ApplyFixes.
 		fixActions := make([]driverutil.FixAction, len(results))
@@ -209,10 +198,8 @@ func processResults(fset *token.FileSet, id, fixArchive string, results []result
 			}
 		}
 
-		// By default, fixes overwrite the original file.
-		// With the -diff flag, print the diffs to stdout.
-		// If "go fix" provides a fix archive, we write files
-		// into it so that mutations happen after the build.
+		// By default, fixes overwrite the original file. With the -diff flag, print
+		// the diffs to stdout.
 		write := func(filename string, content []byte) error {
 			return os.WriteFile(filename, content, 0644)
 		}
@@ -247,9 +234,7 @@ func processResults(fset *token.FileSet, id, fixArchive string, results []result
 			exit = 1
 		}
 
-		// Don't proceed to print text/JSON,
-		// and don't report an error
-		// just because there were diagnostics.
+		// Don't proceed to print text/JSON, and don't report an error because there were diagnostics.
 		return
 	}
 
@@ -314,16 +299,12 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 			return pkg, nil
 		}
 		// The compiler's archive is what the package compiles to, so it is the
-		// whole package. A vetx file holds what the vet of that package type
-		// checked, which for a test build is the package without its in-package
-		// test files: an external test package reading a symbol from one finds
-		// it in the archive and not in the vetx.
+		// whole package.
 		if archive, ok := cfg.PackageFile[path]; ok {
 			return importArchive(fset, imports, archive, path)
 		}
-		// A go command carrying its standard library compiles nothing for a
-		// package it already holds, so that package has no archive. Its vetx
-		// carries the types instead.
+		// A go command carrying its standard library compiles nothing for a package
+		// it already holds, so that package has no archive.
 		if entry, ok := vetxEntries[path]; ok {
 			return gcimporter.IImportData(fset, imports, entry.types, path)
 		}
@@ -332,10 +313,7 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 
 	// An external test package augments the package it tests, and that package's
 	// archive is the only place its in-package test files reach. Reading it
-	// first is what makes it the package every later archive resolves to. A
-	// package a reader materializes as another archive's dependency is a stub,
-	// and reading its own archive afterwards keeps the stub rather than filling
-	// it in, so the symbols an export_test.go declares never appear.
+	// first is what makes it the package every later archive resolves to.
 	if under := strings.TrimSuffix(cfg.ImportPath, "_test"); under != cfg.ImportPath {
 		if archive, ok := cfg.PackageFile[under]; ok {
 			if _, err := importArchive(fset, imports, archive, under); err != nil {
@@ -366,14 +344,6 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 	}
 
 	// Register fact types with gob.
-	// In VetxOnly mode, analyzers are only for their facts,
-	// so we can skip any analysis that neither produces facts
-	// nor depends on any analysis that produces facts.
-	//
-	// TODO(adonovan): fix: the command (and logic!) here are backwards.
-	// It should say "...nor is required by any...". (Issue 443099)
-	//
-	// Also build a map to hold working state and result.
 	type action struct {
 		once        sync.Once
 		result      any
@@ -417,9 +387,8 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 			if pkgPath == "unsafe" {
 				return nil, nil
 			}
-			// A package whose types came from its archive was never vetted, so
-			// it produced no facts. That is the answer here, not an error: the
-			// error is for a package the build system should have vetted first.
+			// A package whose types came from its archive was never vetted, so it
+			// produced no facts.
 			if _, ok := cfg.PackageFile[pkgPath]; ok {
 				return nil, nil
 			}
@@ -442,8 +411,7 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 		act.once.Do(func() {
 			execAll(a.Requires) // prefetch dependencies in parallel
 
-			// The inputs to this analysis are the
-			// results of its prerequisites.
+			// The inputs to this analysis are the results of its prerequisites.
 			inputs := make(map[*analysis.Analyzer]any)
 			var failed []string
 			for _, req := range a.Requires {
@@ -468,7 +436,7 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 			}
 
 			module := cfg.Module
-			// cmd/go vet prior to go1.27 did not populate cfg.Module. Do our best.
+			// cmd/go vet before go1.27 did not populate cfg.Module. Do our best.
 			if module == nil && cfg.ModulePath != "" {
 				module = &analysis.Module{
 					Path:      cfg.ModulePath,
@@ -491,8 +459,7 @@ func run(fset *token.FileSet, cfg *Config, analyzers []*analysis.Analyzer) ([]re
 				Report: func(d analysis.Diagnostic) {
 					// Unitchecker doesn't apply fixes, but it does report them in the JSON output.
 					if err := driverutil.ValidateFixes(fset, a, d.SuggestedFixes); err != nil {
-						// Since we have diagnostics, the exit code will be nonzero,
-						// so logging these errors is sufficient.
+						// Since we have diagnostics, the exit code will be nonzero, so logging these errors is sufficient.
 						log.Println(err)
 						d.SuggestedFixes = nil
 					}
@@ -579,9 +546,7 @@ func importArchive(fset *token.FileSet, imports map[string]*types.Package, archi
 		return nil, err
 	}
 	defer open.Close()
-	// The compiler has written unified export data since go1.20. The indexed
-	// format the vetx files carry is a different one, so this reader is not the
-	// one that reads them.
+	// The compiler has written unified export data since go1.20.
 	data, err := gcimporter.ReadUnified(bufio.NewReader(open))
 	if err != nil {
 		return nil, fmt.Errorf("reading export data of %q: %w", path, err)

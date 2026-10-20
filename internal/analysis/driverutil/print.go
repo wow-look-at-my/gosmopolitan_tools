@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package driverutil
 
@@ -36,8 +35,7 @@ func PrintPlain(out io.Writer, fset *token.FileSet, contextLines int, diag analy
 			if !end.IsValid() {
 				end = posn
 			}
-			// TODO(adonovan): highlight the portion of the line indicated
-			// by pos...end using ASCII art, terminal colors, etc?
+			// TODO(adonovan): highlight the portion of the line indicated by pos...end using ASCII art, terminal colors, etc?
 			data, _ := os.ReadFile(posn.Filename)
 			lines := strings.Split(string(data), "\n")
 			for i := posn.Line - contextLines; i <= end.Line+contextLines; i++ {
@@ -55,12 +53,9 @@ func PrintPlain(out io.Writer, fset *token.FileSet, contextLines int, diag analy
 }
 
 // A JSONTree is a mapping from package ID to analysis name to result.
-// Each result is either a jsonError or a list of JSONDiagnostic.
 type JSONTree map[string]map[string]any
 
 // A TextEdit describes the replacement of a portion of a file.
-// Start and End are zero-based half-open indices into the original byte
-// sequence of the file, and New is the new text.
 type JSONTextEdit struct {
 	Filename string `json:"filename"`
 	Start    int    `json:"start"`
@@ -68,9 +63,8 @@ type JSONTextEdit struct {
 	New      string `json:"new"`
 }
 
-// A JSONSuggestedFix describes an edit that should be applied as a whole or not
-// at all. It might contain multiple TextEdits/text_edits if the SuggestedFix
-// consists of multiple non-contiguous edits.
+// A JSONSuggestedFix describes an edit that should be applied as a whole or
+// not at all.
 type JSONSuggestedFix struct {
 	Message string         `json:"message"`
 	Edits   []JSONTextEdit `json:"edits"`
