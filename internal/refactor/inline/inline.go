@@ -1216,11 +1216,23 @@ func (st *state) arguments(caller *Caller, calleeDecl *ast.FuncDecl, assign1 fun
 	// The value is a constant, which is the simplest kind of argument there is:
 	// pure, duplicable and free of effects. Depth: docs/OPTIONAL-PARAMS.md in
 	// the gosmopolitan toolchain.
-	if sig, ok := caller.Info.TypeOf(caller.Call.Fun).Underlying().(*types.Signature); ok && len(args) < sig.Params().Len() {
-		if len(args) > 0 && last(args).spread {
-			return nil, fmt.Errorf("cannot inline: call spreads a tuple over parameters that carry defaults")
+	if sig, ok := caller.Info.TypeOf(caller.Call.Fun).Underlying().(*types.Signature); ok {
+		// A variadic parameter is one the call may omit with no default.
+		missing := sig.Params().Len()
+		if sig.Variadic() {
+			missing--
 		}
-		for i := len(args); i < sig.Params().Len(); i++ {
+		// A spread argument supplies one argument per element of its tuple.
+		supplied := len(args)
+		if supplied > 0 && last(args).spread {
+			if tup, ok := last(args).typ.(*types.Tuple); ok {
+				supplied = supplied - 1 + tup.Len()
+			} else {
+				supplied = missing
+			}
+		}
+		var fills []*argument
+		for i := supplied; i < missing; i++ {
 			param := sig.Params().At(i)
 			var deflt constant.Value
 			if d := param.Default(); d != nil {
@@ -1228,9 +1240,10 @@ func (st *state) arguments(caller *Caller, calleeDecl *ast.FuncDecl, assign1 fun
 			}
 			expr := defaultLiteral(deflt, caller.Call.Pos())
 			if expr == nil {
-				return nil, fmt.Errorf("cannot inline: parameter %s has no default to supply", param.Name())
+				fills = nil // no default here: leave the call.
+				break
 			}
-			args = append(args, &argument{
+			fills = append(fills, &argument{
 				expr:       expr,
 				typ:        param.Type(),
 				constant:   deflt,
@@ -1238,6 +1251,7 @@ func (st *state) arguments(caller *Caller, calleeDecl *ast.FuncDecl, assign1 fun
 				duplicable: true,
 			})
 		}
+		args = append(args, fills...)
 	}
 
 	// Re-typecheck each constant argument expression in a neutral context.

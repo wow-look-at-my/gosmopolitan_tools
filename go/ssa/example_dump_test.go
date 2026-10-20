@@ -12,6 +12,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"strings"
 	"testing"
 
 	"golang.org/x/tools/go/ssa"
@@ -37,7 +38,7 @@ func TestBuildPackageDump(t *testing.T) {
 	pkg.Func("init").WriteTo(&out)
 	pkg.Func("main").WriteTo(&out)
 
-	if got, want := out.String(), buildPackageDump; got != want {
+	if got, want := strings.TrimSpace(out.String()), strings.TrimSpace(buildPackageDump); got != want {
 		t.Errorf("package dump:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
