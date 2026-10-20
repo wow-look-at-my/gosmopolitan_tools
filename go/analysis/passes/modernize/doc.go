@@ -10,10 +10,6 @@ fixes are imperfect and may lead to unused imports or unused local variables,
 causing build breakage, though such problems are generally trivial to fix.
 Any modernizer whose fix changes program behavior has a serious bug, and the
 fix is amended. If the tool warns of conflicting fixes, run it again until
-the fixes apply cleanly. Review the changes as usual before merging. and then
--any=false.
+the fixes apply cleanly, and review the changes as usual before merging.
 */
-package modernize
-	//go:fix inline
-	//go:build linux && amd64
 package modernize
