@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssautil // import "golang.org/x/tools/go/ssa/ssautil"
 
@@ -18,36 +17,19 @@ import (
 //
 // TODO(adonovan): test coverage.
 
-// AllFunctions finds and returns the set of functions potentially
-// needed by program prog, as determined by a simple linker-style
-// reachability algorithm starting from the members and method-sets of
-// each package.  The result may include anonymous functions and
-// synthetic wrappers.
+// AllFunctions finds. It returns the set of functions potentially needed by
+// program prog, as determined. By a simple linker-style reachability
+// algorithm starting from the members and method-sets of each package. The
+// result may include anonymous functions and synthetic wrappers.
 //
 // Precondition: all packages are built.
 //
-// TODO(adonovan): this function is underspecified. It doesn't
-// actually work like a linker, which computes reachability from main
-// using something like go/callgraph/cha (without materializing the
-// call graph). In fact, it treats all public functions and all
-// methods of public non-parameterized types as roots, even though
-// they may be unreachable--but only in packages created from syntax.
-//
-// I think we should deprecate AllFunctions function in favor of two
-// clearly defined ones:
-//
-//  1. The first would efficiently compute CHA reachability from a set
-//     of main packages, making it suitable for a whole-program
-//     analysis context with InstantiateGenerics, in conjunction with
-//     Program.Build.
-//
-//  2. The second would return only the set of functions corresponding
-//     to source Func{Decl,Lit} syntax, like SrcFunctions in
-//     go/analysis/passes/buildssa; this is suitable for
-//     package-at-a-time (or handful of packages) context.
-//     ssa.Package could easily expose it as a field.
-//
-// We could add them unexported for now and use them via the linkname hack.
+// TODO(adonovan): this function is underspecified. It doesn't work like a
+// linker, which computes reachability from main using something like
+// go/callgraph/cha (without materializing the call graph). It treats all
+// public functions and all methods of public non-parameterized types as
+// roots, even though they may be unreachable--but only in packages. Those
+// packages are created from syntax.
 func AllFunctions(prog *ssa.Program) map[*ssa.Function]bool {
 	seen := make(map[*ssa.Function]bool)
 
@@ -83,29 +65,15 @@ func AllFunctions(prog *ssa.Program) map[*ssa.Function]bool {
 		}
 	}
 
-	// Historically, Program.RuntimeTypes used to include the type
-	// of any exported member of a package loaded from syntax that
-	// has a non-parameterized type, plus all types
-	// reachable from that type using reflection, even though
-	// these runtime types may not be required for them.
-	//
-	// Rather than break existing programs that rely on
-	// AllFunctions visiting extra methods that are unreferenced
-	// by IR and unreachable via reflection, we moved the logic
-	// here, unprincipled though it is.
-	// (See doc comment for better ideas.)
-	//
-	// Nonetheless, after the move, we no longer visit every
-	// method of any type recursively reachable from T, only the
-	// methods of T and *T themselves, and we only apply this to
-	// named types T, and not to the type of every exported
-	// package member.
+	// Historically, Program.RuntimeTypes used to include the type of any
+	// exported member of a package loaded from syntax that has a
+	// non-parameterized type. Plus all types reachable from that type using
+	// reflection, even though these runtime types may not be required for them.
 	exportedTypeHack := func(t *ssa.Type) {
 		if isSyntactic(t.Package()) &&
 			ast.IsExported(t.Name()) &&
 			!types.IsInterface(t.Type()) {
-			// Consider only named types.
-			// (Ignore aliases and unsafe.Pointer.)
+			// Consider only named types. (Ignore aliases and unsafe.Pointer.)
 			if named, ok := t.Type().(*types.Named); ok {
 				// Skip generic types.
 				if named.TypeParams() == nil {
@@ -121,11 +89,6 @@ func AllFunctions(prog *ssa.Program) map[*ssa.Function]bool {
 			switch mem := mem.(type) {
 			case *ssa.Function:
 				// Visit all package-level declared functions.
-				//
-				// (This may include generic functions, which is
-				// inconsistent with the treatment of methods:
-				// we skip both generic methods,
-				// and methods of generic types.)
 				function(mem)
 
 			case *ssa.Type:
@@ -156,11 +119,5 @@ func MainPackages(pkgs []*ssa.Package) []*ssa.Package {
 	return mains
 }
 
-// TODO(adonovan): propose a principled API for this. One possibility
-// is a new field, Package.SrcFunctions []*Function, which would
-// contain the list of SrcFunctions described in point 2 of the
-// AllFunctions doc comment, or nil if the package is not from syntax.
-// But perhaps overloading nil vs empty slice is too subtle.
-//
 //go:linkname isSyntactic golang.org/x/tools/go/ssa.isSyntactic
 func isSyntactic(pkg *ssa.Package) bool

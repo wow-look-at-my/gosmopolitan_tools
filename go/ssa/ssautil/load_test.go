@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssautil_test
 
@@ -35,8 +34,7 @@ func main() {
 func TestBuildPackage(t *testing.T) {
 	testenv.NeedsGoBuild(t) // for importer.Default()
 
-	// There is a more substantial test of BuildPackage and the
-	// SSA program it builds in ../ssa/builder_test.go.
+	// There is a more substantial test of BuildPackage and the SSA program it builds in ../ssa/builder_test.go.
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "hello.go", hello, 0)
@@ -127,10 +125,7 @@ func TestBuildPackage_MissingImport(t *testing.T) {
 func TestIssue28106(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
-	// In go1.10, go/packages loads all packages from source, not
-	// export data, but does not type check function bodies of
-	// imported packages. This test ensures that we do not attempt
-	// to run the SSA builder on functions without type information.
+	// In go1.10, go/packages loads all packages from source, not export data.
 	cfg := &packages.Config{Mode: packages.LoadSyntax}
 	pkgs, err := packages.Load(cfg, "runtime")
 	if err != nil {
@@ -141,16 +136,8 @@ func TestIssue28106(t *testing.T) {
 }
 
 func TestIssue53604(t *testing.T) {
-	// Tests that variable initializers are not added to init() when syntax
-	// is not present but types.Info is available.
-	//
-	// Packages x, y, z are loaded with mode `packages.LoadSyntax`.
-	// Package x imports y, and y imports z.
-	// Packages are built using ssautil.Packages() with x and z as roots.
-	// This setup creates y using CreatePackage(pkg, files, info, ...)
-	// where len(files) == 0 but info != nil.
-	//
-	// Tests that globals from y are not initialized.
+	// Tests that variable initializers are not added to init() when syntax is
+	// not present but types.Info is available.
 	e := packagestest.Export(t, packagestest.Modules, []packagestest.Module{
 		{
 			Name: "golang.org/fake",

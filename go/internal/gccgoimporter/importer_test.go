@@ -1,10 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Except for this comment, this file is a verbatim copy of the file
-// with the same name in $GOROOT/src/go/internal/gccgoimporter without
-// the import of "testenv".
+// with the same name in $GOROOT/src/go/internal/gccgoimporter. This
+// holds without the import of "testenv".
 
 package gccgoimporter
 
@@ -67,11 +66,6 @@ func runImporterTest(t *testing.T, imp Importer, initmap map[*types.Package]Init
 			t.Errorf("%s: could not find expected function %q", test.pkgpath, test.wantinits[0])
 		}
 
-		// FIXME: the original version of this test was written against
-		// the v1 export data scheme for capturing init functions, so it
-		// verified the priority values. We moved away from the priority
-		// scheme some time ago; it is not clear how much work it would be
-		// to validate the new init export data.
 	}
 }
 
@@ -134,9 +128,7 @@ func TestObjImporter(t *testing.T) {
 		t.Skip("This test needs gccgo")
 	}
 	if runtime.GOOS == "aix" {
-		// We don't yet have a debug/xcoff package for reading
-		// object files on AIX. Remove this skip if/when issue #29038
-		// is implemented (see also issue #49445).
+		// We don't yet have a debug/xcoff package for reading object files on AIX.
 		t.Skip("no support yet for debug/xcoff")
 	}
 
@@ -172,7 +164,7 @@ func TestObjImporter(t *testing.T) {
 
 	for _, test := range importerTests {
 		if major < test.gccgoVersion {
-			// Support for type aliases was added in GCC 7.
+			// Support for type aliases.
 			t.Logf("skipping %q: not supported before gccgo version %d", test.pkgpath, test.gccgoVersion)
 			continue
 		}

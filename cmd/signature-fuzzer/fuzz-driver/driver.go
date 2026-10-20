@@ -1,13 +1,11 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Stand-alone driver for emitting function-signature test code.  This
-// program is mainly just a wrapper around the code that lives in the
-// fuzz-generator package; it is useful for generating a specific bad
-// code scenario for a given seed, or for doing development on the
-// fuzzer, but for doing actual fuzz testing, better to use
-// fuzz-runner.
+// Stand-alone driver for emitting function-signature test code. This program
+// is mainly a wrapper around the code that lives in the fuzz-generator
+// package. It is useful for generating a specific bad code scenario for a
+// given seed, or for doing development. This holds on the fuzzer, but for
+// doing actual fuzz testing, better to use fuzz-runner.
 
 package main
 

@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -38,9 +37,7 @@ func TestSwitches(t *testing.T) {
 			if fn.Synthetic != "" {
 				continue // e.g. init()
 			}
-			// Each (multi-line) "switch" comment within
-			// this function must match the printed form
-			// of a ConstSwitch.
+			// Each (multi-line) "switch" comment within this function must match the printed form of a ConstSwitch.
 			var wantSwitches []string
 			for _, c := range f.Comments {
 				if fn.Syntax().Pos() <= c.Pos() && c.Pos() < fn.Syntax().End() {

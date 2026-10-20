@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package rename
 
@@ -50,7 +49,6 @@ func isValidIdentifier(id string) bool {
 // isLocal reports whether obj is local to some function.
 // Precondition: not a struct field or interface method.
 func isLocal(obj types.Object) bool {
-	// [... 5=stmt 4=func 3=file 2=pkg 1=universe]
 	var depth int
 	for scope := obj.Parent(); scope != nil; scope = scope.Parent() {
 		depth++

@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package assign
 
@@ -115,8 +114,7 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		if len(exprs) == len(stmt.Lhs) {
-			// If every part of the statement is a self-assignment,
-			// remove the whole statement.
+			// If every part of the statement is a self-assignment, remove the whole statement.
 			tokFile := pass.Fset.File(stmt.Pos())
 			edits = refactor.DeleteStmt(tokFile, curAssign)
 		}

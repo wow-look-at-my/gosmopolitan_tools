@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package eg
 
@@ -17,14 +16,13 @@ import (
 
 // matchExpr reports whether pattern x matches y.
 //
-// If tr.allowWildcards, Idents in x that refer to parameters are
-// treated as wildcards, and match any y that is assignable to the
-// parameter type; matchExpr records this correspondence in tr.env.
-// Otherwise, matchExpr simply reports whether the two trees are
-// equivalent.
+// If tr.allowWildcards, Idents in x that refer to parameters are treated as
+// wildcards, and match any y that is assignable to the parameter type.
+// matchExpr records this correspondence in tr.env. Otherwise, matchExpr
+// reports whether both trees are equivalent.
 //
-// A wildcard appearing more than once in the pattern must
-// consistently match the same tree.
+// A wildcard appearing more than once in the pattern must consistently match
+// the same tree.
 func (tr *Transformer) matchExpr(x, y ast.Expr) bool {
 	if x == nil && y == nil {
 		return true
@@ -35,13 +33,12 @@ func (tr *Transformer) matchExpr(x, y ast.Expr) bool {
 	x = ast.Unparen(x)
 	y = ast.Unparen(y)
 
-	// Is x a wildcard?  (a reference to a 'before' parameter)
+	// Is x a wildcard? (a reference to a 'before' parameter)
 	if xobj, ok := tr.wildcardObj(x); ok {
 		return tr.matchWildcard(xobj, y)
 	}
 
-	// Object identifiers (including pkg-qualified ones)
-	// are handled semantically, not syntactically.
+	// Object identifiers (including pkg-qualified ones) are handled semantically, not syntactically.
 	xobj := isRef(x, tr.info)
 	yobj := isRef(y, tr.info)
 	if xobj != nil {
@@ -51,9 +48,8 @@ func (tr *Transformer) matchExpr(x, y ast.Expr) bool {
 		return false
 	}
 
-	// TODO(adonovan): audit: we cannot assume these ast.Exprs
-	// contain non-nil pointers.  e.g. ImportSpec.Name may be a
-	// nil *ast.Ident.
+	// TODO(adonovan): audit: we cannot assume these ast.Exprs contain non-nil
+	// pointers. e.g. ImportSpec.Name may be a nil *ast.Ident.
 
 	if reflect.TypeOf(x) != reflect.TypeOf(y) {
 		return false
@@ -147,7 +143,7 @@ func (tr *Transformer) matchExprs(xx, yy []ast.Expr) bool {
 	return true
 }
 
-// matchType reports whether the two type ASTs denote identical types.
+// matchType reports whether both type ASTs denote identical types.
 func (tr *Transformer) matchType(x, y ast.Expr) bool {
 	tx := tr.info.Types[x].Type
 	ty := tr.info.Types[y].Type
@@ -188,11 +184,6 @@ func (tr *Transformer) matchWildcard(xobj *types.Var, y ast.Expr) bool {
 	yt := tr.info.TypeOf(y)
 	if yt == nil {
 		// y has no type.
-		// Perhaps it is an *ast.Ellipsis in [...]T{}, or
-		// an *ast.KeyValueExpr in T{k: v}.
-		// Clearly these pseudo-expressions cannot match a
-		// wildcard, but it would nice if we had a way to ignore
-		// the difference between T{v} and T{k:v} for structs.
 		return false
 	}
 	if !types.AssignableTo(yt, xobj.Type()) {
@@ -202,9 +193,8 @@ func (tr *Transformer) matchWildcard(xobj *types.Var, y ast.Expr) bool {
 		return false
 	}
 
-	// A wildcard matches any expression.
-	// If it appears multiple times in the pattern, it must match
-	// the same expression each time.
+	// A wildcard matches any expression. If it appears multiple times in the
+	// pattern, it must match the same expression each time.
 	if old, ok := tr.env[name]; ok {
 		// found existing binding
 		tr.allowWildcards = false

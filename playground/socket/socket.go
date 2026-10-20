@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build !appengine
 
@@ -9,8 +8,6 @@
 // the server sends the output and exit status of the running processes.
 // Multiple clients running multiple processes may be served concurrently.
 // The wire format is JSON and is described by the Message type.
-//
-// This will not run on App Engine as WebSockets are not supported there.
 package socket // import "golang.org/x/tools/playground/socket"
 
 import (
@@ -37,12 +34,10 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// RunScripts specifies whether the socket handler should execute shell scripts
-// (snippets that start with a shebang).
+// RunScripts specifies whether the socket handler should execute shell scripts (snippets that start with a shebang).
 var RunScripts = true
 
-// Environ provides an environment when a binary, such as the go tool, is
-// invoked.
+// Environ provides an environment when a binary, such as the go tool, is invoked.
 var Environ func() []string = os.Environ
 
 const (
@@ -54,8 +49,6 @@ const (
 )
 
 // Message is the wire format for the websocket connection to the browser.
-// It is used for both sending output messages and receiving commands, as
-// distinguished by the Kind field.
 type Message struct {
 	Id      string // client-provided unique id for the process
 	Kind    string // in: "run", "kill" out: "stdout", "stderr", "end"
@@ -220,12 +213,10 @@ type killer interface {
 	Kill()
 }
 
-// limiter returns a channel that wraps the given channel.
-// It receives Messages from the given channel and sends them to the returned
-// channel until it passes msgLimit messages, at which point it will kill the
-// process and pass only the "end" message.
-// When the given channel is closed, or when the "end" message is received,
-// it closes the returned channel.
+// limiter returns a channel that wraps the given channel. It receives
+// Messages from the given channel and sends them to the returned channel
+// until it passes msgLimit messages. This happens at which point it will
+// kill the process and pass only the "end" message.
 func limiter(in <-chan *Message, p killer) <-chan *Message {
 	out := make(chan *Message)
 	go func() {
@@ -239,9 +230,7 @@ func limiter(in <-chan *Message, p killer) <-chan *Message {
 					return
 				}
 			case n == msgLimit:
-				// Kill in a goroutine as Kill will not return
-				// until the process' output has been
-				// processed, and we're doing that in this loop.
+				// Kill in a goroutine as Kill will not return until the process' output has been processed.
 				go p.Kill()
 			default:
 				continue // don't increment
@@ -350,10 +339,7 @@ func (p *process) startProcess(path string, args []string, body string) error {
 // start builds and starts the given program, sending its output to p.out,
 // and stores the running *exec.Cmd in the run field.
 func (p *process) start(body string, opt *Options) error {
-	// We "go build" and then exec the binary so that the
-	// resultant *exec.Cmd is a handle to the user's program
-	// (rather than the go tool process).
-	// This makes Kill work.
+	// We "go build" and then exec the binary so that the resultant *exec.Cmd is a handle to the user's program (rather than the go tool process).
 
 	path, err := os.MkdirTemp("", "present-")
 	if err != nil {
@@ -416,9 +402,8 @@ func (p *process) start(body string, opt *Options) error {
 		cmd.Env = append(cmd.Env, "GOMAXPROCS=2")
 	}
 	if err := cmd.Start(); err != nil {
-		// If we failed to exec, that might be because they built
-		// a non-main package instead of an executable.
-		// Check and report that.
+		// If we failed to exec, that might be because they built a non-main package
+		// instead of an executable. Check and report that.
 		if name, err := packageName(body); err == nil && name != "main" {
 			return errors.New(`executable programs must use "package main"`)
 		}

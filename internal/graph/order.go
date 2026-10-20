@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package graph
 
@@ -36,8 +35,6 @@ func Postorder[NodeID comparable](g Graph[NodeID]) []NodeID {
 		for v := range cg.Out(u) {
 			if onStack.contains(v) {
 				// Cycle detected (back-edge).
-				// To resolve, we simply skip processing this edge further in the
-				// current recursion, effectively "breaking" the cycle at this point.
 				continue
 			}
 			visit(v)
@@ -57,13 +54,6 @@ func Postorder[NodeID comparable](g Graph[NodeID]) []NodeID {
 }
 
 // ReversePostorder returns the nodes of the graph in reverse post-order.
-//
-// If g is a directed acyclic graph (DAG), the result is a topological sort of
-// g.
-//
-// See [Postorder] for how this handles back-edges and cycles.
-//
-// This algorithm runs in O(V + E) time and O(V + E) space.
 func ReversePostorder[NodeID comparable](g Graph[NodeID]) []NodeID {
 	result := Postorder(g)
 	slices.Reverse(result)

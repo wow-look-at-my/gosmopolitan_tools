@@ -1,9 +1,8 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package otel exports spans and metrics to an OpenTelemetry
-// collector using the OTLP HTTP/JSON protocol.
+// Package otel exports spans and metrics to an OpenTelemetry collector using
+// the OTLP HTTP/JSON protocol.
 //
 // Use [NewExporter] to create an exporter, then chain its
 // [Exporter.ProcessEvent] method with other exporters:
@@ -14,9 +13,8 @@
 //	)
 //	event.SetExporter(otelExporter.ProcessEvent)
 //
-// The exporter batches telemetry and flushes periodically in a
-// background goroutine. Call [Exporter.Flush] to force an
-// immediate export.
+// The exporter batches telemetry and flushes periodically in a background
+// goroutine. Call [Exporter.Flush] to force an immediate export.
 package otel
 
 import (
@@ -151,9 +149,7 @@ func (e *Exporter) post(path string, payload any) error {
 		return err
 	}
 
-	// The background context is appropriate here since post is called only
-	// from Flush, which is called only by the Exporter's background goroutine.
-	// Notably it may be called after cancellation of the client's context.
+	// The background context is appropriate here since post is called only from Flush.
 	req, err := http.NewRequestWithContext(context.Background(), "POST", e.endpoint+path, bytes.NewReader(data))
 	if err != nil {
 		return err

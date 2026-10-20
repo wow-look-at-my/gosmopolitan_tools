@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline_test
 
@@ -23,7 +22,7 @@ func TestCalleeEffects(t *testing.T) {
 	var tests = []struct {
 		descr  string
 		callee string // Go source file (sans package decl) containing callee decl
-		want   string // expected effects string (-1=R∞ -2=W∞)
+		want   string
 	}{
 		{
 			"Assignments have unknown effects.",
@@ -38,7 +37,7 @@ func TestCalleeEffects(t *testing.T) {
 		{
 			"Writes to globals have effects.",
 			`func f() { g = 0 }; var g int`,
-			`[-1 -2]`, // the -1 is spurious but benign
+			`[-1 -2]`,
 		},
 		{
 			"Blank assign has no effect.",

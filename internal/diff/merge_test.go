@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package diff_test
 
@@ -11,9 +10,8 @@ import (
 )
 
 func TestMerge(t *testing.T) {
-	// For convenience, we test Merge using strings, not sequences
-	// of edits, though this does put us at the mercy of the diff
-	// algorithm.
+	// For convenience, we test Merge using strings, not sequences of edits,
+	// though this does put us at the mercy of the diff algorithm.
 	for _, test := range []struct {
 		base, x, y string
 		want       string // "!" => conflict
@@ -26,9 +24,7 @@ func TestMerge(t *testing.T) {
 		{"abcdef", "abcXdef", "abcYdef", "abcXYdef"},
 		// colocated identical insertions (coalesced)
 		{"abcdef", "abcXdef", "abcXdef", "abcXdef"},
-		// colocated insertions with common prefix (X first)
-		// TODO(adonovan): would "abcXYdef" be better?
-		// i.e. should we dissect the insertions?
+		// colocated insertions with common prefix (X first) TODO(adonovan): would "abcXYdef" be better?
 		{"abcdef", "abcXdef", "abcXYdef", "abcXXYdef"},
 		// mix of identical and independent insertions (X first)
 		{"abcdef", "aIbcdXef", "aIbcdYef", "aIbcdXYef"},

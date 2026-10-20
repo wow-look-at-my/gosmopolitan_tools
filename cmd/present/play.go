@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -15,18 +14,14 @@ import (
 	"golang.org/x/tools/playground/socket"
 	"golang.org/x/tools/present"
 
-	// This will register a handler at /compile that will proxy to the
-	// respective endpoints at play.golang.org. This allows the frontend to call
-	// these endpoints without needing cross-origin request sharing (CORS).
-	// Note that this is imported regardless of whether the endpoints are used or
-	// not (in the case of a local socket connection, they are not called).
+	// This will register a handler at /compile that will proxy to the respective endpoints at play.golang.org.
 	_ "golang.org/x/tools/playground"
 )
 
 var scripts = []string{"jquery.js", "jquery-ui.js", "playground.js", "play.js"}
 
 // playScript registers an HTTP handler at /play.js that serves all the
-// scripts specified by the variable above, and appends a line that
+// scripts specified by the variable above. It appends a line that
 // initializes the playground with the specified transport.
 func playScript(fsys fs.FS, transport string) {
 	modTime := time.Now()

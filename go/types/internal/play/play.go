@@ -1,10 +1,9 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.23
 
-// The play program is a playground for go/types: a simple web-based
+// The play program is a playground for go/types. A simple web-based
 // text editor into which the user can enter a Go program, select a
 // region, and see type information about it.
 //
@@ -133,10 +132,8 @@ func handleSelectJSON(w http.ResponseWriter, req *http.Request) {
 			node := n
 			prefix := ""
 
-			// A function (Func{Decl.Lit}) doesn't have a scope of its
-			// own, nor does its Body: only nested BlockStmts do.
-			// The type parameters, parameters, and locals are all
-			// in the scope associated with the FuncType; show it.
+			// A function (Func{Decl.Lit}) doesn't have a scope of its own, nor does
+			// its Body: only nested BlockStmts do.
 			switch n := n.(type) {
 			case *ast.FuncDecl:
 				node = n.Type
@@ -165,8 +162,6 @@ func handleSelectJSON(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	// Show the Cursor.Enclosing stack too.
-	// It's usually the same, but may differ in edge
-	// cases (e.g. around FuncType.Func).
 	curFile, _ := inspector.New([]*ast.File{file}).Root().FirstChild()
 	if cur, ok := curFile.FindByPos(startPos, endPos); ok {
 		fmt.Fprintf(out, "Cursor.GoString = %#v\n", cur)
@@ -341,9 +336,6 @@ func formatObj(out *strings.Builder, fset *token.FileSet, ref string, obj types.
 	}
 
 	// Include the pointer value to help distinguish fn and fn.Origin().
-	// (Beware that every invocation creates new pointers so they are
-	// only comparable within a single result page. Hence the need
-	// for the inventory of objects below.)
 	fmt.Fprintf(out, "%s of %s %s of type %v declared at %v (%p)",
 		ref, kind, obj.Name(), obj.Type(), fset.Position(obj.Pos()), obj)
 	if origin != nil && origin != obj {
@@ -418,10 +410,7 @@ func describeType(out *strings.Builder, t types.Type) {
 			fmt.Fprintf(out, " Name: %q\n", t.Obj().Name())
 			ft("Rhs: ", t.Rhs())
 		default:
-			// For types we may have missed or which have too much to bother with,
-			// print their string representation.
-			// TODO(jba): print more about struct types (their fields) and interface and named
-			// types (their methods).
+			// For types we may have missed or which have too much to bother with, print their string representation.
 			fmt.Fprintf(out, " %s\n", t)
 		}
 	}

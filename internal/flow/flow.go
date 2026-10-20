@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package flow implements a monotone flow analysis framework.
 package flow
@@ -14,13 +13,11 @@ import (
 
 const debug = false
 
-// Analysis is the result of a monotone analysis. Fact is the type of elements
-// in the analysis semilattice, and represents the outcome of the analysis at
-// every node and edge.
+// Analysis is the result of a monotone analysis.
 type Analysis[Fact any, NodeID comparable] struct {
 	nodeMap *graph.Index[NodeID]
-	ins     []Fact           // By NodeID
-	edges   []edgeFact[Fact] // Sorted by (from, to)
+	ins     []Fact // By NodeID
+	edges   []edgeFact[Fact]
 }
 
 // In returns the analysis fact on entry to nid. This is the merge of the facts

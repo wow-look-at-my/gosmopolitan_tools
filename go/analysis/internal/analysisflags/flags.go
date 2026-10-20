@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package analysisflags defines helpers for processing flags (-help,
 // -json, -fix, -diff, etc) common to unitchecker and
@@ -29,18 +28,17 @@ var (
 	Diff    bool    // -diff
 )
 
-// Parse creates a flag for each of the analyzer's flags,
-// including (in multi mode) a flag named after the analyzer,
-// parses the flags, then filters and returns the list of
-// analyzers enabled by flags.
+// Parse creates a flag for each of the analyzer's flags, including (in multi
+// mode) a flag named after the analyzer, parses the flags, then filters. It
+// returns the list of analyzers enabled by flags.
 //
-// The result is intended to be passed to unitchecker.Run or checker.Run.
-// Use in unitchecker.Run will gob.Register all fact types for the returned
-// graph of analyzers but of course not the ones only reachable from
-// dropped analyzers. To avoid inconsistency about which gob types are
-// registered from run to run, Parse itself gob.Registers all the facts
-// only reachable from dropped analyzers.
-// This is not a particularly elegant API, but this is an internal package.
+// The result is intended to be passed to unitchecker.Run or checker.Run. Use
+// in unitchecker.Run will gob.Register all fact types for the returned graph
+// of analyzers but not the ones only reachable from dropped analyzers. To
+// avoid inconsistency about which gob types are registered from run to run,
+// Parse itself gob.Registers all the facts only reachable from dropped
+// analyzers. This is not a particularly elegant API, but this is an internal
+// package.
 func Parse(analyzers []*analysis.Analyzer, multi bool) []*analysis.Analyzer {
 	// Connect each analysis flag to the command line as -analysis.flag.
 	enabled := make(map[*analysis.Analyzer]*triState)
@@ -78,8 +76,7 @@ func Parse(analyzers []*analysis.Analyzer, multi bool) []*analysis.Analyzer {
 	flag.BoolVar(&Fix, "fix", false, "apply all suggested fixes")
 	flag.BoolVar(&Diff, "diff", false, "with -fix, don't update the files, but print a unified diff")
 
-	// Add shims for legacy vet flags to enable existing
-	// scripts that run vet to continue to work.
+	// Add shims for legacy vet flags to enable existing scripts that run vet to continue to work.
 	_ = flag.Bool("source", false, "no effect (deprecated)")
 	_ = flag.Bool("v", false, "no effect (deprecated)")
 	_ = flag.Bool("all", false, "no effect (deprecated)")
@@ -101,8 +98,8 @@ func Parse(analyzers []*analysis.Analyzer, multi bool) []*analysis.Analyzer {
 
 	everything := expand(analyzers)
 
-	// If any -NAME flag is true,  run only those analyzers. Otherwise,
-	// if any -NAME flag is false, run all but those analyzers.
+	// If any -NAME flag is true, run only those analyzers. Otherwise, if any
+	// -NAME flag is false, run all but those analyzers.
 	if multi {
 		var hasTrue, hasFalse bool
 		for _, ts := range enabled {
@@ -132,8 +129,7 @@ func Parse(analyzers []*analysis.Analyzer, multi bool) []*analysis.Analyzer {
 		}
 	}
 
-	// Register fact types of skipped analyzers
-	// in case we encounter them in imported files.
+	// Register fact types of skipped analyzers in case we encounter them in imported files.
 	kept := expand(analyzers)
 	for a := range everything {
 		if !kept[a] {
@@ -169,9 +165,8 @@ func printFlags() {
 	}
 	var flags []jsonFlag = nil
 	flag.VisitAll(func(f *flag.Flag) {
-		// Don't report {single,multi}checker debugging
-		// flags or fix as these have no effect on unitchecker
-		// (as invoked by 'go vet').
+		// Don't report {single,multi}checker debugging flags or fix as these have
+		// no effect on unitchecker (as invoked by 'go vet').
 		switch f.Name {
 		case "debug", "cpuprofile", "memprofile", "trace", "fix":
 			return
@@ -190,10 +185,6 @@ func printFlags() {
 
 // addVersionFlag registers a -V flag that, if set,
 // prints the executable version and exits 0.
-//
-// If the -V flag already exists — for example, because it was already
-// registered by a call to cmd/internal/objabi.AddVersionFlag — then
-// addVersionFlag does nothing.
 func addVersionFlag() {
 	if flag.Lookup("V") == nil {
 		flag.Var(versionFlag{}, "V", "print version and exit")
@@ -211,15 +202,9 @@ func (versionFlag) Set(s string) error {
 		log.Fatalf("unsupported flag value: -V=%s (use -V=full)", s)
 	}
 
-	// This replicates the minimal subset of
-	// cmd/internal/objabi.AddVersionFlag, which is private to the
-	// go tool yet forms part of our command-line interface.
-	// TODO(adonovan): clarify the contract.
+	// This replicates the minimal subset of cmd/internal/objabi.addVersionFlag.
 
-	// Print the tool version so the build system can track changes.
-	// Formats:
-	//   $progname version devel ... buildID=...
-	//   $progname version go1.9.1
+	// Print the tool version so the build system can track changes. Formats: $progname version devel ...
 	progname, err := os.Executable()
 	if err != nil {
 		return err
@@ -239,12 +224,7 @@ func (versionFlag) Set(s string) error {
 	return nil
 }
 
-// A triState is a boolean that knows whether
-// it has been set to either true or false.
-// It is used to identify whether a flag appears;
-// the standard boolean flag cannot
-// distinguish missing from unset.
-// It also satisfies flag.Value.
+// A triState is a boolean that knows whether it has been set to either true or false.
 type triState int
 
 const (
@@ -254,7 +234,6 @@ const (
 )
 
 // triState implements flag.Value, flag.Getter, and flag.boolFlag.
-// They work like boolean flags: we can say vet -printf as well as vet -printf=true
 func (ts *triState) Get() any {
 	return *ts == setTrue
 }
@@ -262,8 +241,7 @@ func (ts *triState) Get() any {
 func (ts *triState) Set(value string) error {
 	b, err := strconv.ParseBool(value)
 	if err != nil {
-		// This error message looks poor but package "flag" adds
-		// "invalid boolean value %q for -NAME: %s"
+		// This error message looks poor but package "flag" adds "invalid boolean value %q for -NAME: %s"
 		return fmt.Errorf("want true or false")
 	}
 	if b {
@@ -292,8 +270,8 @@ func (ts triState) IsBoolFlag() bool {
 
 // Legacy flag support
 
-// vetLegacyFlags maps flags used by legacy vet to their corresponding
-// new names. The old names will continue to work.
+// vetLegacyFlags maps flags used by legacy vet to their corresponding new
+// names. The names will continue to work.
 var vetLegacyFlags = map[string]string{
 	// Analyzer name changes
 	"bool":       "bools",

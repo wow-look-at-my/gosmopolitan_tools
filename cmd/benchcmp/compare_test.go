@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -90,7 +89,6 @@ func TestCorrelate(t *testing.T) {
 		t.Errorf("Correlated expected 4 errors, got %d: %v", len(errs), errs)
 	}
 
-	// Want three correlated pairs: one BenchmarkOneEach, two BenchmarkTwoEach.
 	if len(pairs) != 3 {
 		t.Fatalf("Correlated expected 3 pairs, got %v", pairs)
 	}
@@ -116,7 +114,7 @@ func TestBenchCmpSorting(t *testing.T) {
 		{&parse.Benchmark{Name: "BenchmarkSlower", NsPerOp: 10, Ord: 0}, &parse.Benchmark{Name: "BenchmarkSlower", NsPerOp: 11}},
 	}
 
-	// Test just one magnitude-based sort order; they are symmetric.
+	// Test one magnitude-based sort order; they are symmetric.
 	sort.Sort(ByDeltaNsPerOp(c))
 	want := []string{"BenchmarkMuchFaster", "BenchmarkSlower", "BenchmarkSameA", "BenchmarkSameB"}
 	have := []string{c[0].Name(), c[1].Name(), c[2].Name(), c[3].Name()}

@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package lcs
 
@@ -12,21 +11,19 @@ import (
 
 // A Diff is a replacement of a portion of A by a portion of B.
 type Diff struct {
-	Start, End         int // offsets of portion to delete in A
+	Start, End         int
 	ReplStart, ReplEnd int // offset of replacement text in B
 }
 
-// DiffBytes returns the differences between two byte sequences.
 // It does not respect rune boundaries.
 func DiffBytes(a, b []byte) []Diff { return diff(bytesSeqs{a, b}) }
 
-// DiffRunes returns the differences between two rune sequences.
+// DiffRunes returns the differences between rune sequences.
 func DiffRunes(a, b []rune) []Diff { return diff(runesSeqs{a, b}) }
 
-// DiffLines returns the differences between two string sequences.
 func DiffLines(a, b []string) []Diff { return diff(linesSeqs{a, b}) }
 
-// A limit on how deeply the LCS algorithm should search. The value is just a guess.
+// A limit on how deeply the LCS algorithm should search. The value is a guess.
 var maxDiffs = 100
 
 func diff(seqs sequences) []Diff {
@@ -34,9 +31,9 @@ func diff(seqs sequences) []Diff {
 	return diff
 }
 
-// compute computes the list of differences between two sequences,
-// along with the LCS. It is exercised directly by tests.
-// The algorithm is one of {forward, backward, twosided}.
+// compute computes the list of differences between sequences,
+// along with the LCS. It is exercised directly by tests. The
+// algorithm is one of {forward, backward, twosided}.
 func compute(seqs sequences, algo func(*editGraph) lcs, limit int) ([]Diff, lcs) {
 	if limit <= 0 {
 		limit = 1 << 25 // effectively infinity
@@ -56,7 +53,7 @@ func compute(seqs sequences, algo func(*editGraph) lcs, limit int) ([]Diff, lcs)
 	return diffs, lcs
 }
 
-// editGraph carries the information for computing the lcs of two sequences.
+// editGraph carries the information for computing the lcs of sequences.
 type editGraph struct {
 	seqs   sequences
 	vf, vb label // forward and backward labels
@@ -128,9 +125,7 @@ func forward(e *editGraph) lcs {
 			}
 		}
 	}
-	// D is too large
-	// find the D path with maximal x+y inside the rectangle and
-	// use that to compute the found part of the lcs
+	// D is too large find the D path.
 	kmax := -e.limit - 1
 	diagmax := -1
 	for k := -e.limit; k <= e.limit; k += 2 {
@@ -230,9 +225,7 @@ func backward(e *editGraph) lcs {
 		}
 	}
 
-	// D is too large
-	// find the D path with minimal x+y inside the rectangle and
-	// use that to compute the part of the lcs found
+	// D is too large find the D path with minimal x+y inside the rectangle and use.
 	kmax := -e.limit - 1
 	diagmin := 1 << 25
 	for k := -e.limit; k <= e.limit; k += 2 {
@@ -292,16 +285,13 @@ func (e *editGraph) getBackward(d, k int) int {
 // -- TWOSIDED ---
 
 func twosided(e *editGraph) lcs {
-	// The termination condition could be improved, as either the forward
-	// or backward pass could succeed before Myers' Lemma applies.
-	// Aside from questions of efficiency (is the extra testing cost-effective)
-	// this is more likely to matter when e.limit is reached.
+	// The termination condition could be improved.
 	e.setForward(0, 0, e.lx)
 	e.setBackward(0, 0, e.ux)
 
 	// from D to D+1
 	for D := range e.limit {
-		// just finished a backwards pass, so check
+		// Finished a backwards pass, so check
 		if got, ok := e.twoDone(D, D); ok {
 			return e.twolcs(D, D, got)
 		}
@@ -318,7 +308,7 @@ func twosided(e *editGraph) lcs {
 				e.setForward(D+1, k, lookh)
 			}
 		}
-		// just did a forward pass, so check
+		// Did a forward pass, so check
 		if got, ok := e.twoDone(D+1, D); ok {
 			return e.twolcs(D+1, D, got)
 		}
@@ -337,8 +327,7 @@ func twosided(e *editGraph) lcs {
 		}
 	}
 
-	// D too large. combine a forward and backward partial lcs
-	// first, a forward one
+	// D too large. combine a forward and backward partial lcs first, a forward one
 	kmax := -e.limit - 1
 	diagmax := -1
 	for k := -e.limit; k <= e.limit; k += 2 {
@@ -352,9 +341,7 @@ func twosided(e *editGraph) lcs {
 		panic(fmt.Sprintf("no forward paths when limit=%d?", e.limit))
 	}
 	lcs := e.forwardlcs(e.limit, kmax)
-	// now a backward one
-	// find the D path with minimal x+y inside the rectangle and
-	// use that to compute the lcs
+	// now a backward one find the D path with minimal x+y inside the rectangle and use that to compute the lcs
 	diagmin := 1 << 25 // infinity
 	for k := -e.limit; k <= e.limit; k += 2 {
 		x := e.getBackward(e.limit, k)
@@ -407,25 +394,16 @@ func (e *editGraph) twolcs(df, db, kf int) lcs {
 	u := e.vb.get(db, kb)
 	v := u - kf
 
-	// Myers proved there is a df-path from (0,0) to (u,v)
-	// and a db-path from (x,y) to (N,M).
-	// In the first case the overall path is the forward path
-	// to (u,v) followed by the backward path to (N,M).
-	// In the second case the path is the backward path to (x,y)
-	// followed by the forward path to (x,y) from (0,0).
-
 	// Look for some special cases to avoid computing either of these paths.
 	if x == u {
-		// "babaab" "cccaba"
-		// already patched together
+		// "babaab" "cccaba" already patched together
 		lcs := e.forwardlcs(df, kf)
 		lcs = append(lcs, e.backwardlcs(db, kb)...)
 		return lcs.sort()
 	}
 
-	// is (u-1,v) or (u,v-1) labelled df-1?
-	// if so, that forward df-1-path plus a horizontal or vertical edge
-	// is the df-path to (u,v), then plus the db-path to (N,M)
+	// is (u-1,v) or (u,v-1) labelled df-1? if so, that forward df-1-path plus a horizontal or vertical edge is the df-path to (u,v),
+	// then plus the db-path to (N,M)
 	if u > 0 && ok(df-1, u-1-v) && e.vf.get(df-1, u-1-v) == u-1 {
 		//  "aabbab" "cbcabc"
 		lcs := e.forwardlcs(df-1, u-1-v)
@@ -463,8 +441,7 @@ func (e *editGraph) twolcs(df, db, kf int) lcs {
 		return lcs.sort()
 	}
 
-	// need to compute another path
-	// "aabbaa" "aacaba"
+	// need to compute another path "aabbaa" "aacaba"
 	lcs := e.backwardlcs(db, kb)
 	oldx, oldy := e.ux, e.uy
 	e.ux = u

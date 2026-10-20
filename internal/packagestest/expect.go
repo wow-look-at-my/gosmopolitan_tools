@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packagestest
 
@@ -23,56 +22,20 @@ const (
 	eofIdentifier = "EOF"
 )
 
-// Expect invokes the supplied methods for all expectation notes found in
-// the exported source files.
+// Expect invokes the supplied methods for all expectation notes found in the
+// exported source files.
 //
-// All exported go source files are parsed to collect the expectation
-// notes.
-// See the documentation for expect.Parse for how the notes are collected
-// and parsed.
+// All exported go source files are parsed to collect the expectation notes.
+// See the documentation for expect.Parse for how the notes are collected and
+// parsed.
 //
 // The methods are supplied as a map of name to function, and those functions
-// will be matched against the expectations by name.
-// Notes with no matching function will be skipped, and functions with no
-// matching notes will not be invoked.
-// If there are no registered markers yet, a special pass will be run first
-// which adds any markers declared with @mark(Name, pattern) or @name. These
-// call the Mark method to add the marker to the global set.
-// You can register the "mark" method to override these in your own call to
-// Expect. The bound Mark function is usable directly in your method map, so
-//
-//	exported.Expect(map[string]interface{}{"mark": exported.Mark})
-//
-// replicates the built in behavior.
-//
-// # Method invocation
-//
-// When invoking a method the expressions in the parameter list need to be
-// converted to values to be passed to the method.
-// There are a very limited set of types the arguments are allowed to be.
-//
-//	expect.Note : passed the Note instance being evaluated.
-//	string : can be supplied either a string literal or an identifier.
-//	int : can only be supplied an integer literal.
-//	*regexp.Regexp : can only be supplied a regular expression literal
-//	token.Pos : has a file position calculated as described below.
-//	token.Position : has a file position calculated as described below.
-//	expect.Range: has a start and end position as described below.
-//	interface{} : will be passed any value
-//
-// # Position calculation
-//
-// There is some extra handling when a parameter is being coerced into a
-// token.Pos, token.Position or Range type argument.
-//
-// If the parameter is an identifier, it will be treated as the name of an
-// marker to look up (as if markers were global variables).
-//
-// If it is a string or regular expression, then it will be passed to
-// expect.MatchBefore to look up a match in the line at which it was declared.
-//
-// It is safe to call this repeatedly with different method sets, but it is
-// not safe to call it concurrently.
+// will be matched against the expectations by name. Notes with no matching
+// function will be skipped, and functions with no matching notes will not be
+// invoked. If there are no registered markers yet, a special pass will be run
+// first which adds any markers declared with @mark(Name, pattern) or @name.
+// These call the Mark method to add the marker to the global set. You can
+// register the "mark" method to override these in your own call to Expect.
 func (e *Exported) Expect(methods map[string]any) error {
 	if err := e.getNotes(); err != nil {
 		return err
@@ -174,7 +137,7 @@ func (e *Exported) getNotes() error {
 		e.notes = notes
 		return nil
 	}
-	// Check go.mod markers regardless of mode, we need to do this so that our marker count
+	// Check go.mod markers regardless of mode. We need to do this so that our marker count
 	// matches the counts in the summary.txt.golden file for the test directory.
 	if gomod, found := e.written[e.primary]["go.mod"]; found {
 		// If we are in Modules mode, then we need to check the contents of the go.mod.temp.
@@ -233,15 +196,10 @@ var (
 	exportedType   = reflect.TypeFor[*Exported]()
 )
 
-// converter converts from a marker's argument parsed from the comment to
-// reflect values passed to the method during Invoke.
-// It takes the args remaining, and returns the args it did not consume.
-// This allows a converter to consume 0 args for well known types, or multiple
-// args for compound types.
+// converter converts from a marker's argument parsed from the comment to reflect values passed to the method during Invoke.
 type converter func(*expect.Note, []any) (reflect.Value, []any, error)
 
-// method is used to track information about Invoke methods that is expensive to
-// calculate so that we can work it out once rather than per marker.
+// method is used to track information about Invoke methods.
 type method struct {
 	f          reflect.Value // the reflect value of the passed in method
 	converters []converter   // the parameter converters for the method
@@ -436,7 +394,7 @@ func (e *Exported) rangeConverter(n *expect.Note, args []any) (astutil.Range, []
 	}
 }
 
-// newRange creates a new Range from two valid positions within the specified token.File.
+// newRange creates a new Range from valid positions within the specified token.File.
 func newRange(file *token.File, start, end token.Pos) astutil.Range {
 	fileBase := file.Base()
 	fileEnd := fileBase + file.Size()

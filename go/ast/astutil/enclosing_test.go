@@ -1,13 +1,12 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil_test
 
 // This file defines tests of PathEnclosingInterval.
 
-// TODO(adonovan): exhaustive tests that run over the whole input
-// tree, not just handcrafted examples.
+// TODO(adonovan): exhaustive tests that run over the whole input tree, not
+// handcrafted examples.
 
 import (
 	"bytes"
@@ -36,9 +35,9 @@ func pathToString(path []ast.Node) string {
 	return buf.String()
 }
 
-// findInterval parses input and returns the [start, end) positions of
-// the first occurrence of substr in input.  f==nil indicates failure;
-// an error has already been reported in that case.
+// findInterval parses input and returns the [start, end) positions of the
+// first occurrence of substr in input. f==nil indicates failure; an error has
+// already been reported in that case.
 func findInterval(t *testing.T, fset *token.FileSet, input, substr string) (f *ast.File, start, end token.Pos) {
 	f, err := parser.ParseFile(fset, "<input>", input, 0)
 	if err != nil {
@@ -176,9 +175,8 @@ func TestPathEnclosingInterval_Paths(t *testing.T) {
 		substr string // first occurrence of this string indicates interval
 		path   string // the pathToString(),exact of the expected path
 	}
-	// For these tests, we check only the path of the enclosing
-	// node, but not its complete text because it's often quite
-	// large when !exact.
+	// For these tests, we check only the path of the enclosing node, but not its
+	// complete text because it's often large when !exact.
 	tests := []testCase{
 		{"// add",
 			"[BlockStmt FuncDecl File],false"},

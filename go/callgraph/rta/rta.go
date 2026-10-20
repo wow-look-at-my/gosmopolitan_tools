@@ -1,40 +1,19 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// This package provides Rapid Type Analysis (RTA) for Go, a fast
-// algorithm for call graph construction and discovery of reachable code
-// (and hence dead code) and runtime types.  The algorithm was first
-// described in:
+// This package provides Rapid Type Analysis (RTA) for Go, a fast algorithm
+// for call graph construction and discovery of reachable code (and hence dead
+// code) and runtime types. The algorithm was first described in.
 //
-// David F. Bacon and Peter F. Sweeney. 1996.
-// Fast static analysis of C++ virtual function calls. (OOPSLA '96)
-// http://doi.acm.org/10.1145/236337.236371
+// David F. Bacon and Peter F. Sweeney. Fast static analysis of C++ virtual
+// function calls. (OOPSLA '96) http://doi.acm.org/10.1145/236337.236371
 //
-// The algorithm uses dynamic programming to tabulate the cross-product
-// of the set of known "address-taken" functions with the set of known
-// dynamic calls of the same type.  As each new address-taken function
-// is discovered, call graph edges are added from each known callsite,
-// and as each new call site is discovered, call graph edges are added
-// from it to each known address-taken function.
-//
-// A similar approach is used for dynamic calls via interfaces: it
-// tabulates the cross-product of the set of known "runtime types",
-// i.e. types that may appear in an interface value, or may be derived from
-// one via reflection, with the set of known "invoke"-mode dynamic
-// calls.  As each new runtime type is discovered, call edges are
-// added from the known call sites, and as each new call site is
-// discovered, call graph edges are added to each compatible
-// method.
-//
-// In addition, we must consider as reachable all address-taken
-// functions and all exported methods of any runtime type, since they
-// may be called via reflection.
-//
-// Each time a newly added call edge causes a new function to become
-// reachable, the code of that function is analyzed for more call sites,
-// address-taken functions, and runtime types.  The process continues
-// until a fixed point is reached.
+// Consider the algorithm uses dynamic programming to tabulate the
+// cross-product of the set of known "address-taken". Those uses functions
+// with the set of known dynamic calls of the same type. As each new
+// address-taken function is discovered, call graph edges are added from each
+// known callsite. And as each new call site is discovered, call graph edges
+// are added from it to each known address-taken function.
 package rta // import "golang.org/x/tools/go/callgraph/rta"
 
 import (
@@ -51,32 +30,13 @@ import (
 // A Result holds the results of Rapid Type Analysis, which includes the
 // set of reachable functions/methods, runtime types, and the call graph.
 type Result struct {
-	// CallGraph is the discovered callgraph.
-	// It does not include edges for calls made via reflection.
+	// CallGraph is the discovered callgraph. It does not include edges for calls made via reflection.
 	CallGraph *callgraph.Graph
 
 	// Reachable contains the set of reachable functions and methods.
-	// This includes exported methods of runtime types, since
-	// they may be accessed via reflection.
-	// The value indicates whether the function is address-taken.
-	//
-	// (We wrap the bool in a struct to avoid inadvertent use of
-	// "if Reachable[f] {" to test for set membership.)
 	Reachable map[*ssa.Function]struct{ AddrTaken bool }
 
-	// RuntimeTypes contains the set of types that are needed at
-	// runtime, for interfaces or reflection.
-	//
-	// The value indicates whether the type is inaccessible to reflection.
-	// Consider:
-	// 	type A struct{B}
-	// 	fmt.Println(new(A))
-	// Types *A, A and B are accessible to reflection, but the unnamed
-	// type struct{B} is not.
-	//
-	// TODO(adonovan): populating this field is expensive yet it
-	// is never used in x/tools. Add a revised [Analyze] API that
-	// provides the option not to set it.
+	// RuntimeTypes contains the set of types that are needed at runtime, for interfaces or reflection.
 	RuntimeTypes typeutil.Map
 }
 
@@ -91,29 +51,20 @@ type rta struct {
 	worklist []*ssa.Function // list of functions to visit
 
 	// addrTakenFuncsBySig contains all address-taken *Functions, grouped by signature.
-	// Keys are *types.Signature, values are map[*ssa.Function]bool sets.
 	addrTakenFuncsBySig typeutil.Map
 
 	// dynCallSites contains all dynamic "call"-mode call sites, grouped by signature.
-	// Keys are *types.Signature, values are unordered []ssa.CallInstruction.
 	dynCallSites typeutil.Map
 
 	// invokeSites contains all "invoke"-mode call sites, grouped by interface.
-	// Keys are *types.Interface (never *types.Named),
-	// Values are unordered []ssa.CallInstruction sets.
 	invokeSites typeutil.Map
 
-	// The following two maps together define the subset of the
-	// m:n "implements" relation needed by the algorithm.
+	// The following maps together define the subset of the m:n "implements" relation needed by the algorithm.
 
-	// concreteTypes maps each concrete type to information about it.
-	// Keys are types.Type, values are *concreteTypeInfo.
-	// Only concrete types used as MakeInterface operands are included.
+	// concreteTypes maps each concrete type to information about it. Keys are types.Type, values are *concreteTypeInfo.
 	concreteTypes typeutil.Map
 
 	// interfaceTypes maps each interface type to information about it.
-	// Keys are *types.Interface, values are *interfaceTypeInfo.
-	// Only interfaces used in "invoke"-mode CallInstructions are included.
 	interfaceTypes typeutil.Map
 }
 
@@ -140,7 +91,7 @@ func (r *rta) addReachable(f *ssa.Function, addrTaken bool) {
 	}
 	reachable[f] = v
 	if len(reachable) > n {
-		// First time seeing f.  Add it to the worklist.
+		// First time seeing f. Add it to the worklist.
 		r.worklist = append(r.worklist, f)
 	}
 }
@@ -176,35 +127,14 @@ func (r *rta) visitAddrTakenFunc(f *ssa.Function) {
 		// First time seeing f.
 		funcs[f] = true
 
-		// If we've seen any dyncalls of this type, mark it reachable,
-		// and add call graph edges.
+		// If we've seen any dyncalls of this type, mark it reachable, and add call graph edges.
 		sites, _ := r.dynCallSites.At(S).([]ssa.CallInstruction)
 		for _, site := range sites {
 			r.addEdge(site.Parent(), site, f, true)
 		}
 
-		// If the program includes (*reflect.Value).Call,
-		// add a dynamic call edge from it to any address-taken
-		// function, regardless of signature.
-		//
-		// This isn't perfect.
-		// - The actual call comes from an internal function
-		//   called reflect.call, but we can't rely on that here.
-		// - reflect.Value.CallSlice behaves similarly,
-		//   but we don't bother to create callgraph edges from
-		//   it as well as it wouldn't fundamentally change the
-		//   reachability but it would add a bunch more edges.
-		// - We assume that if reflect.Value.Call is among
-		//   the dependencies of the application, it is itself
-		//   reachable. (It would be more accurate to defer
-		//   all the addEdges below until r.V.Call itself
-		//   becomes reachable.)
-		// - Fake call graph edges are added from r.V.Call to
-		//   each address-taken function, but not to every
-		//   method reachable through a materialized rtype,
-		//   which is a little inconsistent. Still, the
-		//   reachable set includes both kinds, which is what
-		//   matters for e.g. deadcode detection.)
+		// If the program includes (*reflect.Value).Call, add a dynamic call edge
+		// from it to any address-taken function, regardless of signature.
 		if r.reflectValueCall != nil {
 			var site ssa.CallInstruction = nil // can't find actual call site
 			r.addEdge(r.reflectValueCall, site, f, true)
@@ -220,8 +150,7 @@ func (r *rta) visitDynCall(site ssa.CallInstruction) {
 	sites, _ := r.dynCallSites.At(S).([]ssa.CallInstruction)
 	r.dynCallSites.Set(S, append(sites, site))
 
-	// For each function of signature S that we know is address-taken,
-	// add an edge and mark it reachable.
+	// For each function of signature S that we know is address-taken, add an edge and mark it reachable.
 	funcs, _ := r.addrTakenFuncsBySig.At(S).(map[*ssa.Function]bool)
 	for g := range funcs {
 		r.addEdge(site.Parent(), site, g, true)
@@ -274,16 +203,11 @@ func (r *rta) visitFunc(f *ssa.Function) {
 					r.visitDynCall(instr)
 				}
 
-				// Ignore the call-position operand when
-				// looking for address-taken Functions.
-				// Hack: assume this is rands[0].
+				// Ignore the call-position operand when looking for address-taken Functions. Hack: assume this is rands[0].
 				rands = rands[1:]
 
 			case *ssa.MakeInterface:
-				// Converting a value of type T to an
-				// interface materializes its runtime
-				// type, allowing any of its exported
-				// methods to be called though reflection.
+				// Converting a value of type T to an interface materializes its runtime type.
 				r.addRuntimeType(instr.X.Type())
 			}
 
@@ -298,16 +222,15 @@ func (r *rta) visitFunc(f *ssa.Function) {
 }
 
 // Analyze performs Rapid Type Analysis, starting at the specified root
-// functions.  It returns nil if no roots were specified.
+// functions. It returns nil if no roots were specified.
 //
 // The root functions must be one or more entrypoints (main and init
-// functions) of a complete SSA program, with function bodies for all
-// dependencies, constructed with the [ssa.InstantiateGenerics] mode
-// flag.
+// functions) of a complete SSA program. Those functions are with function
+// bodies for all dependencies, constructed with the
+// [ssa.InstantiateGenerics] mode flag.
 //
-// If buildCallGraph is true, Result.CallGraph will contain a call
-// graph; otherwise, only the other fields (reachable functions) are
-// populated.
+// If buildCallGraph is true, Result.CallGraph will contain a call graph;
+// otherwise, only the other fields (reachable functions) are populated.
 func Analyze(roots []*ssa.Function, buildCallGraph bool) *Result {
 	if len(roots) == 0 {
 		return nil
@@ -319,9 +242,7 @@ func Analyze(roots []*ssa.Function, buildCallGraph bool) *Result {
 	}
 
 	if buildCallGraph {
-		// TODO(adonovan): change callgraph API to eliminate the
-		// notion of a distinguished root node.  Some callgraphs
-		// have many roots, or none.
+		// TODO(adonovan): change callgraph API to eliminate the notion of a distinguished root node.
 		r.result.CallGraph = callgraph.New(roots[0])
 	}
 
@@ -344,9 +265,7 @@ func Analyze(roots []*ssa.Function, buildCallGraph bool) *Result {
 		r.addReachable(root, false)
 	}
 
-	// Visit functions, processing their instructions, and adding
-	// new functions to the worklist, until a fixed point is
-	// reached.
+	// Visit functions, processing their instructions, and adding new functions to the worklist.
 	var shadow []*ssa.Function // for efficiency, we double-buffer the worklist
 	for len(r.worklist) > 0 {
 		shadow, r.worklist = r.worklist, shadow[:0]
@@ -357,7 +276,7 @@ func Analyze(roots []*ssa.Function, buildCallGraph bool) *Result {
 	return r.result
 }
 
-// interfaces(C) returns all currently known interfaces implemented by C.
+// interfaces(C) returns all known interfaces implemented by C.
 func (r *rta) interfaces(C types.Type) []*types.Interface {
 	// Create an info for C the first time we see it.
 	var cinfo *concreteTypeInfo
@@ -384,7 +303,7 @@ func (r *rta) interfaces(C types.Type) []*types.Interface {
 	return cinfo.implements
 }
 
-// implementations(I) returns all currently known concrete types that implement I.
+// implementations(I) returns all known concrete types that implement I.
 func (r *rta) implementations(I *types.Interface) []types.Type {
 	// Create an info for I the first time we see it.
 	var iinfo *interfaceTypeInfo
@@ -417,10 +336,7 @@ func (r *rta) addRuntimeType(T types.Type) {
 	typesinternal.ForEachElement(methodSetOf, T, func(T types.Type, access bool) bool {
 		if prevInaccess, ok := r.result.RuntimeTypes.At(T).(bool); ok {
 			if prevInaccess && access {
-				// A type previously marked inaccessible (ok && prevInaccess)
-				// is now found to be accessible (access):
-				// record that it is no longer inaccessible (false).
-				// (The inverted sense of the map is regrettable.)
+				// A type marked inaccessible (ok && prevInaccess) is now found to be accessible (access): record that it is no longer inaccessible.
 				r.result.RuntimeTypes.Set(T, false)
 			}
 			return true // seen; prune traversal
@@ -437,9 +353,7 @@ func (r *rta) addRuntimeType(T types.Type) {
 					continue
 				}
 				if obj.Type().(*types.Signature).TypeParams() != nil {
-					// Skip generic methods: they have no single ssa.Function,
-					// so MethodValue returns nil, and reflection cannot call
-					// them without instantiating them first.
+					// Skip generic methods: they have no single ssa.Function, so MethodValue returns nil.
 					continue
 				}
 				r.addReachable(r.prog.MethodValue(sel), true)
@@ -482,8 +396,6 @@ func fingerprint(mset *types.MethodSet) uint64 {
 // implements reports whether types.Implements(cinfo.C, iinfo.I),
 // but more efficiently.
 func implements(cinfo *concreteTypeInfo, iinfo *interfaceTypeInfo) (got bool) {
-	// The concrete type must have at least the methods
-	// (bits) of the interface type. Use a bitwise subset
-	// test to reject most candidates quickly.
+	// The concrete type must have at least the methods (bits) of the interface type.
 	return iinfo.fprint & ^cinfo.fprint == 0 && types.Implements(cinfo.C, iinfo.I)
 }

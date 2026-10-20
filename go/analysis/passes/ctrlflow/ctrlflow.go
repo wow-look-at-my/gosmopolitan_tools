@@ -1,11 +1,9 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package ctrlflow is an analysis that provides a syntactic
-// control-flow graph (CFG) for the body of a function.
-// It records whether a function cannot return.
-// By itself, it does not report any diagnostics.
+// Package ctrlflow is an analysis that provides a syntactic control-flow
+// graph (CFG) for the body of a function. It records whether a function
+// cannot return. By itself, it does not report any diagnostics.
 package ctrlflow
 
 import (
@@ -49,24 +47,13 @@ type CFGs struct {
 	pass      *analysis.Pass       // transient; nil after construction
 }
 
-// NoReturn reports whether the specified control-flow graph cannot return normally.
-//
-// It is defined for at least all function symbols that appear as the static callee of a
-// CallExpr in the current package, even if the callee was imported from a dependency.
-//
-// The result may incorporate interprocedural information based on induction of
-// the "no return" property over the static call graph within the package.
-// For example, if f simply calls g and g always calls os.Exit, then both f and g may
-// be deemed never to return.
+// NoReturn reports whether the specified control-flow graph cannot return
+// normally.
 func (c *CFGs) NoReturn(fn *types.Func) bool {
 	return c.noReturn[fn]
 }
 
-// CFGs has two maps: funcDecls for named functions and funcLits for
-// unnamed ones. Unlike funcLits, the funcDecls map is not keyed by its
-// syntax node, *ast.FuncDecl, because callMayReturn needs to do a
-// look-up by *types.Func, and you can get from an *ast.FuncDecl to a
-// *types.Func but not the other way.
+// CFGs has maps: funcDecls for named functions and funcLits for unnamed ones.
 
 type declInfo struct {
 	decl    *ast.FuncDecl
@@ -97,13 +84,9 @@ func (c *CFGs) FuncLit(lit *ast.FuncLit) *cfg.CFG {
 func run(pass *analysis.Pass) (any, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
-	// Because CFG construction consumes and produces noReturn
-	// facts, CFGs for exported FuncDecls must be built before 'run'
-	// returns; we cannot construct them lazily.
-	// (We could build CFGs for FuncLits lazily,
-	// but the benefit is marginal.)
+	// Because CFG construction consumes and produces noReturn facts, CFGs for exported FuncDecls must be built before 'run' returns; we cannot construct them lazily.
 
-	// Pass 1. Map types.Funcs to ast.FuncDecls in this package.
+	// Map types.Funcs to ast.FuncDecls in this package.
 	funcDecls := make(map[*types.Func]*declInfo) // functions and methods
 	funcLits := make(map[*ast.FuncLit]*litInfo)
 
@@ -136,19 +119,16 @@ func run(pass *analysis.Pass) (any, error) {
 		pass:      pass,
 	}
 
-	// Pass 2. Build CFGs.
+	// Build CFGs.
 
-	// Build CFGs for named functions.
-	// Cycles in the static call graph are broken
+	// Build CFGs for named functions. Cycles in the static call graph are broken
 	// arbitrarily but deterministically.
-	// We create noReturn facts as discovered.
 	for _, fn := range decls {
 		c.buildDecl(fn, funcDecls[fn])
 	}
 
-	// Build CFGs for literal functions.
-	// These aren't relevant to facts (since they aren't named)
-	// but are required for the CFGs.FuncLit API.
+	// Build CFGs for literal functions. These aren't relevant to facts (since
+	// they aren't named) but are required for the CFGs.FuncLit API.
 	for _, lit := range lits {
 		li := funcLits[lit]
 		if li.cfg == nil {
@@ -167,11 +147,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 // di.cfg may be nil on return.
 func (c *CFGs) buildDecl(fn *types.Func, di *declInfo) {
-	// buildDecl may call itself recursively for the same function,
-	// because cfg.New is passed the callMayReturn method, which
-	// builds the CFG of the callee, leading to recursion.
-	// The buildDecl call tree thus resembles the static call graph.
-	// We mark each node when we start working on it to break cycles.
+	// buildDecl may call itself recursively for the same function.
 
 	if di.started {
 		return // break cycle
@@ -205,11 +181,7 @@ func (c *CFGs) callMayReturn(call *ast.CallExpr) (r bool) {
 		return false // panic never returns
 	}
 
-	// Is this a static call? Also includes static functions
-	// parameterized by a type. Such functions may or may not
-	// return depending on the parameter type, but in some
-	// cases the answer is definite. We let ctrlflow figure
-	// that out.
+	// Is this a static call? Also includes static functions parameterized by a type.
 	fn := typeutil.StaticCallee(c.pass.TypesInfo, call)
 	if fn == nil {
 		return true // callee not statically known; be conservative
@@ -221,8 +193,7 @@ func (c *CFGs) callMayReturn(call *ast.CallExpr) (r bool) {
 		return !c.noReturn[fn]
 	}
 
-	// Not declared in this package.
-	// Is there a fact from another package?
+	// Not declared in this package. Is there a fact from another package?
 	if c.pass.ImportObjectFact(fn, new(noReturn)) {
 		c.noReturn[fn] = true
 		return false
@@ -233,10 +204,10 @@ func (c *CFGs) callMayReturn(call *ast.CallExpr) (r bool) {
 
 var panicBuiltin = types.Universe.Lookup("panic").(*types.Builtin)
 
-// knownIntrinsic reports whether a function intrinsically never
-// returns because it stops execution of the calling thread, or does
-// in fact return, contrary to its apparent body, because it is
-// handled specially by the compiler.
+// knownIntrinsic reports whether a function intrinsically never returns
+// because it stops execution of the calling thread, or does return, contrary
+// to its apparent body. This is because it is handled specially by the
+// compiler.
 //
 // It is the base case in the recursion.
 func knownIntrinsic(fn *types.Func) (noreturn, known bool) {
@@ -245,10 +216,7 @@ func knownIntrinsic(fn *types.Func) (noreturn, known bool) {
 	// Functions known intrinsically never to return.
 	if typesinternal.IsFunctionNamed(fn, "syscall", "Exit", "ExitProcess", "ExitThread") ||
 		typesinternal.IsFunctionNamed(fn, "runtime", "Goexit", "fatalthrow", "fatalpanic", "exit") ||
-		// Following staticcheck (see go/ir/exits.go) we include functions
-		// in several popular logging packages whose no-return status is
-		// beyond the analysis to infer.
-		// TODO(adonovan): make this list extensible.
+		// Following staticcheck.
 		typesinternal.IsMethodNamed(fn, "go.uber.org/zap", "Logger", "Fatal", "Panic") ||
 		typesinternal.IsMethodNamed(fn, "go.uber.org/zap", "SugaredLogger", "Fatal", "Fatalw", "Fatalf", "Panic", "Panicw", "Panicf") ||
 		typesinternal.IsMethodNamed(fn, "github.com/sirupsen/logrus", "Logger", "Exit", "Panic", "Panicf", "Panicln") ||
@@ -258,17 +226,8 @@ func knownIntrinsic(fn *types.Func) (noreturn, known bool) {
 		return true, true
 	}
 
-	// Compiler intrinsics known to return, contrary to
-	// what analysis of the function body would conclude.
-	//
-	// Not all such intrinsics must be listed here: ctrlflow
-	// considers any function called for its value--such as
-	// crypto/internal/constanttime.bool2Uint8--to potentially
-	// return; only functions called as a statement, for effects,
-	// are no-return candidates.
-	//
-	// Unfortunately this does sometimes mean peering into internals.
-	// Where possible, use the nearest enclosing public API function.
+	// Compiler intrinsics known to return, contrary to what analysis of the
+	// function body would conclude.
 	if typesinternal.IsFunctionNamed(fn, "internal/abi", "EscapeNonString") ||
 		typesinternal.IsFunctionNamed(fn, "hash/maphash", "Comparable") {
 		return false, true

@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package buildutil
 
@@ -15,19 +14,13 @@ import (
 	"strings"
 )
 
-// OverlayContext overlays a build.Context with additional files from
-// a map. Files in the map take precedence over other files.
+// OverlayContext overlays a build.Context with additional files from a map.
+// Files in the map take precedence over other files.
 //
-// In addition to plain string comparison, two file names are
-// considered equal if their base names match and their directory
-// components point at the same directory on the file system. That is,
-// symbolic links are followed for directories, but not files.
-//
-// A common use case for OverlayContext is to allow editors to pass in
-// a set of unsaved, modified files.
-//
-// Currently, only the Context.OpenFile function will respect the
-// overlay. This may change in the future.
+// In addition to plain string comparison, file names are considered equal if
+// their base names match. Their directory components point at the same
+// directory on the file system. That is, symbolic links are followed for
+// directories, but not files.
 func OverlayContext(orig *build.Context, overlay map[string][]byte) *build.Context {
 	// TODO(dominikh): Implement IsDir, HasSubdir and ReadDir
 

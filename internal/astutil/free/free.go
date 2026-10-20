@@ -1,10 +1,9 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package free defines utilities for computing the free variables of
 // a syntax tree without type information. This is inherently
-// heuristic because of the T{f: x} ambiguity, in which f may or may
+// heuristic because of the T{f. X} ambiguity, in which f may or may
 // not be a lexical reference depending on whether T is a struct type.
 package free
 
@@ -16,40 +15,14 @@ import (
 // Copied, with considerable changes, from go/parser/resolver.go
 // at af53bd2c03.
 
-// Names computes an approximation to the set of free names of the AST
-// at node n based solely on syntax.
-//
-// In the absence of composite literals, the set of free names is exact. Composite
-// literals introduce an ambiguity that can only be resolved with type information:
-// whether F is a field name or a value in `T{F: ...}`.
-// If includeComplitIdents is true, this function conservatively assumes
-// T is not a struct type, so freeishNames overapproximates: the resulting
-// set may contain spurious entries that are not free lexical references
-// but are references to struct fields.
-// If includeComplitIdents is false, this function assumes that T *is*
-// a struct type, so freeishNames underapproximates: the resulting set
-// may omit names that are free lexical references.
-//
-// TODO(adonovan): includeComplitIdents is a crude hammer: the caller
-// may have partial or heuristic information about whether a given T
-// is struct type. Replace includeComplitIdents with a hook to query
-// the caller.
-//
-// The code is based on go/parser.resolveFile, but heavily simplified. Crucial
-// differences are:
-//   - Instead of resolving names to their objects, this function merely records
-//     whether they are free.
-//   - Labels are ignored: they do not refer to values.
-//   - This is never called on ImportSpecs, so the function panics if it sees one.
+// Names computes an approximation to the set of free names of the AST at node
+// n based solely on syntax.
 func Names(n ast.Node, includeComplitIdents bool) map[string]bool {
 	v := &freeVisitor{
 		free:                 make(map[string]bool),
 		includeComplitIdents: includeComplitIdents,
 	}
-	// Begin with a scope, even though n might not be a form that establishes a scope.
-	// For example, n might be:
-	//    x := ...
-	// Then we need to add the first x to some scope.
+	// Begin with a scope, even though n might not be a form that establishes a scope. For example, n might be: x := ...
 	v.openScope()
 	ast.Walk(v, n)
 	v.closeScope()
@@ -114,16 +87,12 @@ func (v *freeVisitor) Visit(n ast.Node) ast.Visitor {
 		for _, e := range n.Elts {
 			if kv, _ := e.(*ast.KeyValueExpr); kv != nil {
 				if ident, _ := kv.Key.(*ast.Ident); ident != nil {
-					// It is not possible from syntax alone to know whether
-					// an identifier used as a composite literal key is
-					// a struct field (if n.Type is a struct) or a value
-					// (if n.Type is a map, slice or array).
+					// It is not possible from syntax alone to know whether an identifier
+					// used as a composite literal key is a struct field.
 					if v.includeComplitIdents {
-						// Over-approximate by treating both cases as potentially
-						// free names.
+						// Over-approximate by treating both cases as potentially free names.
 						v.use(ident)
 					} else {
-						// Under-approximate by ignoring potentially free names.
 					}
 				} else {
 					v.walk(kv.Key)
@@ -242,9 +211,7 @@ func (v *freeVisitor) Visit(n ast.Node) ast.Visitor {
 		case token.TYPE:
 			for _, spec := range n.Specs {
 				spec := spec.(*ast.TypeSpec)
-				// Go spec: The scope of a type identifier declared inside a
-				// function begins at the identifier in the TypeSpec and ends
-				// at the end of the innermost containing block.
+				// Go spec.
 				v.declare(spec.Name)
 				if spec.TypeParams != nil {
 					v.openScope()
@@ -360,11 +327,7 @@ func (v *freeVisitor) walkFieldList(list *ast.FieldList) {
 
 func (v *freeVisitor) shortVarDecl(lhs []ast.Expr) {
 	// Go spec: A short variable declaration may redeclare variables provided
-	// they were originally declared in the same block with the same type, and
-	// at least one of the non-blank variables is new.
-	//
-	// However, it doesn't matter to free analysis whether a variable is declared
-	// fresh or redeclared.
+	// they were declared in the same block with the same type.
 	for _, x := range lhs {
 		// In a well-formed program each expr must be an identifier,
 		// but be forgiving.
@@ -381,7 +344,6 @@ func walkSlice[S ~[]E, E ast.Node](r *freeVisitor, list S) {
 }
 
 // walkFieldTypes resolves the types of the walkFieldTypes in list.
-// The companion method declareFieldList declares the names of the walkFieldTypes.
 func (v *freeVisitor) walkFieldTypes(list *ast.FieldList) {
 	if list != nil {
 		for _, f := range list.List {
@@ -392,7 +354,6 @@ func (v *freeVisitor) walkFieldTypes(list *ast.FieldList) {
 
 // declareFieldNames declares the names of the fields in list.
 // (Names in a FieldList always establish new bindings.)
-// The companion method resolveFieldList resolves the types of the fields.
 func (v *freeVisitor) declareFieldNames(list *ast.FieldList) {
 	if list != nil {
 		for _, f := range list.List {

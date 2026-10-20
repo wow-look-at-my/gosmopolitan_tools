@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Stringer is a tool to automate the creation of methods that satisfy the fmt.Stringer
 // interface. Given the name of a (signed or unsigned) integer type T that has constants
@@ -14,66 +13,6 @@
 // Stringer works best with constants that are consecutive values such as created using iota,
 // but creates good code regardless. In the future it might also provide custom support for
 // constant sets that are bit patterns.
-//
-// For example, given this snippet,
-//
-//	package painkiller
-//
-//	type Pill int
-//
-//	const (
-//		Placebo Pill = iota
-//		Aspirin
-//		Ibuprofen
-//		Paracetamol
-//		Acetaminophen = Paracetamol
-//	)
-//
-// running this command
-//
-//	stringer -type=Pill
-//
-// in the same directory will create the file pill_string.go, in package painkiller,
-// containing a definition of
-//
-//	func (Pill) String() string
-//
-// That method will translate the value of a Pill constant to the string representation
-// of the respective constant name, so that the call fmt.Print(painkiller.Aspirin) will
-// print the string "Aspirin".
-//
-// Typically this process would be run using go generate, like this:
-//
-//	//go:generate stringer -type=Pill
-//
-// If multiple constants have the same value, the lexically first matching name will
-// be used (in the example, Acetaminophen will print as "Paracetamol").
-//
-// With no arguments, it processes the package in the current directory.
-// Otherwise, the arguments must name a single directory holding a Go package
-// or a set of Go source files that represent a single Go package.
-//
-// The -type flag accepts a comma-separated list of types so a single run can
-// generate methods for multiple types. The default output file is t_string.go,
-// where t is the lower-cased name of the first type listed. It can be overridden
-// with the -output flag.
-//
-// Types can also be declared in tests, in which case type declarations in the
-// non-test package or its test variant are preferred over types defined in the
-// package with suffix "_test".
-// The default output file for type declarations in tests is t_string_test.go with t picked as above.
-//
-// The -linecomment flag tells stringer to generate the text of any line comment, trimmed
-// of leading spaces, instead of the constant name. For instance, if the constants above had a
-// Pill prefix, one could write
-//
-//	PillAspirin // Aspirin
-//
-// to suppress it in the output.
-//
-// The -trimprefix flag specifies a prefix to remove from the constant names
-// when generating the string representations. For instance, -trimprefix=Pill
-// would be an alternative way to ensure that PillAspirin.String() == "Aspirin".
 package main // import "golang.org/x/tools/cmd/stringer"
 
 import (
@@ -128,7 +67,7 @@ func main() {
 		tags = strings.Split(*buildTags, ",")
 	}
 
-	// We accept either one directory or a list of files. Which do we have?
+	// We accept either directory or a list of files. Which do we have?
 	args := flag.Args()
 	if len(args) == 0 {
 		// Default: process whole package in current directory.
@@ -147,17 +86,7 @@ func main() {
 		dir = filepath.Dir(args[0])
 	}
 
-	// For each type, generate code in the first package where the type is declared.
-	// The order of packages is as follows:
-	// package x
-	// package x compiled for tests
-	// package x_test
-	//
-	// Each package pass could result in a separate generated file.
-	// These files must have the same package and test/not-test nature as the types
-	// from which they were generated.
-	//
-	// Types will be excluded when generated, to avoid repetitions.
+	// For each type, generate code in the first package where the type is declared. The order of packages is as follows.
 	pkgs := loadPackages(args, tags, *trimprefix, *linecomment, nil /* logf */)
 	sort.Slice(pkgs, func(i, j int) bool {
 		// Put x_test packages last.
@@ -207,10 +136,7 @@ func main() {
 		// Write to file.
 		outputName := *output
 		if outputName == "" {
-			// Type names will be unique across packages since only the first
-			// match is picked.
-			// So there won't be collisions between a package compiled for tests
-			// and the separate package of tests (package foo_test).
+			// Type names will be unique across packages since only the first match is picked.
 			outputName = filepath.Join(dir, baseName(pkg, foundTypes[0]))
 		}
 		err := os.WriteFile(outputName, src, 0o644)
@@ -274,7 +200,7 @@ type Package struct {
 	hasTestFiles bool
 }
 
-// loadPackages analyzes the single package constructed from the patterns and tags.
+// loadPackages analyzes the package constructed from the patterns and tags.
 // loadPackages exits if there is an error.
 //
 // Returns all variants (such as tests) of the package.
@@ -318,9 +244,8 @@ func loadPackages(
 			}
 		}
 
-		// Keep track of test files, since we might want to generated
-		// code that ends up in that kind of package.
-		// Can be replaced once https://go.dev/issue/38445 lands.
+		// Keep track of test files, since we might want to generated code that ends
+		// up in that kind of package.
 		for _, f := range pkg.GoFiles {
 			if strings.HasSuffix(f, "_test.go") {
 				p.hasTestFiles = true
@@ -359,18 +284,8 @@ func (g *Generator) generate(typeName string, values []Value) {
 	}
 	g.Printf("}\n")
 	runs := splitIntoRuns(values)
-	// The decision of which pattern to use depends on the number of
-	// runs in the numbers. If there's only one, it's easy. For more than
-	// one, there's a tradeoff between complexity and size of the data
-	// and code vs. the simplicity of a map. A map takes more space,
-	// but so does the code. The decision here (crossover at 10) is
-	// arbitrary, but considers that for large numbers of runs the cost
-	// of the linear scan in the switch might become important, and
-	// rather than use yet another algorithm such as binary search,
-	// we punt and use a map. In any case, the likelihood of a map
-	// being necessary for any realistic example other than bitmasks
-	// is very low. And bitmasks probably deserve their own analysis,
-	// to be done some other day.
+	// The decision of which pattern to use depends on the number of runs in the
+	// numbers. If there's only one, it's easy.
 	switch {
 	case len(runs) == 1:
 		g.buildOneRun(runs, typeName)
@@ -382,16 +297,11 @@ func (g *Generator) generate(typeName string, values []Value) {
 }
 
 // splitIntoRuns breaks the values into runs of contiguous sequences.
-// For example, given 1,2,3,5,6,7 it returns {1,2,3},{5,6,7}.
 // The input slice is known to be non-empty.
 func splitIntoRuns(values []Value) [][]Value {
 	// We use stable sort so the lexically first name is chosen for equal elements.
 	sort.Stable(byValue(values))
-	// Remove duplicates. Stable sort has put the one we want to print first,
-	// so use that one. The String method won't care about which named constant
-	// was the argument, so the first name for the given value is the only one to keep.
-	// We need to do this because identical values would cause the switch or map
-	// to fail to compile.
+	// Remove duplicates. Stable sort has put the one we want to print first, so use that one.
 	j := 1
 	for i := 1; i < len(values); i++ {
 		if values[i].value != values[i-1].value {
@@ -417,8 +327,7 @@ func splitIntoRuns(values []Value) [][]Value {
 func (g *Generator) format() []byte {
 	src, err := format.Source(g.buf.Bytes())
 	if err != nil {
-		// Should never happen, but can arise when developing this code.
-		// The user can compile the output to see the error.
+		// Should never happen, but can arise when developing this code. The user can compile the output to see the error.
 		log.Printf("warning: internal error: invalid Go generated: %s", err)
 		log.Printf("warning: compile the package to analyze the error")
 		return g.buf.Bytes()
@@ -430,11 +339,7 @@ func (g *Generator) format() []byte {
 type Value struct {
 	originalName string // The name of the constant.
 	name         string // The name with trimmed prefix.
-	// The value is stored as a bit pattern alone. The boolean tells us
-	// whether to interpret it as an int64 or a uint64; the only place
-	// this matters is when sorting.
-	// Much of the time the str field is all we need; it is printed
-	// by Value.String.
+	// The value is stored as a bit pattern alone.
 	value  uint64 // Will be converted to int64 when needed.
 	signed bool   // Whether the constant is a signed type.
 	str    string // The string representation given by the "go/constant" package.
@@ -445,8 +350,6 @@ func (v *Value) String() string {
 }
 
 // byValue lets us sort the constants into increasing order.
-// We take care in the Less method to sort in signed or unsigned order,
-// as appropriate.
 type byValue []Value
 
 func (b byValue) Len() int      { return len(b) }
@@ -465,8 +368,7 @@ func (f *File) genDecl(node ast.Node) bool {
 		// We only care about const declarations.
 		return true
 	}
-	// The name of the type of the constants we are declaring.
-	// Can change if this is a multi-element declaration.
+	// The name of the type of the constants we are declaring. Can change if this is a multi-element declaration.
 	typ := ""
 	// Loop over the elements of the declaration. Each element is a ValueSpec:
 	// a list of names possibly followed by a type, possibly followed by values.
@@ -475,15 +377,10 @@ func (f *File) genDecl(node ast.Node) bool {
 	for _, spec := range decl.Specs {
 		vspec := spec.(*ast.ValueSpec) // Guaranteed to succeed as this is CONST.
 		if vspec.Type == nil && len(vspec.Values) > 0 {
-			// "X = 1". With no type but a value. If the constant is untyped,
-			// skip this vspec and reset the remembered type.
+			// "X = 1". With no type but a value. If the constant is untyped, skip this vspec and reset the remembered type.
 			typ = ""
 
 			// If this is a simple type conversion, remember the type.
-			// We don't mind if this is actually a call; a qualified call won't
-			// be matched (that will be SelectorExpr, not Ident), and only unusual
-			// situations will result in a function call that appears to be
-			// a type conversion.
 			ce, ok := vspec.Values[0].(*ast.CallExpr)
 			if !ok {
 				continue
@@ -513,9 +410,7 @@ func (f *File) genDecl(node ast.Node) bool {
 			if name.Name == "_" {
 				continue
 			}
-			// This dance lets the type checker find the values for us. It's a
-			// bit tricky: look up the object declared by the name, find its
-			// types.Const, and extract its value.
+			// This dance lets the type checker find the values for us.
 			obj, ok := f.pkg.defs[name]
 			if !ok {
 				log.Fatalf("no value for constant %s", name)
@@ -555,9 +450,8 @@ func (f *File) genDecl(node ast.Node) bool {
 
 // Helpers
 
-// usize returns the number of bits of the smallest unsigned integer
-// type that will hold n. Used to create the smallest possible slice of
-// integers to use as indexes into the concatenated strings.
+// usize returns the number of bits of the smallest unsigned integer type that
+// will hold n.
 func usize(n int) int {
 	switch {
 	case n < 1<<8:
@@ -565,7 +459,6 @@ func usize(n int) int {
 	case n < 1<<16:
 		return 16
 	default:
-		// 2^32 is enough constants for anyone.
 		return 32
 	}
 }
@@ -644,7 +537,7 @@ func (g *Generator) buildOneRun(runs [][]Value, typeName string) {
 	g.Printf(stringOneRun, typeName, values[0].String())
 }
 
-// Arguments to format are:
+// Arguments to format are.
 //
 //	[1]: type name
 //	[2]: lowest defined value for type, as a string
@@ -671,7 +564,6 @@ func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 			continue
 		}
 		if values[0].value == 0 && !values[0].signed {
-			// For an unsigned lower bound of 0, "0 <= i" would be redundant.
 			g.Printf("\tcase i <= %s:\n", &values[len(values)-1])
 		} else {
 			g.Printf("\tcase %s <= i && i <= %s:\n", &values[0], &values[len(values)-1])

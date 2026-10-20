@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build plan9
 
@@ -15,9 +14,6 @@ import (
 
 var errFileNotFound = syscall.ENOENT
 
-// lockedErrStrings are the errors Plan 9 file servers return for a file that is
-// already open for exclusive use, mirroring the set recognized by cmd/go's
-// lockedfile.
 var lockedErrStrings = [...]string{
 	"file is locked",                  // cwfs, kfs
 	"exclusive lock",                  // fossil

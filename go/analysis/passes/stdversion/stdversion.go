@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package stdversion reports uses of standard library symbols that are
 // "too new" for the Go version in force in the referring file.
@@ -44,16 +43,13 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	// Prior to go1.22, versions.FileVersion returns only the
-	// toolchain version, which is of no use to us, so
-	// disable this analyzer on earlier versions.
+	// Before go1.22, versions.FileVersion returns only the toolchain version,
+	// which is of no use to us, so disable this analyzer on earlier versions.
 	if !slices.Contains(build.Default.ReleaseTags, "go1.22") {
 		return nil, nil
 	}
 
-	// Don't report diagnostics for modules marked before go1.21,
-	// since at that time the go directive wasn't clearly
-	// specified as a toolchain requirement.
+	// Don't report diagnostics for modules marked before go1.21.
 	pkgVersion := pass.Pkg.GoVersion()
 	if !versions.AtLeast(pkgVersion, "go1.21") {
 		return nil, nil
@@ -76,8 +72,7 @@ func run(pass *analysis.Pass) (any, error) {
 		return disallowed
 	}
 
-	// Scan the syntax looking for references to symbols
-	// that are disallowed by the version of the file.
+	// Scan the syntax looking for references to symbols that are disallowed by the version of the file.
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	nodeFilter := []ast.Node{
 		(*ast.File)(nil),
@@ -92,7 +87,6 @@ func run(pass *analysis.Pass) (any, error) {
 				fileVersion = ""
 			} else {
 				fileVersion = versions.Lang(versions.FileVersion(pass.TypesInfo, n))
-				// (may be "" if unknown)
 			}
 
 		case *ast.Ident:

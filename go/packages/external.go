@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages
 
@@ -17,12 +16,9 @@ import (
 	"strings"
 )
 
-// DriverRequest defines the schema of a request for package metadata
-// from an external driver program. The JSON-encoded DriverRequest
-// message is provided to the driver program's standard input. The
-// query patterns are provided as command-line arguments.
-//
-// See the package documentation for an overview.
+// DriverRequest defines the schema of a request for package metadata from an
+// external driver program. The JSON-encoded DriverRequest message is provided
+// to the driver program's standard input.
 type DriverRequest struct {
 	Mode LoadMode `json:"mode"`
 
@@ -35,57 +31,35 @@ type DriverRequest struct {
 	// Tests specifies whether the patterns should also return test packages.
 	Tests bool `json:"tests"`
 
-	// Overlay maps file paths (relative to the driver's working directory)
-	// to the contents of overlay files (see Config.Overlay).
+	// Overlay maps file paths (relative to the driver's working directory) to the contents of overlay files.
 	Overlay map[string][]byte `json:"overlay"`
 }
 
-// DriverResponse defines the schema of a response from an external
-// driver program, providing the results of a query for package
-// metadata. The driver program must write a JSON-encoded
-// DriverResponse message to its standard output.
-//
-// See the package documentation for an overview.
+// DriverResponse defines the schema of a response from an external driver
+// program, providing the results of a query for package metadata.
 type DriverResponse struct {
-	// NotHandled is returned if the request can't be handled by the current
-	// driver. If an external driver returns a response with NotHandled, the
-	// rest of the DriverResponse is ignored, and go/packages will fallback
-	// to the next driver. If go/packages is extended in the future to support
-	// lists of multiple drivers, go/packages will fall back to the next driver.
+	// NotHandled is returned if the request can't be handled by the current driver.
 	NotHandled bool
 
-	// Compiler and Arch are the arguments pass of types.SizesFor
-	// to get a types.Sizes to use when type checking.
+	// Compiler and Arch are the arguments pass of types.SizesFor to get a types.Sizes to use when type checking.
 	Compiler string
 	Arch     string
 
 	// Roots is the set of package IDs that make up the root packages.
-	// We have to encode this separately because when we encode a single package
-	// we cannot know if it is one of the roots as that requires knowledge of the
-	// graph it is part of.
 	Roots []string `json:",omitempty"`
 
-	// Packages is the full set of packages in the graph.
-	// The packages are not connected into a graph.
-	// The Imports if populated will be stubs that only have their ID set.
-	// Imports will be connected and then type and syntax information added in a
-	// later pass (see refine).
+	// Packages is the full set of packages in the graph. The packages are not connected into a graph.
 	Packages []*Package
 
-	// GoVersion is the minor version number used by the driver
-	// (e.g. the go command on the PATH) when selecting .go files.
-	// Zero means unknown.
+	// GoVersion is the minor version number used by the driver (e.g. the go command on the PATH) when selecting .go files.
 	GoVersion int
 }
 
-// driver is the type for functions that query the build system for the
-// packages named by the patterns.
+// driver is the type for functions that query the build system for the packages named by the patterns.
 type driver func(cfg *Config, patterns []string) (*DriverResponse, error)
 
-// findExternalDriver returns the file path of a tool that supplies
-// the build system package structure, or "" if not found.
-// If GOPACKAGESDRIVER is set in the environment findExternalTool returns its
-// value, otherwise it searches for a binary named gopackagesdriver on the PATH.
+// findExternalDriver returns the file path of a tool that supplies the build
+// system package structure, or "" if not found.
 func findExternalDriver(cfg *Config) driver {
 	const toolPrefix = "GOPACKAGESDRIVER="
 	tool := ""
@@ -120,18 +94,7 @@ func findExternalDriver(cfg *Config) driver {
 		stderr := new(bytes.Buffer)
 		cmd := exec.CommandContext(cfg.Context, tool, patterns...)
 		cmd.Dir = cfg.Dir
-		// The cwd gets resolved to the real path. On Darwin, where
-		// /tmp is a symlink, this breaks anything that expects the
-		// working directory to keep the original path, including the
-		// go command when dealing with modules.
-		//
-		// os.Getwd stdlib has a special feature where if the
-		// cwd and the PWD are the same node then it trusts
-		// the PWD, so by setting it in the env for the child
-		// process we fix up all the paths returned by the go
-		// command.
-		//
-		// (See similar trick in Invocation.run in ../../internal/gocommand/invoke.go)
+		// The cwd gets resolved to the real path.
 		cmd.Env = append(slices.Clip(cfg.Env), "PWD="+cfg.Dir)
 		cmd.Stdin = bytes.NewReader(req)
 		cmd.Stdout = buf

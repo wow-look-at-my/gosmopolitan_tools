@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package bools defines an Analyzer that detects common mistakes
 // involving boolean operators.
@@ -72,11 +71,9 @@ var (
 	and = boolOp{"and", token.LAND, token.EQL}
 )
 
-// commutativeSets returns all side effect free sets of
-// expressions in e that are connected by op.
-// For example, given 'a || b || f() || c || d' with the or op,
-// commutativeSets returns {{b, a}, {d, c}}.
-// commutativeSets adds any expanded BinaryExprs to seen.
+// commutativeSets returns all side effect free sets of expressions in e that
+// are connected by op. For example, given 'a || b || f() || c || d' with the
+// or op, commutativeSets returns {{b, a}, {d, c}}.
 func (op boolOp) commutativeSets(info *types.Info, e *ast.BinaryExpr, seen map[*ast.BinaryExpr]bool) [][]ast.Expr {
 	exprs := op.split(e, seen)
 
@@ -118,10 +115,9 @@ func (op boolOp) checkRedundant(pass *analysis.Pass, exprs []ast.Expr) {
 //	x != c1 || x != c2
 //	x == c1 && x == c2
 //
-// where c1 and c2 are constant expressions.
-// If c1 and c2 are the same then it's redundant;
-// if c1 and c2 are different then it's always true or always false.
-// Exprs must contain only side effect free expressions.
+// where c1 and c2 are constant expressions. If c1 and c2 are the same then
+// it's redundant; if c1 and c2 are different then it's always true or always
+// false. Exprs must contain only side effect free expressions.
 func (op boolOp) checkSuspect(pass *analysis.Pass, exprs []ast.Expr) {
 	// seen maps from expressions 'x' to equality expressions 'x != c'.
 	seen := make(map[string]string)
@@ -132,13 +128,7 @@ func (op boolOp) checkSuspect(pass *analysis.Pass, exprs []ast.Expr) {
 			continue
 		}
 
-		// In order to avoid false positives, restrict to cases
-		// in which one of the operands is constant. We're then
-		// interested in the other operand.
-		// In the rare case in which both operands are constant
-		// (e.g. runtime.GOOS and "windows"), we'll only catch
-		// mistakes if the LHS is repeated, which is how most
-		// code is written.
+		// To avoid false positives, restrict to cases in which of the operands is constant.
 		var x ast.Expr
 		switch {
 		case pass.TypesInfo.Types[bin.Y].Value != nil:

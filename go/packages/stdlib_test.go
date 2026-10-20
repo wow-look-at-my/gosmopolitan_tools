@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packages_test
 
@@ -41,13 +40,13 @@ func TestStdlibMetadata(t *testing.T) {
 	t.Logf("Loaded %d packages", len(pkgs))
 	numPkgs := len(pkgs)
 
-	want := 150 // 186 on linux, 185 on windows.
+	want := 150
 	if numPkgs < want {
 		t.Errorf("Loaded only %d packages, want at least %d", numPkgs, want)
 	}
 
 	t.Log("GOMAXPROCS: ", runtime.GOMAXPROCS(0))
-	t.Log("Metadata:   ", t1.Sub(t0))                          // ~800ms on 12 threads
+	t.Log("Metadata:   ", t1.Sub(t0))                          // ~800ms on multiple threads
 	t.Log("#MB:        ", int64(memstats.Alloc-alloc)/1000000) // ~1MB
 }
 

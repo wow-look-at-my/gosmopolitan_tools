@@ -1,9 +1,7 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Indexed package import.
-// See iexport.go for the export data format.
+// Indexed package import. See iexport.go for the export data format.
 
 package gcimporter
 
@@ -45,8 +43,7 @@ const (
 	iexportVersionGo1_18         = 2
 	iexportVersionGenerics       = 2
 	iexportVersionGenericMethods = 3
-	// A parameter carries the constant a call passes when it omits the
-	// argument. See docs/OPTIONAL-PARAMS.md in the gosmopolitan toolchain.
+	// A parameter carries the constant a call passes when it omits the argument.
 	iexportVersionParamDefaults = 4
 	iexportVersion              = iexportVersionParamDefaults
 
@@ -92,8 +89,6 @@ const (
 	genericTypeTag  = 'U'
 )
 
-// IImportData imports a package from the serialized package data
-// and returns 0 and a reference to the package.
 // If the export data version is not recognized or the format is otherwise
 // compromised, an error is returned.
 func IImportData(fset *token.FileSet, imports map[string]*types.Package, data []byte, path string) (*types.Package, error) {
@@ -109,13 +104,7 @@ func IImportBundle(fset *token.FileSet, imports map[string]*types.Package, data 
 	return iimportCommon(fset, GetPackagesFromMap(imports), data, true, "", false, nil)
 }
 
-// A GetPackagesFunc function obtains the non-nil symbols for a set of
-// packages, creating and recursively importing them as needed. An
-// implementation should store each package symbol is in the Pkg
-// field of the items array.
-//
-// Any error causes importing to fail. This can be used to quickly read
-// the import manifest of an export data file without fully decoding it.
+// A GetPackagesFunc function obtains the non-nil symbols for a set of packages.
 type GetPackagesFunc = func(items []GetPackagesItem) error
 
 // A GetPackagesItem is a request from the importer for the package
@@ -219,8 +208,7 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 		declData: declData,
 		pkgIndex: make(map[*types.Package]map[string]uint64),
 		typCache: make(map[uint64]types.Type),
-		// Separate map for typeparams, keyed by their package and unique
-		// name.
+		// Separate map for typeparams, keyed by their package and unique name.
 		tparamIndex: make(map[ident]types.Type),
 
 		fake: fakeFileSet{
@@ -264,7 +252,6 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 
 		uniquePkgPaths[pkgPath] = true
 	}
-	// Debugging #63822; hypothesis: there are duplicate PkgPaths.
 	if len(uniquePkgPaths) != len(items) {
 		reportf("found duplicate PkgPaths while reading export data manifest: %v", items)
 	}
@@ -334,10 +321,6 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 	}
 
 	// SetConstraint can't be called if the constraint type is not yet complete.
-	// When type params are created in the typeParamTag case of (*importReader).obj(),
-	// the associated constraint type may not be complete due to recursion.
-	// Therefore, we defer calling SetConstraint there, and call it here instead
-	// after all types are complete.
 	for _, d := range p.later {
 		d.t.SetConstraint(d.constraint)
 	}
@@ -346,7 +329,7 @@ func iimportCommon(fset *token.FileSet, getPackages GetPackagesFunc, data []byte
 		typ.Complete()
 	}
 
-	// Workaround for golang/go#61561. See the doc for instanceList for details.
+	// See the doc for instanceList for details.
 	for _, typ := range p.instanceList {
 		if iface, _ := typ.Underlying().(*types.Interface); iface != nil {
 			iface.Complete()
@@ -383,11 +366,7 @@ type iimporter struct {
 	fake          fakeFileSet
 	interfaceList []*types.Interface
 
-	// Workaround for the go/types bug golang/go#61561: instances produced during
-	// instantiation may contain incomplete interfaces. Here we only complete the
-	// underlying type of the instance, which is the most common case but doesn't
-	// handle parameterized interface literals defined deeper in the type.
-	instanceList []types.Type // instances for later completion (see golang/go#61561)
+	instanceList []types.Type
 
 	// Arguments for calls to SetConstraint that are deferred due to recursive types
 	later []setConstraintArgs
@@ -397,8 +376,7 @@ type iimporter struct {
 
 func (p *iimporter) trace(format string, args ...any) {
 	if !trace {
-		// Call sites should also be guarded, but having this check here allows
-		// easily enabling/disabling debug trace statements.
+		// Call sites should also be guarded.
 		return
 	}
 	fmt.Printf(strings.Repeat("..", p.indent)+format+"\n", args...)
@@ -420,9 +398,7 @@ func (p *iimporter) doDecl(pkg *types.Package, name string) {
 
 	off, ok := p.pkgIndex[pkg][name]
 	if !ok {
-		// In deep mode, the index should be complete. In shallow
-		// mode, we should have already recursively loaded necessary
-		// dependencies so the above Lookup succeeds.
+		// In deep mode, the index should be complete.
 		errorf("%v.%v not in index", pkg, name)
 	}
 
@@ -463,13 +439,6 @@ func (p *iimporter) decodeFile(rd intReader) *token.File {
 	file := p.fake.fset.AddFile(filename, -1, size)
 
 	// SetLines requires a nondecreasing sequence.
-	// Because it is common for clients to derive the interval
-	// [start, start+len(name)] from a start position, and we
-	// want to ensure that the end offset is on the same line,
-	// we fill in the gaps of the sparse encoding with values
-	// that strictly increase by the largest possible amount.
-	// This allows us to avoid having to record the actual end
-	// offset of each needed line.
 
 	lines := make([]int, int(rd.uint64()))
 	var index, offset int
@@ -526,10 +495,6 @@ func (p *iimporter) typAt(off uint64, base *types.Named) types.Type {
 
 // canReuse reports whether the type rhs on the RHS of the declaration for def
 // may be re-used.
-//
-// Specifically, if def is non-nil and rhs is an interface type with methods, it
-// may not be re-used because we have a convention of setting the receiver type
-// for interface methods to def.
 func canReuse(def *types.Named, rhs types.Type) bool {
 	if def == nil {
 		return true
@@ -550,12 +515,6 @@ type importReader struct {
 	prevColumn int64
 }
 
-// markBlack is redefined in iimport_go123.go, to work around golang/go#69912.
-//
-// If TypeNames are not marked black (in the sense of go/types cycle
-// detection), they may be mutated when dot-imported. Fix this by punching a
-// hole through the type, when compiling with Go 1.23. (The bug has been fixed
-// for 1.24, but the fix was not worth back-porting).
 var markBlack = func(name *types.TypeName) {}
 
 // obj decodes and declares the package-level object denoted by (pkg, name).
@@ -571,7 +530,7 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 		}
 		typ := r.typ()
 		obj := aliases.New(pos, pkg, name, typ, tparams)
-		markBlack(obj) // workaround for golang/go#69912
+		markBlack(obj)
 		r.declare(obj)
 
 	case constTag:
@@ -588,15 +547,13 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 		r.declare(types.NewFunc(pos, pkg, name, sig))
 
 	case typeTag, genericTypeTag:
-		// Types can be recursive. We need to setup a stub
-		// declaration before recursing.
+		// Types can be recursive. We need to setup a stub declaration before recursing.
 		obj := types.NewTypeName(pos, pkg, name, nil)
 		named := types.NewNamed(obj, nil, nil)
 
-		markBlack(obj) // workaround for golang/go#69912
+		markBlack(obj)
 
-		// Declare obj before calling r.tparamList, so the new type name is recognized
-		// if used in the constraint of one of its own typeparams (see #48280).
+		// Declare obj before calling r.tparamList, so the new type name is recognized if used in the constraint of one of its own typeparams.
 		r.declare(obj)
 		if tag == genericTypeTag {
 			tparams := r.tparamList()
@@ -616,9 +573,7 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 				}
 				recv := r.param(pkg)
 
-				// If the receiver has any targs, set those as the
-				// rparams of the method (since those are the
-				// typeparams being used in the method sig/body).
+				// If the receiver has any targs, set those as the rparams of the method (since those are the typeparams being used in the method sig/body).
 				_, recvNamed := typesinternal.ReceiverNamed(recv)
 				targs := recvNamed.TypeArgs()
 				var rparams []*types.TypeParam
@@ -634,9 +589,8 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 		}
 
 	case typeParamTag:
-		// We need to "declare" a typeparam in order to have a name that
-		// can be referenced recursively (if needed) in the type param's
-		// bound.
+		// We need to "declare" a typeparam to have a name that can be referenced
+		// recursively (if needed) in the type param's bound.
 		if r.p.version < iexportVersionGenerics {
 			errorf("unexpected type param type")
 		}
@@ -644,8 +598,7 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 		tn := types.NewTypeName(pos, pkg, name0, nil)
 		t := types.NewTypeParam(tn, nil)
 
-		// To handle recursive references to the typeparam within its
-		// bound, save the partial type in tparamIndex before reading the bounds.
+		// To handle recursive references to the typeparam within its bound, save the partial type in tparamIndex before reading the bounds.
 		id := ident{pkg, name}
 		r.p.tparamIndex[id] = t
 		var implicit bool
@@ -660,10 +613,7 @@ func (r *importReader) obj(pkg *types.Package, name string) {
 			}
 			iface.MarkImplicit()
 		}
-		// The constraint type may not be complete, if we
-		// are in the middle of a type recursion involving type
-		// constraints. So, we defer SetConstraint until we have
-		// completely set up all types in ImportData.
+		// The constraint type may not be complete, if we are in the middle of a type recursion involving type constraints.
 		r.p.later = append(r.p.later, setConstraintArgs{t: t, constraint: constraint})
 
 	case varTag:
@@ -922,12 +872,8 @@ func (r *importReader) doType(base *types.Named) (res types.Type) {
 			emb := r.bool()
 			tag := r.string()
 
-			// Either this is not a shallow import, the field is local, or the
-			// encoded objectPath failed to produce an object (a bug).
-			//
-			// Even in this last, buggy case, fall back on creating a new field. As
-			// discussed in iexport.go, this is not correct, but mostly works and is
-			// preferable to failing (for now at least).
+			// Either this is not a shallow import, the field is local, or the encoded
+			// objectPath failed to produce an object (a bug).
 			if field == nil {
 				field = types.NewField(fpos, fieldPkg, fname, ftyp, emb)
 			}
@@ -956,8 +902,7 @@ func (r *importReader) doType(base *types.Named) (res types.Type) {
 			mpos := r.pos()
 			mname := r.ident()
 
-			// TODO(mdempsky): Matches bimport.go, but I
-			// don't agree with this.
+			// TODO(mdempsky): Matches bimport.go, but I don't agree with this.
 			var recv *types.Var
 			if base != nil {
 				recv = types.NewVar(token.NoPos, methodPkg, "", base)
@@ -992,8 +937,7 @@ func (r *importReader) doType(base *types.Named) (res types.Type) {
 		if r.p.version < iexportVersionGenerics {
 			errorf("unexpected instantiation type")
 		}
-		// pos does not matter for instances: they are positioned on the original
-		// type.
+		// pos does not matter for instances: they are positioned on the original type.
 		_ = r.pos()
 		len := r.uint64()
 		targs := make([]types.Type, len)
@@ -1001,12 +945,10 @@ func (r *importReader) doType(base *types.Named) (res types.Type) {
 			targs[i] = r.typ()
 		}
 		baseType := r.typ()
-		// The imported instantiated type doesn't include any methods, so
-		// we must always use the methods of the base (orig) type.
-		// TODO provide a non-nil *Environment
+		// The imported instantiated type does not include any methods.
 		t, _ := types.Instantiate(nil, baseType, targs, false)
 
-		// Workaround for golang/go#61561. See the doc for instanceList for details.
+		// See the doc for instanceList for details.
 		r.p.instanceList = append(r.p.instanceList, t)
 		return t
 
@@ -1060,8 +1002,7 @@ func (r *importReader) tparamList() []*types.TypeParam {
 	}
 	xs := make([]*types.TypeParam, n)
 	for i := range xs {
-		// Note: the standard library importer is tolerant of nil types here,
-		// though would panic in SetTypeParams.
+		// Note: the standard library importer is tolerant of nil types here, though would panic in SetTypeParams.
 		xs[i] = types.Unalias(r.typ()).(*types.TypeParam)
 	}
 	return xs
@@ -1082,7 +1023,7 @@ func (r *importReader) param(pkg *types.Package) *types.Var {
 	param := types.NewParam(pos, pkg, name, typ)
 	if r.p.version >= iexportVersionParamDefaults && r.bool() {
 		_, val := r.value()
-		param.SetDefault(val)
+		param.SetDefault(&types.ParamDefault{Const: val})
 	}
 	return param
 }

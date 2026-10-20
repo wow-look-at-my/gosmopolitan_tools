@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa_test
 
@@ -41,13 +40,10 @@ func TestObjValueLookup(t *testing.T) {
 		tokFile       = ppkg.Fset.File(f.Pos())
 	)
 
-	// Maps each var Ident (represented "name:linenum") to the
-	// kind of ssa.Value we expect (represented "Constant", "&Alloc").
+	// Maps each var Ident (represented "name:linenum") to the kind of ssa.Value we expect (represented "Constant", "&Alloc").
 	expectations := make(map[string]string)
 
-	// Each note of the form @ssa(x, "BinOp") in testdata/objlookup.go
-	// specifies an expectation that an object named x declared on the
-	// same line is associated with an ssa.Value of type *ssa.BinOp.
+	// Each note of the form @ssa(x, "BinOp") in testdata/objlookup.go specifies.
 	notes, err := expect.ExtractGo(tokFile, f)
 	if err != nil {
 		t.Fatal(err)

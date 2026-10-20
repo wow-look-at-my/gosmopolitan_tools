@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 package main
 
 import (
@@ -64,15 +63,13 @@ e e
 		})
 	}
 
-	// TODO(adonovan):
-	// - test errors
 }
 
 func TestAllpaths(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		in   string
-		to   string // from is always "A"
+		to   string // from is always.
 		want string
 	}{
 		{
@@ -109,39 +106,29 @@ func TestAllpaths(t *testing.T) {
 		},
 		{
 			name: "Two Paths Basic",
-			//           /-> C --\
-			// A -> B --          -> E -> F
-			//           \-> D --/
+			// A -> B -- -> E -> F \-> D --/.
 			in:   "A B\nB C\nC E\nB D\nD E\nE F",
 			to:   "E",
 			want: "A B\nB C\nB D\nC E\nD E\n",
 		},
 		{
 			name: "Two Paths With One Immediately From Start",
-			//      /-> B -+ -> D
-			// A --        |
-			//      \-> C <+
+			// A -- | \-> C <+.
 			in:   "A B\nA C\nB C\nB D",
 			to:   "C",
 			want: "A B\nA C\nB C\n",
 		},
 		{
 			name: "Two Paths Further Up",
-			//      /-> B --\
-			// A --          -> D -> E -> F
-			//      \-> C --/
+			// A -- -> D -> E -> F \-> C --/.
 			in:   "A B\nA C\nB D\nC D\nD E\nE F",
 			to:   "E",
 			want: "A B\nA C\nB D\nC D\nD E\n",
 		},
 		{
-			// We should include A - C  - D even though it's further up the
-			// second path than D (which would already be in the graph by
-			// the time we get around to integrating the second path).
+			// We should include A - C - D even though it's further up the second path than D.
 			name: "Two Splits",
-			//      /-> B --\         /-> E --\
-			// A --           -> D --          -> G -> H
-			//      \-> C --/         \-> F --/
+			// A -- -> D -- -> G -> H \-> C --/ \-> F --/.
 			in:   "A B\nA C\nB D\nC D\nD E\nD F\nE G\nF G\nG H",
 			to:   "G",
 			want: "A B\nA C\nB D\nC D\nD E\nD F\nE G\nF G\n",
@@ -149,35 +136,27 @@ func TestAllpaths(t *testing.T) {
 		{
 			// D - E should not be duplicated.
 			name: "Two Paths - Two Splits With Gap",
-			//      /-> B --\              /-> F --\
-			// A --           -> D -> E --          -> H -> I
-			//      \-> C --/              \-> G --/
+			// A -- -> D -> E -- -> H -> I \-> C --/ \-> G --/.
 			in:   "A B\nA C\nB D\nC D\nD E\nE F\nE G\nF H\nG H\nH I",
 			to:   "H",
 			want: "A B\nA C\nB D\nC D\nD E\nE F\nE G\nF H\nG H\n",
 		},
 		{
-			// C <--> B --> A --> D <--> E
-			//        ⋃
+			// C <--> B --> A --> D <--> E ⋃
 			name: "non-regression test for #74842",
 			in:   "A D\nB A\nB B\nB C\nC B\nD E\nE D",
 			to:   "D",
 			want: "A D\nD E\nE D\n",
 		},
 		{
-			// A --> B --> D
-			//       ^
-			//       v
-			//       C[123]
+			// A --> B --> D ^ v C[123]
 			name: "regression test for #74842",
 			in:   "A B\nB C1\nB C2\nB C3\nB D\nC1 B\nC2 B\nC3 B\n",
 			to:   "D",
 			want: "A B\nB C1\nB C2\nB C3\nB D\nC1 B\nC2 B\nC3 B\n",
 		},
 		{
-			// A -------> B --> D
-			//  \--> C ---^     |
-			//       ^----------+
+			// A -------> B --> D \--> C ---^ | ^----------+
 			name: "another regression test for #74842",
 			in:   "A B\nA C\nB D\nC B\nD C\n",
 			to:   "D",
@@ -204,8 +183,7 @@ func TestSomepath(t *testing.T) {
 		name string
 		in   string
 		to   string
-		// somepath is non-deterministic, so we have to provide all the
-		// possible options. Each option is separated with |.
+		// somepath is non-deterministic, so we have to provide all the possible options. Each option is separated with |.
 		wantAnyOf string
 	}{
 		{
@@ -222,18 +200,14 @@ func TestSomepath(t *testing.T) {
 		},
 		{
 			name: "Two Paths",
-			//      /-> B --\
-			// A --          -> D
-			//      \-> C --/
+			// A -- -> D \-> C --/.
 			in:        "A B\nA C\nB D\nC D",
 			to:        "D",
 			wantAnyOf: "A B\nB D|A C\nC D",
 		},
 		{
 			name: "Printed path is minimal",
-			// A -> B1->B2->B3 -> E
-			// A -> C1->C2 -> E
-			// A -> D -> E
+			// A -> B1->B2->B3 -> E A -> C1->C2 -> E A -> D -> E
 			in:        "A D C1 B1\nD E\nC1 C2\nC2 E\nB1 B2\nB2 B3\nB3 E",
 			to:        "E",
 			wantAnyOf: "A D\nD E",
@@ -337,8 +311,7 @@ func TestFocus(t *testing.T) {
 		},
 		{
 			name: "Some Nodes Not Included",
-			// C does not have a path involving B, and should not be included
-			// in the output.
+			// C does not have a path involving B, and should not be included in the output.
 			in:    "A B\nA C",
 			focus: "B",
 			want:  "A B\n",
@@ -359,11 +332,7 @@ func TestFocus(t *testing.T) {
 		},
 		{
 			name: "Complex",
-			// Paths in and out from focus.
-			//                   /-> F
-			//      /-> B -> D --
-			// A --              \-> E
-			//      \-> C
+			// Paths in and out from focus. /-> F /-> B -> D -- A -- \-> E \-> C
 			in:    "A B\nA C\nB D\nD F\nD E",
 			focus: "D",
 			want:  "A B\nB D\nD E\nD F\n",

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package analysistest_test
 
@@ -22,8 +21,8 @@ import (
 )
 
 func init() {
-	// Run() decides when tests use GOPATH mode or modules.
-	// We turn off GOPROXY just for good measure.
+	// Run() decides when tests use GOPATH mode or modules. We turn off GOPROXY
+	// for good measure.
 	if err := os.Setenv("GOPROXY", "off"); err != nil {
 		log.Fatal(err)
 	}
@@ -33,8 +32,7 @@ func init() {
 func TestTheTest(t *testing.T) {
 	testenv.NeedsTool(t, "go")
 
-	// We'll simulate a partly failing test of the findcall analysis,
-	// which (by default) reports calls to functions named 'println'.
+	// We'll simulate a partly failing test of the findcall analysis.
 	findcall.Analyzer.Flags.Set("name", "println")
 
 	filemap := map[string]string{
@@ -142,7 +140,7 @@ func println(...interface{}) { println_TEST_() } // want println:"found" "call o
 		`a/b.go:14:9: unexpected diagnostic: call of println(...)`,
 		"a/b.go:11: no diagnostic was reported matching `wrong expectation text`",
 		"a/b.go:17: no diagnostic was reported matching `unsatisfied expectation`",
-		// duplicate copies of each message from the test package (see issue #40574)
+		// duplicate copies of each message from the test package
 		`a/b.go:5: in 'want' comment: unexpected ":"`,
 		`a/b.go:6: in 'want' comment: got String after foo, want ':'`,
 		`a/b.go:7: in 'want' comment: got EOF, want regular expression`,
@@ -159,8 +157,8 @@ func println(...interface{}) { println_TEST_() } // want println:"found" "call o
 	}
 }
 
-// TestNoEnd tests that a missing SuggestedFix.End position is
-// correctly interpreted as if equal to SuggestedFix.Pos (see issue #64199).
+// TestNoEnd tests that a missing SuggestedFix.End position is correctly
+// interpreted as if equal to SuggestedFix.Pos.
 func TestNoEnd(t *testing.T) {
 	noend := &analysis.Analyzer{
 		Name: "noend",

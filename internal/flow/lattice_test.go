@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package flow_test
 
@@ -34,7 +33,6 @@ func set(nodes ...int) nodeSet {
 func TestMapLattice_Trivial(t *testing.T) {
 	l := flow.MapLattice[int, nodeSet, nodeSetUnion]{}
 
-	// Case 1: a is empty, b is not
 	a := map[int]nodeSet{}
 	b := map[int]nodeSet{1: set(1)}
 
@@ -43,7 +41,6 @@ func TestMapLattice_Trivial(t *testing.T) {
 		t.Errorf("Merge(empty, b) = %v, want %v", got, b)
 	}
 
-	// Case 2: b is empty, a is not
 	got = l.Merge(b, a)
 	if !l.Equals(got, b) {
 		t.Errorf("Merge(b, empty) = %v, want %v", got, b)
@@ -54,7 +51,7 @@ func TestMapLattice_Merge(t *testing.T) {
 	l := flow.MapLattice[int, nodeSet, nodeSetUnion]{}
 
 	a := map[int]nodeSet{
-		1: set(1), // Only in a
+		1: set(1),
 		2: set(2), // In both
 	}
 	b := map[int]nodeSet{

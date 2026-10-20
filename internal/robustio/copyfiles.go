@@ -1,15 +1,14 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
 // The copyfiles script copies the contents of the internal cmd/go robustio
 // package to the current directory, with adjustments to make it build.
 //
-// NOTE: In retrospect this script got out of hand, as we have to perform
-// various operations on the package to get it to build at old Go versions. If
-// in the future it proves to be flaky, delete it and just copy code manually.
+// NOTE. In retrospect this script got out of hand, as we have to perform
+// various operations. On the package to get it to build at old Go versions.
+// If in the future it proves to be flaky, delete it and copy code manually.
 package main
 
 import (
@@ -52,18 +51,13 @@ func main() {
 				content = bytes.Replace(content, []byte("windows.ERROR_SHARING_VIOLATION"), []byte("ERROR_SHARING_VIOLATION"), -1)
 			}
 
-			// Replace os.ReadFile with os.ReadFile (for 1.15 and older). We
-			// attempt to match calls (via the '('), to avoid matching mentions of
-			// os.ReadFile in comments.
-			//
-			// TODO(rfindley): once we (shortly!) no longer support 1.15, remove
-			// this and break the build.
+			// We attempt to match calls (via the '('), to avoid matching mentions
+			// of os.ReadFile in comments.
 			if bytes.Contains(content, []byte("os.ReadFile(")) {
 				content = bytes.Replace(content, []byte("\"os\""), []byte("\"io/ioutil\"\n\t\"os\""), 1)
 				content = bytes.Replace(content, []byte("os.ReadFile("), []byte("os.ReadFile("), -1)
 			}
 
-			// Add +build constraints, for 1.16.
 			content = addPlusBuildConstraints(content)
 
 			fileContent[entry.Name()] = content
@@ -83,8 +77,6 @@ func main() {
 
 // addPlusBuildConstraints splices in +build constraints for go:build
 // constraints encountered in the source.
-//
-// Gopls still builds at Go 1.16, which requires +build constraints.
 func addPlusBuildConstraints(src []byte) []byte {
 	var s scanner.Scanner
 	fset := token.NewFileSet()

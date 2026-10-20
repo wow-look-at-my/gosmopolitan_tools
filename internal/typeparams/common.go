@@ -1,12 +1,9 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package typeparams contains common utilities for writing tools that
-// interact with generic Go code, as introduced with Go 1.18. It
-// supplements the standard library APIs. Notably, the StructuralTerms
-// API computes a minimal representation of the structural
-// restrictions on a type parameter.
+// It supplements the standard library APIs. Notably, the StructuralTerms API
+// computes a minimal representation of the structural restrictions on a type
+// parameter.
 //
 // An external version of these APIs is available in the
 // golang.org/x/exp/typeparams module.
@@ -24,9 +21,6 @@ import (
 // For an ast.IndexExpr, the resulting indices slice will contain exactly one
 // index expression. For an ast.IndexListExpr (go1.18+), it may have a variable
 // number of index expressions.
-//
-// For nodes that don't represent index expressions, the first return value of
-// UnpackIndexExpr will be nil.
 func UnpackIndexExpr(n ast.Node) (x ast.Expr, lbrack token.Pos, indices []ast.Expr, rbrack token.Pos) {
 	switch e := n.(type) {
 	case *ast.IndexExpr:

@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter
 
@@ -10,9 +9,6 @@ import (
 )
 
 // predecl is a cache for the predeclared types in types.Universe.
-//
-// Cache a distinct result based on the runtime value of any.
-// The pointer value of the any type varies based on GODEBUG settings.
 var predeclMu sync.Mutex
 var predecl map[types.Type][]types.Type
 

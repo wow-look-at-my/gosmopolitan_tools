@@ -1,17 +1,15 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package unusedresult defines an analyzer that checks for unused
 // results of calls to certain functions.
 package unusedresult
 
-// It is tempting to make this analysis inductive: for each function
-// that tail-calls one of the functions that we check, check those
-// functions too. However, just because you must use the result of
-// fmt.Sprintf doesn't mean you need to use the result of every
-// function that returns a formatted string: it may have other results
-// and effects.
+// It is tempting to make this analysis inductive: for each function that
+// tail-calls one of the functions that we check, check those functions too.
+// You need to use the result of every function that returns a formatted
+// string: it may have other results and effects. This happens however,
+// because you must use the result of fmt.Sprintf doesn't mean.
 
 import (
 	_ "embed"
@@ -44,12 +42,11 @@ var Analyzer = &analysis.Analyzer{
 var funcs, stringMethods stringSetFlag
 
 func init() {
-	// TODO(adonovan): provide a comment or declaration syntax to
-	// allow users to add their functions to this set using facts.
-	// For example:
+	// TODO(adonovan): provide a comment or declaration syntax to allow users to
+	// add their functions to this set using facts. For example:
 	//
 	//    func ignoringTheErrorWouldBeVeryBad() error {
-	//      type mustUseResult struct{} // enables vet unusedresult check
+
 	//      ...
 	//    }
 	//

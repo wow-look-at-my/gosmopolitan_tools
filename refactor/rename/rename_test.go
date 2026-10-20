@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package rename
 
@@ -203,11 +202,7 @@ func f() {
 				`would conflict with this field`,
 		},
 		{
-			// rename type used as embedded field
-			// => rename field
-			// => field/field conflict
-			// This is an entailed renaming;
-			// it would be nice if we checked source positions.
+			// rename type used as embedded field => rename field => field/field conflict This is an entailed renaming; it would be nice if we checked source positions.
 			from: "main.U", to: "w",
 			want: `renaming this field "U" to "w".*` +
 				`would conflict with this field`,
@@ -941,7 +936,7 @@ func f(z interface{}) {
 		},
 
 		// Renaming of embedded field that is a qualified reference.
-		// (Regression test for bug 8924.)
+		// (Regression test for a later bug.)
 		{
 			ctxt: fakeContext(map[string][]string{
 				"foo": {`package foo; type T int`},
@@ -968,7 +963,7 @@ type _ struct{ *foo.U }
 		},
 
 		// Renaming of embedded field that is a qualified reference with the '-from' flag.
-		// (Regression test for bug 12038.)
+		// (Regression test for a later bug.)
 		{
 			ctxt: fakeContext(map[string][]string{
 				"foo": {`package foo; type T int`},
@@ -1164,7 +1159,7 @@ var _ I = D{}
 `,
 			},
 		},
-		// Interface embedded in struct.  No conflict if C need not satisfy I.
+		// Interface embedded in struct. No conflict if C need not satisfy I.
 		{
 			ctxt: fakeContext(map[string][]string{
 				"main": {`
@@ -1286,7 +1281,6 @@ var _ = I(C(0)).(J)
 `,
 			},
 		},
-		// Progress after "soft" type errors (Go issue 14596).
 		{
 			ctxt: fakeContext(map[string][]string{
 				"main": {`package main
@@ -1372,8 +1366,7 @@ func TestDiff(t *testing.T) {
 	Diff = true
 	stdout = new(bytes.Buffer)
 
-	// Set up a fake GOPATH in a temporary directory,
-	// and ensure we're in GOPATH mode.
+	// Set up a fake GOPATH in a temporary directory, and ensure we're in GOPATH mode.
 	tmpdir, err := os.MkdirTemp("", "TestDiff")
 	if err != nil {
 		t.Fatal(err)
@@ -1431,11 +1424,9 @@ func justHereForTestingDiff() {
 	}
 }
 
-// ---------------------------------------------------------------------
-
 // Simplifying wrapper around buildutil.FakeContext for packages whose
-// filenames are sequentially numbered (%d.go).  pkgs maps a package
-// import path to its list of file contents.
+// filenames are sequentially numbered (%d.go). pkgs maps a package import
+// path to its list of file contents.
 func fakeContext(pkgs map[string][]string) *build.Context {
 	pkgs2 := make(map[string]map[string]string)
 	for path, files := range pkgs {

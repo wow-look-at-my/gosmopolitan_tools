@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package bisect
 
@@ -11,9 +10,9 @@ import (
 	"testing"
 )
 
-// In order for package bisect to be copied into the standard library
-// and used by very low-level packages such as internal/godebug,
-// it needs to have no imports at all.
+// In order for package bisect to be copied into the standard library. It used
+// by low-level packages such as internal/godebug, it needs to have no imports
+// at all.
 func TestNoImports(t *testing.T) {
 	files, err := filepath.Glob("*.go")
 	if err != nil {

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -11,18 +10,13 @@ import (
 )
 
 // Message is the interface to all jsonrpc2 message types.
-// They share no common functionality, but are a closed set of concrete types
-// that are allowed to implement this interface. The message types are *Call,
-// *Notification and *Response.
 type Message interface {
-	// isJSONRPC2Message is used to make the set of message implementations a
-	// closed set.
+	// isJSONRPC2Message is used to make the set of message implementations a closed set.
 	isJSONRPC2Message()
 }
 
-// Request is the shared interface to jsonrpc2 messages that request
-// a method be invoked.
-// The request types are a closed set of *Call and *Notification.
+// Request is the shared interface to jsonrpc2 messages that request a method
+// be invoked.
 type Request interface {
 	Message
 	// Method is a string containing the method name to invoke.
@@ -163,14 +157,13 @@ func toWireError(err error) *WireError {
 		return nil
 	}
 	if err, ok := err.(*WireError); ok {
-		// already a wire error, just use it
+		// already a wire error, use it
 		return err
 	}
 	result := &WireError{Message: err.Error()}
 	var wrapped *WireError
 	if errors.As(err, &wrapped) {
-		// if we wrapped a wire error, keep the code from the wrapped error
-		// but the message from the outer error
+		// if we wrapped a wire error, keep the code from the wrapped error but the message from the outer error
 		result.Code = wrapped.Code
 	}
 	return result

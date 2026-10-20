@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeparams_test
 
@@ -79,7 +78,7 @@ func TestCoreType(t *testing.T) {
 		{"Q", "<nil>"},           // interface type with no terms and functions
 		{"R", "int"},             // interface type with both terms and functions.
 		{"S", "int"},             // interface type with a tilde term
-		{"T", "<-chan int"},      // Prefix of 2 terms that are identical before switching to channel.
+		{"T", "<-chan int"},      // Prefix of multiple terms that are identical before switching to channel.
 	} {
 		// Eval() expr for its type.
 		tv, err := types.Eval(fset, pkg, 0, test.expr)

@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package timeformat defines an Analyzer that checks for the use
 // of time.Format or time.Parse calls with a bad format.
@@ -37,10 +36,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	// Note: (time.Time).Format is a method and can be a typeutil.Callee
-	// without directly importing "time". So we cannot just skip this package
-	// when !analysis.Imports(pass.Pkg, "time").
-	// TODO(taking): Consider using a prepass to collect typeutil.Callees.
+	// Note: (time.Time).Format is a method and can be a typeutil.Callee without directly importing "time".
 
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -86,7 +82,6 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// badFormatAt return the start of a bad format in e or -1 if no bad format is found.
 func badFormatAt(info *types.Info, e ast.Expr) int {
 	tv, ok := info.Types[e]
 	if !ok { // no type info, assume good

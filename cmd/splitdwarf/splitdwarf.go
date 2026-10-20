@@ -1,20 +1,14 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd
 
 /*
-Splitdwarf uncompresses and copies the DWARF segment of a Mach-O
-executable into the "dSYM" file expected by lldb and ports of gdb
-on OSX.
-
-Usage: splitdwarf osxMachoFile [ osxDsymFile ]
-
-Unless a dSYM file name is provided on the command line,
-splitdwarf will place it where the OSX tools expect it, in
-"<osxMachoFile>.dSYM/Contents/Resources/DWARF/<osxMachoFile>",
-creating directories as necessary.
+Splitdwarf uncompresses and copies the DWARF segment of a Mach-O executable
+into the "dSYM" file expected by lldb and ports of gdb on OSX. Usage: on the
+command line, splitdwarf will place it where the OSX tools expect it, in
+"<osxMachoFile>.dSYM/Contents/Resources/DWARF/<osxMachoFile>", creating
+directories as necessary.
 */
 package main // import "golang.org/x/tools/cmd/splitdwarf"
 
@@ -31,7 +25,7 @@ import (
 )
 
 const (
-	pageAlign = 12 // 4096 = 1 << 12
+	pageAlign = 12
 )
 
 func note(format string, why ...any) {
@@ -74,47 +68,11 @@ for input_exe need to allow writing.
 
 	// describe(&exeMacho.FileTOC)
 
-	// Offsets into __LINKEDIT:
-	//
-	// Command LC_SYMTAB =
-	//  (1) number of symbols at file offset (within link edit section) of 16-byte symbol table entries
-	// struct {
-	//  StringTableIndex uint32
-	//  Type, SectionIndex uint8
-	//  Description uint16
-	//  Value uint64
-	// }
-	//
-	// (2) string table offset and size.  Strings are zero-byte terminated.  First must be " ".
-	//
-	// Command LC_DYSYMTAB = indices within symtab (above), except for IndSym
-	//   IndSym Offset = file offset (within link edit section) of 4-byte indices within symtab.
-	//
-	// Section __TEXT.__symbol_stub1.
-	//   Offset and size (Reserved2) locate and describe a table for this section.
-	//   Symbols beginning at IndirectSymIndex (Reserved1) (see LC_DYSYMTAB.IndSymOffset) refer to this table.
-	//   (These table entries are apparently PLTs [Procedure Linkage Table/Trampoline])
-	//
-	// Section __DATA.__nl_symbol_ptr.
-	//   Reserved1 seems to be an index within the Indirect symbols (see LC_DYSYMTAB.IndSymOffset)
-	//   Some of these symbols appear to be duplicates of other indirect symbols appearing early
-	//
-	// Section __DATA.__la_symbol_ptr.
-	//   Reserved1 seems to be an index within the Indirect symbols (see LC_DYSYMTAB.IndSymOffset)
-	//   Some of these symbols appear to be duplicates of other indirect symbols appearing early
-	//
+	// Offsets into __LINKEDIT:.
 
-	// Create a File for the output dwarf.
-	// Copy header, file type is MH_DSYM
-	// Copy the relevant load commands
+	// Create a File for the output dwarf. Copy header, file type is MH_DSYM Copy the relevant load commands
 
-	// LoadCmdUuid
-	// Symtab -- very abbreviated (Use DYSYMTAB Iextdefsym, Nextdefsym to identify these).
-	// Segment __PAGEZERO
-	// Segment __TEXT (zero the size, zero the offset of each section)
-	// Segment __DATA (zero the size, zero the offset of each section)
-	// Segment __LINKEDIT (contains the symbols and strings from Symtab)
-	// Segment __DWARF (uncompressed)
+	// LoadCmdUuid Symtab -- abbreviated (Use DYSYMTAB Iextdefsym, Nextdefsym to identify these).
 
 	var uuid *macho.Uuid
 	for _, l := range exeMacho.Loads {
@@ -155,21 +113,16 @@ for input_exe need to allow writing.
 	newdata := data.CopyZeroed()
 	newsymtab := symtab.Copy()
 
-	// Linkedit segment contain symbols and strings;
-	// Symtab refers to offsets into linkedit.
-	// This next bit initializes newsymtab and sets up data structures for the linkedit segment
+	// Linkedit segment contain symbols and strings; Symtab refers to offsets into linkedit.
 	linkeditsyms := []macho.Nlist64{}
 	linkeditstrings := []string{}
 
-	// Linkedit will begin at the second page, i.e., offset is one page from beginning
-	// Symbols come first
+	// Linkedit will begin at the second page, i.e., offset is one page from beginning Symbols come first
 	linkeditsymbase := uint32(1) << pageAlign
 
 	// Strings come second, offset by the number of symbols times their size.
-	// Only those symbols from dysymtab.defsym are written into the debugging information.
 	linkeditstringbase := linkeditsymbase + exeMacho.FileTOC.SymbolSize()*dysymtab.Nextdefsym
 
-	// The first two bytes of the strings are reserved for space, null (' ', \000)
 	linkeditstringcur := uint32(2)
 
 	newsymtab.Syms = newsymtab.Syms[:0]
@@ -193,14 +146,13 @@ for input_exe need to allow writing.
 		uuid = &macho.Uuid{UuidCmd: macho.UuidCmd{LoadCmd: macho.LcUuid}}
 		uuid.Len = uuid.LoadSize(newtoc)
 		copy(uuid.Id[0:], contentuuid(&exeMacho.FileTOC)[0:16])
-		uuid.Id[6] = uuid.Id[6]&^0xf0 | 0x40 // version 4 (pseudo-random); see section 4.1.3
-		uuid.Id[8] = uuid.Id[8]&^0xc0 | 0x80 // variant bits; see section 4.1.1
+		uuid.Id[6] = uuid.Id[6]&^0xf0 | 0x40
+		uuid.Id[8] = uuid.Id[8]&^0xc0 | 0x80
 	}
 	newtoc.AddLoad(uuid)
 
-	// For the specified segment (assumed to be in exeMacho) make a copy of its
-	// sections with appropriate fields zeroed out, and append them to the
-	// currently-last segment in newtoc.
+	// For the specified segment (assumed to be in exeMacho) make a copy of its sections with appropriate fields zeroed out, and append them to the currently-last
+	// segment. That segment is in newtoc.
 	copyZOdSections := func(g *macho.Segment) {
 		for i := g.Firstsect; i < g.Firstsect+g.Nsect; i++ {
 			s := exeMacho.Sections[i].Copy()
@@ -254,8 +206,7 @@ for input_exe need to allow writing.
 		newtoc.AddSection(s)
 	}
 
-	// Write segments/sections.
-	// Only dwarf and linkedit contain anything interesting.
+	// Write segments/sections. Only dwarf and linkedit contain anything interesting.
 
 	// Memory map the output file to get the buffer directly.
 	outDwarf := inputExe + ".dSYM/Contents/Resources/DWARF"
@@ -270,8 +221,6 @@ for input_exe need to allow writing.
 	}
 	dwarfFile, buffer := CreateMmapFile(outDwarf, int64(newtoc.FileSize()))
 
-	// (1) Linkedit segment
-	// Symbol table
 	offset = uint32(newlinkedit.Offset)
 	for i := range linkeditsyms {
 		if exeMacho.Magic == macho.Magic64 {
@@ -281,7 +230,7 @@ for input_exe need to allow writing.
 		}
 	}
 
-	// Initial two bytes of string table, followed by actual zero-terminated strings.
+	// Initial a couple of bytes of string table, followed by actual zero-terminated strings.
 	buffer[linkeditstringbase] = ' '
 	buffer[linkeditstringbase+1] = 0
 	offset = linkeditstringbase + 2
@@ -294,7 +243,6 @@ for input_exe need to allow writing.
 		offset++
 	}
 
-	// (2) DWARF segment
 	ioff := newdwarf.Firstsect - dwarf.Firstsect
 	for i := dwarf.Firstsect; i < dwarf.Firstsect+dwarf.Nsect; i++ {
 		s := exeMacho.Sections[i]
@@ -302,8 +250,7 @@ for input_exe need to allow writing.
 		s.PutUncompressedData(buffer[newtoc.Sections[j].Offset:])
 	}
 
-	// Because "text" overlaps the header and the loads, write them afterwards, just in case.
-	// Write header.
+	// Because "text" overlaps the header and the loads, write them afterwards, in case. Write header.
 	newtoc.Put(buffer)
 
 	err = syscall.Munmap(buffer)
@@ -380,13 +327,11 @@ func describe(exem *macho.FileTOC) {
 	note("File size is %d", exem.FileSize())
 }
 
-// contentuuid returns a UUID derived from (some of) the content of an executable.
-// specifically included are the non-DWARF sections, specifically excluded are things
-// that surely depend on the presence or absence of DWARF sections (e.g., section
-// numbers, positions with file, number of load commands).
-// (It was considered desirable if this was insensitive to the presence of the
-// __DWARF segment, however because it is not last, it moves other segments,
-// whose contents appear to contain file offset references.)
+// contentuuid returns a UUID derived from (some of) the content of an
+// executable. specifically included are the non-DWARF sections, specifically
+// excluded are things that surely depend on the presence or absence of DWARF
+// sections (e.g., section numbers, positions with file, number of load
+// commands).
 func contentuuid(exem *macho.FileTOC) []byte {
 	h := sha256.New()
 	for _, l := range exem.Loads {

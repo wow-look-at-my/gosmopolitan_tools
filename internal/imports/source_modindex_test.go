@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -12,18 +11,12 @@ import (
 	"golang.org/x/tools/internal/modindex"
 )
 
-// This code is here rather than in the modindex package
-// to avoid import loops
+// This code is here rather than in the modindex package to avoid import loops
 
-// TODO(adonovan): this code is only used by a test in this package.
-// Can we delete it? Or is there a plan to call NewIndexSource from
-// cmd/goimports?
+// TODO(adonovan): this code is only used by a test in this package. Can we
+// delete it?
 
 // implements Source using modindex, so only for module cache.
-//
-// this is perhaps over-engineered. A new Index is read at first use.
-// And then Update is called after every 15 minutes, and a new Index
-// is read if the index changed. It is not clear the Mutex is needed.
 type IndexSource struct {
 	modcachedir string
 	mu          sync.Mutex
@@ -83,9 +76,7 @@ func (s *IndexSource) getIndex() (*modindex.Index, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// (s.index = nil => s.expires is zero,
-	// so the first condition is strictly redundant.
-	// But it makes the postcondition very clear.)
+	// Expires is zero, so the first condition is strictly redundant.
 	if s.index == nil || time.Now().After(s.expires) {
 		index, err := modindex.Update(s.modcachedir)
 		if err != nil {

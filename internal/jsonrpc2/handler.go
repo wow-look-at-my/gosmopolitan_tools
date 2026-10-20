@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -13,11 +12,9 @@ import (
 )
 
 // Handler is invoked to handle incoming requests.
-// The Replier sends a reply to the request and must be called exactly once.
 type Handler func(ctx context.Context, reply Replier, req Request) error
 
-// Replier is passed to handlers to allow them to reply to the request.
-// If err is set then result will be ignored.
+// Replier is passed to handlers to allow them to reply to the request. If err is set then result will be ignored.
 type Replier func(ctx context.Context, result any, err error) error
 
 // MethodNotFound is a Handler that replies to all call requests with the
@@ -79,11 +76,10 @@ func CancelHandler(handler Handler) (Handler, func(id ID)) {
 }
 
 // AsyncHandler is a middleware that returns a handler that processes each
-// request goes in its own goroutine.
-// The handler returns immediately, without the request being processed.
-// Each request then waits for the previous request to finish before it starts.
-// This allows the stream to unblock at the cost of unbounded goroutines
-// all stalled on the previous one.
+// request goes in its own goroutine. The handler returns immediately, without
+// the request being processed. Each request then waits for the request to
+// finish before it starts. This allows the stream to unblock at the cost of
+// unbounded goroutines all stalled on the one.
 func AsyncHandler(handler Handler) Handler {
 	nextRequest := make(chan struct{})
 	close(nextRequest)
@@ -112,11 +108,6 @@ func AsyncHandler(handler Handler) Handler {
 // Async, when used with the [AsyncHandler] middleware, indicates that the
 // current jsonrpc2 request may be handled asynchronously to subsequent
 // requests.
-//
-// When not used with an AsyncHandler, Async is a no-op.
-//
-// Async must be called at most once on each request's context (and its
-// descendants).
 func Async(ctx context.Context) {
 	if r, ok := ctx.Value(asyncKey).(*releaser); ok {
 		r.release(false)
@@ -127,9 +118,7 @@ type asyncKeyType struct{}
 
 var asyncKey = asyncKeyType{}
 
-// A releaser implements concurrency safe 'releasing' of async requests. (A
-// request is released when it is allowed to run concurrent with other
-// requests, via a call to [Async].)
+// A releaser implements concurrency safe 'releasing' of async requests.
 type releaser struct {
 	mu       sync.Mutex
 	ch       chan struct{}

@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package refactor_test
 
@@ -120,49 +119,49 @@ func TestDeleteStmt(t *testing.T) {
 		},
 		{ // should it also remove the semicolon? No, can't find it.
 			in:    "package p; func f() { switch a(); b() {}}",
-			which: 2, // 0 is the func body, 1 is the switch statement
+			which: 2,
 			want:  "package p; func f() { switch ; b() {}}",
 			name:  "switch0",
 		},
 		{ // remove preceding comment too
 			in:    "package p; func f() { switch /*c*/a(); {}}",
-			which: 2, // 0 is the func body, 1 is the switch statement
+			which: 2,
 			want:  "package p; func f() { switch ; {}}",
 			name:  "switch1",
 		},
 		{ // remove subsequent comment too
 			in:    "package p; func f() { switch a()/*c*/; {}}",
-			which: 2, // 0 is the func body, 1 is the switch statement
+			which: 2,
 			want:  "package p; func f() { switch ; {}}",
 			name:  "switch2",
 		},
 		{ // statement inside a case
 			in:    "package p; func f() { select {default: a()}}",
-			which: 4, // 0 is the func body, 1 is the select statement, 2 is its body, 3 is the comm clause
+			which: 4,
 			want:  "package p; func f() { select {default: }}",
 			name:  "comm0",
 		},
 		{ // statement in comm clause
 			in:    "package p; func f(x chan any) { select {case x <- a: a(x)}}",
-			which: 5, // 0 is the func body, 1 is the select statement, 2 is its body, 3 is the comm clause
+			which: 5,
 			want:  "package p; func f(x chan any) { select {case x <- a: }}",
 			name:  "comm1",
 		},
 		{ // don't remove whole clause
 			in:    "package p; func f(x chan any) { select {case x <- a: a(x)}}",
-			which: 4, // 0 is the func body, 1 is the select statement, 2 is its body, 3 is the comm clause
+			which: 4,
 			want:  "package p; func f(x chan any) { select {case x <- a: a(x)}}",
 			name:  "comm2",
 		},
 		{
 			in:    "package p; func f() { switch {default: a()}}",
-			which: 4, // 0 is the func body, 1 is the select statement, 2 is its body
+			which: 4,
 			want:  "package p; func f() { switch {default: }}",
 			name:  "case0",
 		},
 		{
 			in:    "package p; func f() { switch {case 3: /*A*/ a() /*B*/}}",
-			which: 4, // 0 is the func body, 1 is the select statement, 2 is its body
+			which: 4,
 			want:  "package p; func f() { switch {case 3: }}",
 			name:  "case1",
 		},
@@ -178,7 +177,7 @@ func TestDeleteStmt(t *testing.T) {
 			want:  "package p; func f() {for a();c(); {}}",
 			name:  "for1",
 		},
-		{ // one of two func calls on. line
+		{ // one of func calls on. line
 			in:    "package p; func f() {for\na();c()\nb() {}}",
 			which: 2,
 			want:  "package p; func f() {for\n;c()\nb() {}}",
@@ -202,7 +201,7 @@ func TestDeleteStmt(t *testing.T) {
 			want:  "package p; func f() {switch a();b().(type){}}",
 			name:  "type1",
 		},
-		{ // if
+		{
 			in:    "package p; func f() {if a();b() {}}",
 			which: 2,
 			want:  "package p; func f() {if ;b() {}}",
@@ -409,9 +408,8 @@ func TestDeleteVar(t *testing.T) {
 			"package p; var ( v int // comment\n x int )",
 			"package p; var ( x int )",
 		},
-		// local DeclStmt > GenDecl > ValueSpec
-		// (The only interesting cases
-		// here are the total deletions.)
+		// local DeclStmt > GenDecl > ValueSpec (The only interesting cases here are
+		// the total deletions.)
 		{
 			"package p; func _() { var v int }",
 			"package p; func _() {}",
@@ -506,11 +504,6 @@ func TestDeleteVar(t *testing.T) {
 			"package p; type T int; func _(v T) {}", // receiver
 			"package p; type T int; func _(v T) {}",
 		},
-		// There is no defining Ident in this case.
-		// {
-		// 	"package p; func _() { switch v := any(nil).(type) {} }",
-		// 	"package p; func _() { switch v := any(nil).(type) {} }",
-		// },
 	} {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Logf("src: %s", test.src)
@@ -539,10 +532,7 @@ func TestDeleteVar(t *testing.T) {
 			tokFile := fset.File(f.Pos())
 			edits := refactor.DeleteVar(tokFile, info, curId)
 
-			// TODO(adonovan): extract this helper for
-			// applying TextEdits and comparing against
-			// expectations. (This code was mostly copied
-			// from analysistest.)
+			// TODO(adonovan): extract this helper for applying TextEdits and comparing against expectations.
 			var dedits []diff.Edit
 			for _, edit := range edits {
 				file := fset.File(edit.Pos)

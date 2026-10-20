@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modindex
 
@@ -127,8 +126,7 @@ func (ix *Index) Lookup(pkgName, name string, prefix bool) []Candidate {
 				if len(flds) >= 4 {
 					sig := strings.Split(flds[3], " ")
 					for i := range sig {
-						// $ cannot otherwise occur. removing the spaces
-						// almost works, but for chan struct{}, e.g.
+						// $ cannot otherwise occur. removing the spaces almost works, but for chan struct{}, e.g.
 						sig[i] = strings.Replace(sig[i], "$", " ", -1)
 					}
 					px.Sig = toFields(sig)
@@ -149,7 +147,7 @@ func toFields(sig []string) []Field {
 }
 
 // benchmarks show this is measurably better than strings.Split
-// split into first 4 fields separated by single space
+// split into first fields separated by single space
 func fastSplit(x string) []string {
 	ans := make([]string, 0, 4)
 	nxt := 0

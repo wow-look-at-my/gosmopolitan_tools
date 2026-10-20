@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter_test
 
@@ -109,7 +108,7 @@ func TestIndexedImportTypeparamTests(t *testing.T) {
 
 	for _, entry := range list {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
-			// For now, only consider standalone go files.
+			// Only consider standalone go files.
 			continue
 		}
 
@@ -121,9 +120,7 @@ func TestIndexedImportTypeparamTests(t *testing.T) {
 			}
 
 			if !bytes.HasPrefix(src, []byte("// run")) && !bytes.HasPrefix(src, []byte("// compile")) {
-				// We're bypassing the logic of run.go here, so be conservative about
-				// the files we consider in an attempt to make this test more robust to
-				// changes in test/typeparams.
+				// We are bypassing the logic of run.go here.
 				t.Skipf("not detected as a run test")
 			}
 

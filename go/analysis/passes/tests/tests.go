@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package tests
 
@@ -123,7 +122,6 @@ func checkFuzzCall(pass *analysis.Pass, fn *ast.FuncDecl) (params *types.Tuple) 
 			if tSign.Results().Len() != 0 {
 				pass.ReportRangef(expr, "fuzz target must not return any value")
 			}
-			// ff Argument function should have 1 or more argument
 			if tSign.Params().Len() == 0 {
 				pass.ReportRangef(expr, "fuzz target must have 1 or more argument")
 				return false
@@ -145,8 +143,7 @@ func checkFuzzCall(pass *analysis.Pass, fn *ast.FuncDecl) (params *types.Tuple) 
 				}
 				return true
 			})
-			// We do not need to look at any calls to f.Fuzz inside of a Fuzz call,
-			// since they are not allowed.
+			// We do not need to look at any calls to f.Fuzz inside of a Fuzz call, since they are not allowed.
 			return false
 		}
 		return true
@@ -154,8 +151,8 @@ func checkFuzzCall(pass *analysis.Pass, fn *ast.FuncDecl) (params *types.Tuple) 
 	return params
 }
 
-// checkAddCalls checks that the arguments of f.Add calls have the same number and type of arguments as
-// the signature of the function passed to (*testing.F).Fuzz
+// checkAddCalls checks that the arguments of f.Add. Calls have the same number and type of arguments
+// as the signature of the function passed to (*testing.F).Fuzz
 func checkAddCalls(pass *analysis.Pass, fn *ast.FuncDecl, params *types.Tuple) {
 	ast.Inspect(fn, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -179,8 +176,8 @@ func checkAddCalls(pass *analysis.Pass, fn *ast.FuncDecl, params *types.Tuple) {
 					mismatched = append(mismatched, i)
 				}
 			}
-			// If just one of the types is mismatched report for that
-			// type only. Otherwise report for the whole call to (*testing.F).Add
+			// If one of the types is mismatched report for that type only. Otherwise
+			// report for the whole call to (*testing.F).Add
 			if len(mismatched) == 1 {
 				i := mismatched[0]
 				expr := call.Args[i]
@@ -253,8 +250,7 @@ func validateFuzzArgs(pass *analysis.Pass, params *types.Tuple, expr ast.Expr) b
 }
 
 func isTestingType(typ types.Type, testingType string) bool {
-	// No Unalias here: I doubt "go test" recognizes
-	// "type A = *testing.T; func Test(A) {}" as a test.
+	// No Unalias here: I doubt "go test" recognizes "type A = *testing.T; func Test(A) {}" as a test.
 	ptr, ok := typ.(*types.Pointer)
 	if !ok {
 		return false
@@ -319,12 +315,6 @@ func lookup(pkg *types.Package, name string) []types.Object {
 
 	var ret []types.Object
 	// Search through the imports to see if any of them define name.
-	// It's hard to tell in general which package is being tested, so
-	// for the purposes of the analysis, allow the object to appear
-	// in any of the imports. This guarantees there are no false positives
-	// because the example needs to use the object so it must be defined
-	// in the package or one if its imports. On the other hand, false
-	// negatives are possible, but should be rare.
 	for _, imp := range pkg.Imports() {
 		if obj := imp.Scope().Lookup(name); obj != nil {
 			ret = append(ret, obj)
@@ -409,7 +399,6 @@ func checkExampleName(pass *analysis.Pass, fn *ast.FuncDecl) {
 		objs   = lookup(pass.Pkg, ident)
 	)
 	if ident != "" && len(objs) == 0 {
-		// Check ExampleFoo and ExampleBadFoo.
 		pass.Reportf(fn.Pos(), "%s refers to unknown identifier: %s", fnName, ident)
 		// Abort since obj is absent and no subsequent checks can be performed.
 		return
@@ -429,7 +418,6 @@ func checkExampleName(pass *analysis.Pass, fn *ast.FuncDecl) {
 
 	mmbr := elems[1]
 	if !isExampleSuffix(mmbr) {
-		// Check ExampleFoo_Method and ExampleFoo_BadMethod.
 		found := false
 		// Check if Foo.Method exists in this package or its imports.
 		for _, obj := range objs {
@@ -443,13 +431,11 @@ func checkExampleName(pass *analysis.Pass, fn *ast.FuncDecl) {
 		}
 	}
 	if len(elems) == 3 && !isExampleSuffix(elems[2]) {
-		// Check ExampleFoo_Method_suffix and ExampleFoo_Method_Badsuffix.
 		pass.Reportf(fn.Pos(), "%s has malformed example suffix: %s", fnName, elems[2])
 	}
 }
 
 func checkTest(pass *analysis.Pass, fn *ast.FuncDecl, prefix string) {
-	// Want functions with 0 results and 1 parameter.
 	if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 ||
 		fn.Type.Params == nil ||
 		len(fn.Type.Params.List) != 1 ||
@@ -463,8 +449,8 @@ func checkTest(pass *analysis.Pass, fn *ast.FuncDecl, prefix string) {
 	}
 
 	if tparams := fn.Type.TypeParams; tparams != nil && len(tparams.List) > 0 {
-		// Note: cmd/go/internal/load also errors about TestXXX and BenchmarkXXX functions with type parameters.
-		// We have currently decided to also warn before compilation/package loading. This can help users in IDEs.
+		// Note: cmd/go/internal/load also errors about TestXXX and BenchmarkXXX
+		// functions with type parameters.
 		pass.ReportRangef(astutil.RangeOf(tparams.Opening, tparams.Closing),
 			"%s has type parameters: it will not be run by go test as a %sXXX function",
 			fn.Name.Name, prefix)

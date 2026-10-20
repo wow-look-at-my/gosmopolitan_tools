@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package testfiles provides utilities for writing Go tests with files
 // in testdata.
@@ -24,24 +23,6 @@ import (
 // After copying the files, it processes each of the 'old,new,' rename
 // directives in order. Each rename directive moves the relative path "old"
 // to the relative path "new" within the directory.
-//
-// Renaming allows tests to hide files whose names have
-// special meaning, such as "go.mod" files or "testdata" directories
-// from the go command, or ill-formed Go source files from gofmt.
-//
-// For example if we copy the directory testdata:
-//
-//	testdata/
-//	    go.mod.test
-//	    a/a.go
-//	    b/b.go
-//
-// with the rename "go.mod.test,go.mod", the resulting files will be:
-//
-//	dst/
-//	    go.mod
-//	    a/a.go
-//	    b/b.go
 func CopyToTmp(t testing.TB, src fs.FS, rename ...string) string {
 	dstdir := t.TempDir()
 
@@ -63,9 +44,8 @@ func CopyToTmp(t testing.TB, src fs.FS, rename ...string) string {
 	return dstdir
 }
 
-// ExtractTxtarFileToTmp read a txtar archive on a given path,
-// extracts it to a temporary directory, and returns the
-// temporary directory.
+// ExtractTxtarFileToTmp read a txtar archive on a given path, extracts it to
+// a temporary directory, and returns the temporary directory.
 func ExtractTxtarFileToTmp(t testing.TB, file string) string {
 	ar, err := txtar.ParseFile(file)
 	if err != nil {

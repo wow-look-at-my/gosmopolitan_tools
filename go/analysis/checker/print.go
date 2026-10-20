@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package checker
 
@@ -18,20 +17,14 @@ import (
 )
 
 // PrintText emits diagnostics as plain text to w.
-//
-// If contextLines is nonnegative, it also prints the
-// offending line, plus that many lines of context
-// before and after the line.
 func (g *Graph) PrintText(w io.Writer, contextLines int) error {
 	return writeTextDiagnostics(w, g.Roots, contextLines)
 }
 
 func writeTextDiagnostics(w io.Writer, roots []*Action, contextLines int) error {
-	// De-duplicate diagnostics by position (not token.Pos) to
-	// avoid double-reporting in source files that belong to
-	// multiple packages, such as foo and foo.test.
-	// (We cannot assume that such repeated files were parsed
-	// only once and use syntax nodes as the key.)
+	// De-duplicate diagnostics by position (not token.Pos) to avoid
+	// double-reporting in source files that belong to multiple packages, such as
+	// foo and foo.test.
 	type key struct {
 		pos token.Position
 		end token.Position
@@ -47,8 +40,7 @@ func writeTextDiagnostics(w io.Writer, roots []*Action, contextLines int) error 
 			fmt.Fprintf(w, "%s: %v\n", act.Analyzer.Name, act.Err)
 		} else if act.IsRoot {
 			for _, diag := range act.Diagnostics {
-				// We don't display Analyzer.Name/diag.Category
-				// as most users don't care.
+				// We don't display Analyzer.Name/diag.Category as most users don't care.
 
 				posn := act.Package.Fset.Position(diag.Pos)
 				end := act.Package.Fset.Position(diag.End)
@@ -68,8 +60,6 @@ func writeTextDiagnostics(w io.Writer, roots []*Action, contextLines int) error 
 }
 
 // PrintJSON emits diagnostics in JSON form to w.
-// Diagnostics are shown only for the root nodes,
-// but errors (if any) are shown for all dependencies.
 func (g *Graph) PrintJSON(w io.Writer) error {
 	return writeJSONDiagnostics(w, g.Roots)
 }

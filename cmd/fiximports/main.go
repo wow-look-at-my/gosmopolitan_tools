@@ -1,69 +1,17 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The fiximports command fixes import declarations to use the canonical
-// import path for packages that have an "import comment" as defined by
-// https://golang.org/s/go14customimport.
+// import path for packages. Those packages have an "import comment" as
+// defined by https://golang.org/s/go14customimport.
 //
 // # Background
 //
-// The Go 1 custom import path mechanism lets the maintainer of a
-// package give it a stable name by which clients may import and "go
-// get" it, independent of the underlying version control system (such
-// as Git) or server (such as github.com) that hosts it.  Requests for
-// the custom name are redirected to the underlying name.  This allows
-// packages to be migrated from one underlying server or system to
-// another without breaking existing clients.
-//
-// Because this redirect mechanism creates aliases for existing
-// packages, it's possible for a single program to import the same
-// package by its canonical name and by an alias.  The resulting
-// executable will contain two copies of the package, which is wasteful
-// at best and incorrect at worst.
-//
-// To avoid this, "go build" reports an error if it encounters a special
-// comment like the one below, and if the import path in the comment
-// does not match the path of the enclosing package relative to
-// GOPATH/src:
-//
-//	     $ grep ^package $GOPATH/src/github.com/bob/vanity/foo/foo.go
-//		package foo // import "vanity.com/foo"
-//
-// The error from "go build" indicates that the package canonically
-// known as "vanity.com/foo" is locally installed under the
-// non-canonical name "github.com/bob/vanity/foo".
-//
-// # Usage
-//
-// When a package that you depend on introduces a custom import comment,
-// and your workspace imports it by the non-canonical name, your build
-// will stop working as soon as you update your copy of that package
-// using "go get -u".
-//
-// The purpose of the fiximports tool is to fix up all imports of the
-// non-canonical path within a Go workspace, replacing them with imports
-// of the canonical path.  Following a run of fiximports, the workspace
-// will no longer depend on the non-canonical copy of the package, so it
-// should be safe to delete.  It may be necessary to run "go get -u"
-// again to ensure that the package is locally installed under its
-// canonical path, if it was not already.
-//
-// The fiximports tool operates locally; it does not make HTTP requests
-// and does not discover new custom import comments.  It only operates
-// on non-canonical packages present in your workspace.
-//
-// The -baddomains flag is a list of domain names that should always be
-// considered non-canonical.  You can use this if you wish to make sure
-// that you no longer have any dependencies on packages from that
-// domain, even those that do not yet provide a canonical import path
-// comment.  For example, the default value of -baddomains includes the
-// moribund code hosting site code.google.com, so fiximports will report
-// an error for each import of a package from this domain remaining
-// after canonicalization.
-//
-// To see the changes fiximports would make without applying them, use
-// the -n flag.
+// One go custom import path mechanism lets the maintainer of a package give
+// it. A stable name by which clients may import and "go get" it,
+// independent of the underlying version control system (such as Git) or
+// server (such as github.com) that hosts it. Requests for the custom name
+// are redirected to the underlying name. This allows packages to be.
 package main
 
 import (
@@ -163,10 +111,7 @@ func fiximports(packages ...string) bool {
 		packageName[p.ImportPath] = p.Name
 	}
 
-	// canonical maps each non-canonical package path to
-	// its canonical path and name.
-	// A present nil value indicates that the canonical package
-	// is unknown: hosted on a bad domain with no redirect.
+	// canonical maps each non-canonical package path to its canonical path and name.
 	canonical := make(map[string]canonicalName)
 	domains := strings.Split(*badDomains, ",")
 
@@ -198,7 +143,6 @@ func fiximports(packages ...string) bool {
 			msg := p.Error.Err
 			if strings.Contains(msg, "code in directory") &&
 				strings.Contains(msg, "expects import") {
-				// don't show the very errors we're trying to fix
 			} else {
 				fmt.Fprintln(stderr, p.Error)
 			}
@@ -255,22 +199,16 @@ func fiximports(packages ...string) bool {
 					continue // no slash: standard package
 				}
 				if p.ImportPath[:slash] == domain {
-					// Package comes from bad domain and has no import comment.
-					// Report an error each time this package is imported.
+					// Package comes from bad domain and has no import comment. Report an error each time this package is imported.
 					canonical[p.ImportPath] = canonicalName{}
 
-					// TODO(adonovan): should we make an HTTP request to
-					// see if there's an HTTP redirect, a "go-import" meta tag,
-					// or an import comment in the latest revision?
-					// It would duplicate a lot of logic from "go get".
 				}
 				break
 			}
 		}
 	}
 
-	// Find all clients (direct importers) of canonical packages.
-	// These are the packages that need fixing up.
+	// Find all clients (direct importers) of canonical packages. These are the packages that need fixing up.
 	clients := make(map[*listPackage]bool)
 	for path := range canonical {
 		for client := range importedBy[path] {
@@ -280,7 +218,6 @@ func fiximports(packages ...string) bool {
 
 	// Restrict rewrites to the set of packages specified by the user.
 	if len(packages) == 1 && (packages[0] == "all" || packages[0] == "...") {
-		// no restriction
 	} else {
 		pkgs, err := list(packages...)
 		if err != nil {
@@ -304,8 +241,7 @@ func fiximports(packages ...string) bool {
 		if !rewritePackage(client, canonical) {
 			ok = false
 
-			// There were errors.
-			// Show direct and indirect imports of client.
+			// There were errors. Show direct and indirect imports of client.
 			seen := make(map[string]bool)
 			var direct, indirect []string
 			for p := range importedBy[client.ImportPath] {
@@ -413,8 +349,7 @@ func rewriteFile(filename string, canonical map[string]canonicalName, used map[s
 		used[impPath] = true
 
 		if canon.path == "" {
-			// The canonical path is unknown (a -baddomain).
-			// Show the offending import.
+			// The canonical path is unknown (a -baddomain). Show the offending import.
 			// TODO(adonovan): should we show the actual source text?
 			fmt.Fprintf(stderr, "\t%s:%d: import %q\n",
 				shortPath(filename),
@@ -427,10 +362,6 @@ func rewriteFile(filename string, canonical map[string]canonicalName, used map[s
 		imp.Path.Value = strconv.Quote(canon.path)
 
 		// Add a renaming import if necessary.
-		//
-		// This is a guess at best.  We can't see whether a 'go
-		// get' of the canonical import path would have the same
-		// name or not.  Assume it's the last segment.
 		newBase := path.Base(canon.path)
 		if imp.Name == nil && newBase != canon.name {
 			imp.Name = &ast.Ident{Name: canon.name}
@@ -503,10 +434,6 @@ func list(args ...string) ([]*listPackage, error) {
 }
 
 // cwd contains the current working directory of the tool.
-//
-// It is initialized directly so that its value will be set for any other
-// package variables or init functions that depend on it, such as the gopath
-// variable in main_test.go.
 var cwd string = func() string {
 	cwd, err := os.Getwd()
 	if err != nil {

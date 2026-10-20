@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package fmtstr defines a parser for format strings as used by [fmt.Printf].
 package fmtstr
@@ -20,27 +19,26 @@ type Operation struct {
 	Range Range  // the range of Text within the overall format string
 	Flags string // formatting flags, e.g. "-0"
 	Width Size   // width specifier, e.g., '3' in '%3d'
-	Prec  Size   // precision specifier, e.g., '.4' in '%.4f'
+	Prec  Size
 }
 
 // Size describes an optional width or precision in a format operation.
-// It may represent no value, a literal number, an asterisk, or an indexed asterisk.
 type Size struct {
-	// At most one of these two fields is non-negative.
-	Fixed   int // e.g. 4 from "%4d", otherwise -1
-	Dynamic int // index of argument providing dynamic size (e.g. %*d or %[3]*d), otherwise -1
+	// At most one of these fields is non-negative.
+	Fixed   int
+	Dynamic int
 
-	Index int   // If the width or precision uses an indexed argument (e.g. 2 in %[2]*d), this is the index, otherwise -1
+	Index int
 	Range Range // position of the size specifier within the operation
 }
 
-// Verb represents the verb character of a format operation (e.g., 'd', 's', 'f').
-// It also includes positional information and any explicit argument indexing.
+// Verb represents the verb character of a format operation (e.g., 'd', 's',
+// 'f').
 type Verb struct {
 	Verb     rune
 	Range    Range // positional range of the verb in the format string
-	Index    int   // index of an indexed argument, (e.g. 2 in %[2]d), otherwise -1
-	ArgIndex int   // argument index (0-based) associated with this verb, relative to CallExpr
+	Index    int
+	ArgIndex int // argument index (0-based) associated with this verb, relative to CallExpr
 }
 
 // byte offsets of format string
@@ -48,19 +46,13 @@ type Range struct {
 	Start, End int
 }
 
-// Parse takes a format string and its index in the printf-like call,
-// parses out all format operations, returns a slice of parsed
-// [Operation] which describes flags, width, precision, verb, and argument indexing,
-// or an error if parsing fails.
+// Parse takes a format string and its index in the printf-like call and
+// parses out all format operations. Parse also returns a slice of parsed
+// [Operation] which describes flags, width, precision, verb, and argument
+// indexing, or an error if parsing fails.
 //
-// All error messages are in predicate form ("call has a problem")
-// so that they may be affixed into a subject ("log.Printf ").
-//
-// The flags will only be a subset of ['#', '0', '+', '-', ' '].
-// It does not perform any validation of verbs, nor the
-// existence of corresponding arguments (obviously it can't). The provided format string may differ
-// from the one in CallExpr, such as a concatenated string or a string
-// referred to by the argument in the CallExpr.
+// All error messages are in predicate form ("call has a problem") so that
+// they may be affixed into a subject ("log.Printf ").
 func Parse(format string, idx int) ([]*Operation, error) {
 	if !strings.Contains(format, "%") {
 		return nil, fmt.Errorf("call has arguments but no formatting directives")

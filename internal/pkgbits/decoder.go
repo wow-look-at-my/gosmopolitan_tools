@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package pkgbits
 
@@ -27,39 +26,21 @@ type PkgDecoder struct {
 	sync bool
 
 	// pkgPath is the package path for the package to be decoded.
-	//
-	// TODO(mdempsky): Remove; unneeded since CL 391014.
 	pkgPath string
 
-	// elemData is the full data payload of the encoded package.
-	// Elements are densely and contiguously packed together.
-	//
-	// The last 8 bytes of elemData are the package fingerprint.
+	// elemData is the full data payload of the encoded package. Elements are densely and contiguously packed together.
 	elemData string
 
-	// elemEnds stores the byte-offset end positions of element
-	// bitstreams within elemData.
-	//
-	// For example, element I's bitstream data starts at elemEnds[I-1]
-	// (or 0, if I==0) and ends at elemEnds[I].
-	//
-	// Note: elemEnds is indexed by absolute indices, not
-	// section-relative indices.
+	// elemEnds stores the byte-offset end positions of element bitstreams within elemData.
 	elemEnds []uint32
 
-	// elemEndsEnds stores the index-offset end positions of relocation
-	// sections within elemEnds.
-	//
-	// For example, section K's end positions start at elemEndsEnds[K-1]
-	// (or 0, if K==0) and end at elemEndsEnds[K].
+	// elemEndsEnds stores the index-offset end positions of relocation sections within elemEnds.
 	elemEndsEnds [numRelocs]uint32
 
 	scratchRelocEnt []RelocEnt
 }
 
-// PkgPath returns the package path for the package
-//
-// TODO(mdempsky): Remove; unneeded since CL 391014.
+// PkgPath returns the package path for the package.
 func (pr *PkgDecoder) PkgPath() string { return pr.pkgPath }
 
 // SyncMarkers reports whether pr uses sync markers.
@@ -73,8 +54,7 @@ func NewPkgDecoder(pkgPath, input string) PkgDecoder {
 		pkgPath: pkgPath,
 	}
 
-	// TODO(mdempsky): Implement direct indexing of input string to
-	// avoid copying the position information.
+	// TODO(mdempsky): Implement direct indexing of input string to avoid copying the position information.
 
 	r := strings.NewReader(input)
 
@@ -129,8 +109,7 @@ func (pr *PkgDecoder) Fingerprint() [8]byte {
 	return fp
 }
 
-// AbsIdx returns the absolute index for the given (section, index)
-// pair.
+// AbsIdx returns the absolute index for the given (section, index) pair.
 func (pr *PkgDecoder) AbsIdx(k RelocKind, idx Index) int {
 	absIdx := int(idx)
 	if k > 0 {
@@ -169,10 +148,8 @@ func (pr *PkgDecoder) NewDecoder(k RelocKind, idx Index, marker SyncMarker) Deco
 	return r
 }
 
-// TempDecoder returns a Decoder for the given (section, index) pair,
-// and decodes the given SyncMarker from the element bitstream.
-// If possible the Decoder should be RetireDecoder'd when it is no longer
-// needed, this will avoid heap allocations.
+// TempDecoder returns a Decoder for the given (section, index) pair, and
+// decodes the given SyncMarker from the element bitstream.
 func (pr *PkgDecoder) TempDecoder(k RelocKind, idx Index, marker SyncMarker) Decoder {
 	r := pr.TempDecoderRaw(k, idx)
 	r.Sync(marker)
@@ -318,21 +295,7 @@ func (r *Decoder) Sync(mWant SyncMarker) {
 		return
 	}
 
-	// There's some tension here between printing:
-	//
-	// (1) full file paths that tools can recognize (e.g., so emacs
-	//     hyperlinks the "file:line" text for easy navigation), or
-	//
-	// (2) short file paths that are easier for humans to read (e.g., by
-	//     omitting redundant or irrelevant details, so it's easier to
-	//     focus on the useful bits that remain).
-	//
-	// The current formatting favors the former, as it seems more
-	// helpful in practice. But perhaps the formatting could be improved
-	// to better address both concerns. For example, use relative file
-	// paths if they would be shorter, or rewrite file paths to contain
-	// "$GOROOT" (like objabi.AbsFile does) if tools can be taught how
-	// to reliably expand that again.
+	// There is some tension here between printing:.
 
 	fmt.Printf("export data desync: package %q, section %v, index %v, offset %v\n", r.common.pkgPath, r.k, r.Idx, pos)
 
@@ -351,9 +314,7 @@ func (r *Decoder) Sync(mWant SyncMarker) {
 		fmt.Printf("\t%s\n", pc)
 	}
 
-	// We already printed a stack trace for the reader, so now we can
-	// simply exit. Printing a second one with panic or base.Fatalf
-	// would just be noise.
+	// We already printed a stack trace for the reader, so now we can exit.
 	os.Exit(1)
 }
 
@@ -387,13 +348,8 @@ func (r *Decoder) Int() int { x := r.Int64(); v := int(x); assert(int64(v) == x)
 // Uint decodes and returns a uint value from the element bitstream.
 func (r *Decoder) Uint() uint { x := r.Uint64(); v := uint(x); assert(uint64(v) == x); return v }
 
-// Code decodes a Code value from the element bitstream and returns
-// its ordinal value. It's the caller's responsibility to convert the
-// result to an appropriate Code type.
-//
-// TODO(mdempsky): Ideally this method would have signature "Code[T
-// Code] T" instead, but we don't allow generic methods and the
-// compiler can't depend on generics yet anyway.
+// Code decodes a Code value from the element bitstream and returns its
+// ordinal value.
 func (r *Decoder) Code(mark SyncMarker) int {
 	r.Sync(mark)
 	return r.Len()
@@ -406,8 +362,7 @@ func (r *Decoder) Reloc(k RelocKind) Index {
 	return r.rawReloc(k, r.Len())
 }
 
-// String decodes and returns a string value from the element
-// bitstream.
+// String decodes and returns a string value from the element bitstream.
 func (r *Decoder) String() string {
 	r.Sync(SyncString)
 	return r.common.StringIdx(r.Reloc(RelocString))
@@ -423,8 +378,7 @@ func (r *Decoder) Strings() []string {
 	return res
 }
 
-// Value decodes and returns a constant.Value from the element
-// bitstream.
+// Value decodes and returns a constant.Value from the element bitstream.
 func (r *Decoder) Value() constant.Value {
 	r.Sync(SyncValue)
 	isComplex := r.Bool()
@@ -473,11 +427,10 @@ func (r *Decoder) bigFloat() *big.Float {
 
 // @@@ Helpers
 
-// TODO(mdempsky): These should probably be removed. I think they're a
-// smell that the export data format is not yet quite right.
+// TODO(mdempsky): These should probably be removed. I think they're a smell
+// that the export data format is not yet right.
 
-// PeekPkgPath returns the package path for the specified package
-// index.
+// PeekPkgPath returns the package path for the specified package index.
 func (pr *PkgDecoder) PeekPkgPath(idx Index) string {
 	var path string
 	{

@@ -1,38 +1,14 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package facts defines a serializable set of analysis.Fact.
 //
 // It provides a partial implementation of the Fact-related parts of the
-// analysis.Pass interface for use in analysis drivers such as "go vet"
-// and other build systems.
+// analysis.Pass interface for use. That use is in analysis drivers such as
+// "go vet" and other build systems.
 //
-// The serial format is unspecified and may change, so the same version
-// of this package must be used for reading and writing serialized facts.
-//
-// The handling of facts in the analysis system parallels the handling
-// of type information in the compiler: during compilation of package P,
-// the compiler emits an export data file that describes the type of
-// every object (named thing) defined in package P, plus every object
-// indirectly reachable from one of those objects. Thus the downstream
-// compiler of package Q need only load one export data file per direct
-// import of Q, and it will learn everything about the API of package P
-// and everything it needs to know about the API of P's dependencies.
-//
-// Similarly, analysis of package P emits a fact set containing facts
-// about all objects exported from P, plus additional facts about only
-// those objects of P's dependencies that are reachable from the API of
-// package P; the downstream analysis of Q need only load one fact set
-// per direct import of Q.
-//
-// The notion of "exportedness" that matters here is that of the
-// compiler. According to the language spec, a method pkg.T.f is
-// unexported simply because its name starts with lowercase. But the
-// compiler must nonetheless export f so that downstream compilations can
-// accurately ascertain whether pkg.T implements an interface pkg.I
-// defined as interface{f()}. Exported thus means "described in export
-// data".
+// The serial format is unspecified and may change, so the same version of
+// this package must be used for reading and writing serialized facts.
 package facts
 
 import (
@@ -53,12 +29,6 @@ import (
 const debug = false
 
 // A Set is a set of analysis.Facts.
-//
-// Decode creates a Set of facts by reading from the imports of a given
-// package, and Encode writes out the set. Between these operation,
-// the Import and Export methods will query and update the set.
-//
-// All of Set's methods except String are safe to call concurrently.
 type Set struct {
 	pkg *types.Package
 	mu  sync.Mutex
@@ -152,38 +122,22 @@ type gobFact struct {
 	Fact    analysis.Fact   // type and value of user-defined Fact
 }
 
-// A Decoder decodes the facts from the direct imports of the package
-// provided to NewEncoder. A single decoder may be used to decode
-// multiple fact sets (e.g. each for a different set of fact types)
-// for the same package. Each call to Decode returns an independent
-// fact set.
+// A Decoder decodes the facts from the direct imports of the package provided
+// to NewEncoder.
 type Decoder struct {
 	pkg        *types.Package
 	getPackage GetPackageFunc
 }
 
 // NewDecoder returns a fact decoder for the specified package.
-//
-// It uses a brute-force recursive approach to enumerate all objects
-// defined by dependencies of pkg, so that it can learn the set of
-// package paths that may be mentioned in the fact encoding. This does
-// not scale well; use [NewDecoderFunc] where possible.
 func NewDecoder(pkg *types.Package) *Decoder {
-	// Compute the import map for this package.
-	// See the package doc comment.
+	// Compute the import map for this package. See the package doc comment.
 	m := importMap(pkg.Imports())
 	getPackageFunc := func(path string) *types.Package { return m[path] }
 	return NewDecoderFunc(pkg, getPackageFunc)
 }
 
 // NewDecoderFunc returns a fact decoder for the specified package.
-//
-// It calls the getPackage function for the package path string of
-// each dependency (perhaps indirect) that it encounters in the
-// encoding. If the function returns nil, the fact is discarded.
-//
-// This function is preferred over [NewDecoder] when the client is
-// capable of efficient look-up of packages by package path.
 func NewDecoderFunc(pkg *types.Package, getPackage GetPackageFunc) *Decoder {
 	return &Decoder{
 		pkg:        pkg,
@@ -205,8 +159,7 @@ type GetPackageFunc = func(pkgPath string) *types.Package
 // Concurrent calls to Decode are safe, so long as the
 // [GetPackageFunc] (if any) is also concurrency-safe.
 func (d *Decoder) Decode(read func(pkgPath string) ([]byte, error)) (*Set, error) {
-	// Read facts from imported packages.
-	// Facts may describe indirectly imported packages, or their objects.
+	// Read facts from imported packages. Facts may describe indirectly imported packages, or their objects.
 	m := make(map[key]analysis.Fact) // one big bucket
 	for _, imp := range d.pkg.Imports() {
 		logf := func(format string, args ...any) {
@@ -232,12 +185,11 @@ func (d *Decoder) Decode(read func(pkgPath string) ([]byte, error)) (*Set, error
 		}
 		logf("decoded %d facts: %v", len(gobFacts), gobFacts)
 
-		// Parse each one into a key and a Fact.
+		// Parse each into a key and a Fact.
 		for _, f := range gobFacts {
 			factPkg := d.getPackage(f.PkgPath) // possibly an indirect dependency
 			if factPkg == nil {
-				// Fact relates to a dependency that was
-				// unused in this translation unit. Skip.
+				// Fact relates to a dependency that was unused in this translation unit. Skip.
 				logf("no package %q; discarding %v", f.PkgPath, f.Fact)
 				continue
 			}
@@ -246,8 +198,7 @@ func (d *Decoder) Decode(read func(pkgPath string) ([]byte, error)) (*Set, error
 				// object fact
 				obj, err := objectpath.Object(factPkg, f.Object)
 				if err != nil {
-					// (most likely due to unexported object)
-					// TODO(adonovan): audit for other possibilities.
+					// (most likely due to unexported object) TODO(adonovan): audit for other possibilities.
 					logf("no object for path: %v; discarding %s", err, f.Fact)
 					continue
 				}
@@ -271,8 +222,7 @@ func (d *Decoder) Decode(read func(pkgPath string) ([]byte, error)) (*Set, error
 func (s *Set) Encode() []byte {
 	encoder := new(objectpath.Encoder)
 
-	// TODO(adonovan): opt: use a more efficient encoding
-	// that avoids repeating PkgPath for each fact.
+	// TODO(adonovan): opt: use a more efficient encoding that avoids repeating PkgPath for each fact.
 
 	// Gather all facts, including those from imported packages.
 	var gobFacts []gobFact
@@ -283,22 +233,8 @@ func (s *Set) Encode() []byte {
 			log.Printf("%v => %s\n", k, fact)
 		}
 
-		// Don't export facts that we imported from another
-		// package, unless they represent fields or methods,
-		// or package-level types.
-		// (Facts about packages, and other package-level
-		// objects, are only obtained from direct imports so
-		// they needn't be reexported.)
-		//
-		// This is analogous to the pruning done by "deep"
-		// export data for types, but not as precise because
-		// we aren't careful about which structs or methods
-		// we rexport: it should be only those referenced
-		// from the API of s.pkg.
-		// TODO(adonovan): opt: be more precise. e.g.
-		// intersect with the set of objects computed by
-		// importMap(s.pkg.Imports()).
-		// TODO(adonovan): opt: implement "shallow" facts.
+		// Don't export facts that we imported from another package, unless they
+		// represent fields or methods, or package-level types.
 		if k.pkg != s.pkg {
 			if k.obj == nil {
 				continue // imported package fact

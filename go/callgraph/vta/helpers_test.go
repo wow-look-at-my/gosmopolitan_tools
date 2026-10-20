@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -22,9 +21,8 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-// want extracts the contents of the first comment
-// section starting with "WANT:\n". The returned
-// content is split into lines without // prefix.
+// want extracts the contents of the first comment section starting with
+// "WANT:\n". The returned content is split into lines without // prefix.
 func want(f *ast.File) []string {
 	for _, c := range f.Comments {
 		text := strings.TrimSpace(c.Text())
@@ -35,9 +33,8 @@ func want(f *ast.File) []string {
 	return nil
 }
 
-// testProg returns an ssa representation of a program at
-// `path`, assumed to define package "testdata," and the
-// test want result as list of strings.
+// testProg returns an ssa representation of a program at `path`, assumed to
+// define package "testdata," and the test want result as list of strings.
 func testProg(t testing.TB, path string) (*ssa.Program, []string, error) {
 	// Set debug mode to exercise DebugRef instructions.
 	pkg, ssapkg := loadFile(t, path, ssa.InstantiateGenerics|ssa.GlobalDebug)

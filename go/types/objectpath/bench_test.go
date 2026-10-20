@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package objectpath_test
 
@@ -46,8 +45,7 @@ func BenchmarkMonster(b *testing.B) {
 	pkg := pkgs[0].Types
 	scope := pkg.Scope()
 
-	// Collect all methods and fields of named structs.
-	// All these symbols engage the "search" algorithm.
+	// Collect all methods and fields of named structs. All these symbols engage the "search" algorithm.
 	var all []types.Object
 	for _, name := range scope.Names() {
 		obj := scope.Lookup(name)
@@ -64,9 +62,8 @@ func BenchmarkMonster(b *testing.B) {
 		}
 	}
 
-	// Single measures the cost of requesting paths for a single symbol,
-	// as happens whenever we use [objectpath.For] without an Encoder.
-	// This case must not allocate an index.
+	// Single measures the cost of requesting paths for a single symbol, as
+	// happens whenever we use [objectpath.For] without an Encoder.
 	b.Run("Single", func(b *testing.B) {
 		// Pick a deep object (last field of the last type).
 		obj := all[len(all)-1]
@@ -85,8 +82,6 @@ func BenchmarkMonster(b *testing.B) {
 		// Pick a set of objects including a mix of types, fields, and methods.
 		var targets []types.Object
 		for j := range count {
-			// Offset of 17 (prime) avoids locking stride
-			// with periodicity in monster package.
 			idx := (j*len(all)/count + 17) % len(all)
 			targets = append(targets, all[idx])
 		}
@@ -104,10 +99,6 @@ func BenchmarkMonster(b *testing.B) {
 
 	// All measures performance when a large fraction (or all)
 	// objects in the API are requested.
-	//
-	// This happens when analyzers (e.g. checklocks) emit facts
-	// for a large fraction of symbols, and historically led to
-	// O(n²) running time; see https://go.dev/issue/78893.
 	b.Run("All", func(b *testing.B) {
 		for b.Loop() {
 			enc := new(objectpath.Encoder)

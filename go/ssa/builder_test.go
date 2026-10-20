@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa_test
 
@@ -69,8 +68,7 @@ func main() {
 		return
 	}
 
-	// Build an SSA program from the parsed file.
-	// Load its dependencies from gc binary export data.
+	// Build an SSA program from the parsed file. Load its dependencies from gc binary export data.
 	mode := ssa.SanityCheckFunctions
 	mainPkg, _, err := ssautil.BuildPackage(&types.Config{Importer: importer.Default()}, fset,
 		types.NewPackage("main", ""), []*ast.File{f}, mode)
@@ -83,8 +81,7 @@ func main() {
 	deps := []string{
 		// directly imported dependencies:
 		"bytes", "io", "testing",
-		// indirect dependencies mentioned by
-		// the direct imports' export data
+		// indirect dependencies mentioned by the direct imports' export data
 		"sync", "unicode", "time",
 	}
 
@@ -201,8 +198,8 @@ func TestNoIndirectCreatePackage(t *testing.T) {
 func TestRuntimeTypes(t *testing.T) {
 	testenv.NeedsGoBuild(t) // for importer.Default()
 
-	// TODO(adonovan): these test cases don't really make logical
-	// sense any more. Rethink.
+	// TODO(adonovan): these test cases don't make logical sense any more.
+	// Rethink.
 
 	tests := []struct {
 		input string
@@ -289,8 +286,7 @@ func (C) f()
 			continue
 		}
 
-		// Create a single-file main package.
-		// Load dependencies from gc binary export data.
+		// Create a single-file main package. Load dependencies from gc binary export data.
 		mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
 		ssapkg, _, err := ssautil.BuildPackage(&types.Config{Importer: importer.Default()}, fset,
 			types.NewPackage("p", ""), []*ast.File{f}, mode)
@@ -315,14 +311,14 @@ func (C) f()
 	}
 }
 
-// TestInit tests that synthesized init functions are correctly formed.
-// Bare init functions omit calls to dependent init functions and the use of
-// an init guard. They are useful in cases where the client uses a different
-// calling convention for init functions, or cases where it is easier for a
-// client to analyze bare init functions. Both of these aspects are used by
-// the llgo compiler for simpler integration with gccgo's runtime library,
-// and to simplify the analysis whereby it deduces which stores to globals
-// can be lowered to global initializers.
+// TestInit tests that synthesized init functions are correctly formed. Bare
+// init functions omit calls to dependent init functions and the use of an
+// init guard. They are useful in cases where the client uses a different
+// calling convention for init functions, or cases where it is easier. This
+// holds for a client to analyze bare init functions. Both of these aspects
+// are used by the llgo compiler for simpler integration with gccgo's
+// runtime library, and to simplify the analysis. Whereby it deduces which
+// stores to globals can be lowered to global initializers.
 func TestInit(t *testing.T) {
 	tests := []struct {
 		mode        ssa.BuilderMode
@@ -483,31 +479,6 @@ func g(slice []int) {
 
 func h(error)
 `
-	// The SSA code for this function should look something like this:
-	// 0:
-	//         jump 1
-	// 1:
-	//         t0 = len(slice)
-	//         jump 2
-	// 2:
-	//         t1 = phi [1: -1:int, 3: t2]
-	//         t2 = t1 + 1:int
-	//         t3 = t2 < t0
-	//         if t3 goto 3 else 1
-	// 3:
-	//         t4 = f()
-	//         t5 = h(t4)
-	//         jump 2
-	//
-	// But earlier versions of the SSA construction algorithm would
-	// additionally generate this cycle of dead phis:
-	//
-	// 1:
-	//         t7 = phi [0: nil:error, 2: t8] #e
-	//         ...
-	// 2:
-	//         t8 = phi [1: t7, 3: t4] #e
-	//         ...
 
 	p, _ := buildPackage(t, input, ssa.BuilderMode(0))
 	g := p.Func("g")
@@ -547,12 +518,7 @@ func Load[T any](x *Pointer[T]) *T {
 
 func LoadPointer(addr *unsafe.Pointer) (val unsafe.Pointer)
 `
-	// The SSA members for this package should look something like this:
-	//          func  LoadPointer func(addr *unsafe.Pointer) (val unsafe.Pointer)
-	//      type  Pointer     struct{v unsafe.Pointer}
-	//        method (*Pointer[T any]) Load() *T
-	//      func  init        func()
-	//      var   init$guard  bool
+	// The SSA members for this package must look something like this: func.
 
 	p, _ := buildPackage(t, input, ssa.BuilderMode(0))
 
@@ -585,10 +551,9 @@ type R[T any] struct{ S[T] }
 
 var indirect = R[int].M
 `
-	// The relevant SSA members for this package should look something like this:
-	// var   bound      func() int
-	// var   thunk      func(S[int]) int
-	// var   wrapper    func(R[int]) int
+	// The relevant SSA members for this package should look something like this.
+	// This covers var bound func() int var thunk func(S[int]) int var wrapper
+	// func(R[int]) int
 
 	for _, mode := range []ssa.BuilderMode{ssa.BuilderMode(0), ssa.InstantiateGenerics} {
 		p, _ := buildPackage(t, input, mode)
@@ -672,9 +637,6 @@ func TestTypeparamTest(t *testing.T) {
 	// testdata/src. Decreases runtime from ~80s to ~1s.
 
 	if runtime.GOARCH == "wasm" {
-		// Consistent flakes on wasm (#64726, #69409, #69410).
-		// Needs more investigation, but more likely a wasm issue
-		// Disabling for now.
 		t.Skip("Consistent flakes on wasm (e.g. https://go.dev/issues/64726)")
 	}
 
@@ -691,17 +653,15 @@ func TestTypeparamTest(t *testing.T) {
 		t.Skipf("test/typeparam doesn't exist under GOROOT %s", goroot)
 	}
 
-	// Collect all of the .go files in
 	fsys := os.DirFS(dir)
 	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Each call to buildPackage calls package.Load, which invokes "go list",
-	// and with over 300 subtests this can be very slow (minutes, or tens
-	// on some platforms). So, we use an overlay to map each test file to a
-	// distinct single-file package and load them all at once.
+	// Each call to buildPackage calls package.Load, which invokes "go list", and
+	// with over many subtests this can be slow (minutes, or tens on some
+	// platforms).
 	overlay := map[string][]byte{
 		"go.mod": goMod("example.com", -1),
 	}
@@ -737,9 +697,8 @@ func TestTypeparamTest(t *testing.T) {
 
 // TestOrderOfOperations ensures order of operations are as intended.
 func TestOrderOfOperations(t *testing.T) {
-	// Testing for the order of operations within an expression is done
-	// by collecting the sequence of direct function calls within a *Function.
-	// Callees are all external functions so they cannot be safely re-ordered by ssa.
+	// Testing for the order of operations within an expression is done by
+	// collecting the sequence of direct function calls within a *Function.
 	const input = `
 package p
 
@@ -982,8 +941,6 @@ func TestSyntax(t *testing.T) {
 		"F[int]$1":   "*ast.FuncLit : func() p.S1 @ 10",
 		"F[int]$1$1": "*ast.FuncLit : func() p.S2 @ 11",
 		"F[int]$2":   "*ast.FuncLit : func() p.S3 @ 16",
-		// ...but no F[P] etc as they are unreferenced.
-		// (NB: GlobalDebug mode would cause them to be referenced.)
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Expected the functions with signature to be:\n\t%#v.\n Got:\n\t%#v", want, got)
@@ -1020,7 +977,7 @@ func TestGo117Builtins(t *testing.T) {
 	}
 }
 
-// TestLabels just tests that anonymous labels are handled.
+// TestLabels tests that anonymous labels are handled.
 func TestLabels(t *testing.T) {
 	tests := []string{
 		`package main
@@ -1061,7 +1018,6 @@ func TestFixedBugs(t *testing.T) {
 }
 
 func TestIssue67079(t *testing.T) {
-	// This test reproduced a race in the SSA builder nearly 100% of the time.
 
 	// Load the package.
 	const src = `package p; type T int; func (T) f() {}; var _ = (*T).f`
@@ -1166,11 +1122,8 @@ func f[S any]() {
 	const debug = false // enable to debug skips
 	skipped := 0
 	for probe, fn := range probes {
-		// Each probe is of the form:
-		// 		print("within", "test", head, tail)
-		// The probe only matches within a function whose fn.String() is within.
-		// This allows for different instantiations of fn to match different probes.
-		// On a match, it applies the test named "test" to head::tail.
+		// Each probe is of the form: print("within", "test", head, tail) The probe
+		// only matches within a function whose fn.String() is within.
 		if len(probe.Args) < 3 {
 			t.Fatalf("probe %v did not have enough arguments", probe)
 		}
@@ -1292,9 +1245,6 @@ func TestMultipleGoversions(t *testing.T) {
 	}
 }
 
-// TestRangeOverInt tests that, in a range-over-int (#61405),
-// the type of each range var v (identified by print(v) calls)
-// has the expected type.
 func TestRangeOverInt(t *testing.T) {
 	const rangeOverIntSrc = `
 		package p
@@ -1409,7 +1359,7 @@ func TestFakeRangeIterType(t *testing.T) {
 		}
 	}
 
-	// Testing the two different kinds of fake types.
+	// Testing both different kinds of fake types.
 	const source = `package p
 
 func rangeMap(m map[string]int) {
@@ -1524,8 +1474,8 @@ func TestBuildPackageGo120(t *testing.T) {
 
 // TestParamDefaults checks that a call omitting an argument for a defaulted
 // parameter reaches SSA with that value passed. The type checker leaves such
-// a call as the source wrote it, so the builder has to read the value off the
-// signature; a builder that does not would index past the arguments it has.
+// a call as the source wrote it. The builder has to read the value off the
+// signature. A builder that does not would index past the arguments it has.
 func TestParamDefaults(t *testing.T) {
 	input := `
 package p

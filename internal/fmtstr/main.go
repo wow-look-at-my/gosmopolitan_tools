@@ -1,12 +1,11 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
 // The fmtstr command parses the format strings of calls to selected
-// printf-like functions in the specified source file, and prints the
-// formatting operations and their operands.
+// printf-like functions in the specified source file. The fmtstr
+// command prints the formatting operations and their operands.
 //
 // It is intended only for debugging and is not a supported interface.
 package main

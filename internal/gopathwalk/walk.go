@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package gopathwalk is like filepath.Walk but specialized for finding Go
 // packages, particularly in $GOPATH and $GOROOT.
@@ -28,8 +27,6 @@ type Options struct {
 	// Search module caches. Also disables legacy goimports ignore rules.
 	ModulesEnabled bool
 
-	// Maximum number of concurrent calls to user-provided callbacks,
-	// or 0 for GOMAXPROCS.
 	Concurrency int
 }
 
@@ -52,27 +49,12 @@ type Root struct {
 }
 
 // Walk concurrently walks Go source directories ($GOROOT, $GOPATH, etc) to find packages.
-//
-// For each package found, add will be called with the absolute
-// paths of the containing source directory and the package directory.
-//
-// Unlike filepath.WalkDir, Walk follows symbolic links
-// (while guarding against cycles).
 func Walk(roots []Root, add func(root Root, dir string), opts Options) {
 	WalkSkip(roots, add, func(Root, string) bool { return false }, opts)
 }
 
 // WalkSkip concurrently walks Go source directories ($GOROOT, $GOPATH, etc) to
 // find packages.
-//
-// For each package found, add will be called with the absolute
-// paths of the containing source directory and the package directory.
-// For each directory that will be scanned, skip will be called
-// with the absolute paths of the containing source directory and the directory.
-// If skip returns false on a directory it will be processed.
-//
-// Unlike filepath.WalkDir, WalkSkip follows symbolic links
-// (while guarding against cycles).
 func WalkSkip(roots []Root, add func(root Root, dir string), skip func(root Root, dir string) bool, opts Options) {
 	for _, root := range roots {
 		walkDir(root, add, skip, opts)
@@ -93,14 +75,7 @@ func walkDir(root Root, add func(Root, string), skip func(root Root, dir string)
 
 	concurrency := opts.Concurrency
 	if concurrency == 0 {
-		// The walk be either CPU-bound or I/O-bound, depending on what the
-		// caller-supplied add function does and the details of the user's platform
-		// and machine. Rather than trying to fine-tune the concurrency level for a
-		// specific environment, we default to GOMAXPROCS: it is likely to be a good
-		// choice for a CPU-bound add function, and if it is instead I/O-bound, then
-		// dealing with I/O saturation is arguably the job of the kernel and/or
-		// runtime. (Oversaturating I/O seems unlikely to harm performance as badly
-		// as failing to saturate would.)
+		// The walk be either CPU-bound or I/O-bound.
 		concurrency = runtime.GOMAXPROCS(0)
 	}
 	w := &walker{
@@ -142,7 +117,7 @@ type walker struct {
 	added sync.Map // map[string]bool
 }
 
-// A symlinkList is a linked list of os.FileInfos for parent directories
+// A symlinkList is a linked list of os.fileInfos for parent directories
 // reached via symlinks.
 type symlinkList struct {
 	info os.FileInfo
@@ -212,13 +187,6 @@ func (w *walker) shouldSkipDir(dir string) bool {
 func (w *walker) walk(path string, pathSymlinks *symlinkList, d fs.DirEntry) {
 	if d.Type()&os.ModeSymlink != 0 {
 		// Walk the symlink's target rather than the symlink itself.
-		//
-		// (Note that os.Stat, unlike the lower-lever os.Readlink,
-		// follows arbitrarily many layers of symlinks, so it will eventually
-		// reach either a non-symlink or a nonexistent target.)
-		//
-		// TODO(bcmills): 'go list all' itself ignores symlinks within GOROOT/src
-		// and GOPATH/src. Do we really need to traverse them here? If so, why?
 
 		fi, err := os.Stat(path)
 		if err != nil {
@@ -228,11 +196,6 @@ func (w *walker) walk(path string, pathSymlinks *symlinkList, d fs.DirEntry) {
 
 		// Avoid walking symlink cycles: if we have already followed a symlink to
 		// this directory as a parent of itself, don't follow it again.
-		//
-		// This doesn't catch the first time through a cycle, but it also minimizes
-		// the number of extra stat calls we make if we *don't* encounter a cycle.
-		// Since we don't actually expect to encounter symlink cycles in practice,
-		// this seems like the right tradeoff.
 		for parent := pathSymlinks; parent != nil; parent = parent.prev {
 			if os.SameFile(fi, parent.info) {
 				return
@@ -253,13 +216,7 @@ func (w *walker) walk(path string, pathSymlinks *symlinkList, d fs.DirEntry) {
 
 		dir := filepath.Dir(path)
 		if dir == w.root.Path && (w.root.Type == RootGOROOT || w.root.Type == RootGOPATH) {
-			// Doesn't make sense to have regular files
-			// directly in your $GOPATH/src or $GOROOT/src.
-			//
-			// TODO(bcmills): there are many levels of directory within
-			// RootModuleCache where this also wouldn't make sense,
-			// Can we generalize this to any directory without a corresponding
-			// import path?
+			// Doesn't make sense to have regular files directly in your $GOPATH/src or $GOROOT/src.
 			return
 		}
 
@@ -291,15 +248,7 @@ func (w *walker) walk(path string, pathSymlinks *symlinkList, d fs.DirEntry) {
 	defer f.Close()
 
 	for {
-		// We impose an arbitrary limit on the number of ReadDir results per
-		// directory to limit the amount of memory consumed for stale or upcoming
-		// directory entries. The limit trades off CPU (number of syscalls to read
-		// the whole directory) against RAM (reachable directory entries other than
-		// the one currently being processed).
-		//
-		// Since we process the directories recursively, we will end up maintaining
-		// a slice of entries for each level of the directory tree.
-		// (Compare https://go.dev/issue/36197.)
+		// We impose an arbitrary limit on the number of ReadDir results per directory to limit the amount of memory.
 		ents, err := f.ReadDir(1024)
 		if err != nil {
 			if err != io.EOF {
@@ -326,7 +275,6 @@ func (w *walker) walk(path string, pathSymlinks *symlinkList, d fs.DirEntry) {
 					continue
 
 				default:
-					// No tokens available, so traverse serially.
 				}
 			}
 

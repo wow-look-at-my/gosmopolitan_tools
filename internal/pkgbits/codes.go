@@ -1,13 +1,9 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package pkgbits
 
 // A Code is an enum value that can be encoded into bitstreams.
-//
-// Code types are preferable for enum types, because they allow
-// Decoder to detect desyncs.
 type Code interface {
 	// Marker returns the SyncMarker for the Code's dynamic type.
 	Marker() SyncMarker

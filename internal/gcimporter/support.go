@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter
 
@@ -11,7 +10,6 @@ import (
 	"strings"
 )
 
-// Copy of $GOROOT/src/cmd/internal/archive.ReadHeader.
 func readArchiveHeader(b *bufio.Reader, name string) int {
 	// architecture-independent object file output
 	const HeaderSize = 60

@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package lcs
 
@@ -73,7 +72,7 @@ func TestRegressionOld001(t *testing.T) {
 
 	b := "// Copyright 2019 The Go Authors. All rights reserved.\n// Use of this source code is governed by a BSD-style\n// license that can be found in the LICENSE file.\n\npackage diff_test\n\nimport (\n\t\"fmt\"\n\t\"math/rand\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/google/safehtml/template\"\n\t\"golang.org/x/tools/gopls/internal/lsp/diff\"\n\t\"golang.org/x/tools/internal/diff/difftest\"\n\t\"golang.org/x/tools/gopls/internal/span\"\n)\n"
 	for i := 1; i < len(b); i++ {
-		diffs, lcs := compute(stringSeqs{a, b}, twosided, i) // 14 from gopls
+		diffs, lcs := compute(stringSeqs{a, b}, twosided, i)
 		if !lcs.valid() {
 			t.Errorf("%d,%v", len(diffs), lcs)
 		}
@@ -109,13 +108,12 @@ func TestRandOld(t *testing.T) {
 	rng := rng(t)
 
 	for i := range 1000 {
-		// TODO(adonovan): use ASCII and bytesSeqs here? The use of
-		// non-ASCII isn't relevant to the property exercised by the test.
+		// TODO(adonovan): use ASCII and bytesSeqs here?
 		a := []rune(randstr(rng, "abω", 16))
 		b := []rune(randstr(rng, "abωc", 16))
 		seq := runesSeqs{a, b}
 
-		const lim = 0 // make sure we get the lcs (24 was too small)
+		const lim = 0
 		_, forw := compute(seq, forward, lim)
 		_, back := compute(seq, backward, lim)
 		_, two := compute(seq, twosided, lim)
@@ -130,7 +128,7 @@ func TestRandOld(t *testing.T) {
 }
 
 // TestDiffAPI tests the public API functions (Diff{Bytes,Strings,Runes})
-// to ensure at least minimal parity of the three representations.
+// to ensure at least minimal parity of the representations.
 func TestDiffAPI(t *testing.T) {
 	for _, test := range []struct {
 		a, b                 string
@@ -186,8 +184,7 @@ func rng(tb testing.TB) *rand.Rand {
 }
 
 func genBench(rng *rand.Rand, set string, n int) []struct{ before, after string } {
-	// before and after for benchmarks. 24 strings of length n with
-	// before and after differing at least once, and about 5%
+	// before and after for benchmarks.
 	var ans []struct{ before, after string }
 	for range 24 {
 		// maybe b should have an approximately known number of diffs
@@ -210,16 +207,16 @@ func genBench(rng *rand.Rand, set string, n int) []struct{ before, after string 
 	return ans
 }
 
-// This benchmark represents a common case for a diff command:
-// large file with a single relatively small diff in the middle.
-// (It's not clear whether this is representative of gopls workloads
-// or whether it is important to gopls diff performance.)
+// This benchmark represents a common case for a diff command: large file with
+// a single relatively small diff in the middle. (It's not clear whether this
+// is representative of gopls workloads or whether it is important to gopls
+// diff performance.)
 //
-// TODO(adonovan) opt: it could be much faster.  For example,
-// comparing a file against itself is about 10x faster than with the
-// small deletion in the middle. Strangely, comparing a file against
-// itself minus the last byte is faster still; I don't know why.
-// There is much low-hanging fruit here for further improvement.
+// TODO(adonovan) opt: it could be much faster. For example, comparing a file
+// against itself is about 10x faster than with the small deletion in the
+// middle. Strangely, comparing a file against itself minus the last byte is
+// faster still; I don't know why. There is much low-hanging fruit here for
+// further improvement.
 func BenchmarkLargeFileSmallDiff(b *testing.B) {
 	data, err := os.ReadFile("old.go") // large file
 	if err != nil {
@@ -229,7 +226,7 @@ func BenchmarkLargeFileSmallDiff(b *testing.B) {
 	n := len(data)
 
 	src := string(data)
-	dst := src[:n*49/100] + src[n*51/100:] // remove 2% from the middle
+	dst := src[:n*49/100] + src[n*51/100:]
 	b.Run("string", func(b *testing.B) {
 		for b.Loop() {
 			compute(stringSeqs{src, dst}, twosided, len(src)+len(dst))

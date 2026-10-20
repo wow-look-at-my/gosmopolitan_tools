@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -32,15 +31,11 @@ type printer struct {
 }
 
 func (p *printer) print(s string) {
-	// Write the string one byte at a time. We care about the presence of
-	// newlines for indentation which we will see even in the presence of
-	// (non-corrupted) Unicode; no need to read one rune at a time.
+	// Write the string one byte at a time.
 	for i := 0; i < len(s); i++ {
 		ch := s[i]
 		if ch != '\n' && p.last == '\n' {
-			// Note: This could lead to a range overflow for very large
-			// indentations, but it's extremely unlikely to happen for
-			// non-pathological code.
+			// Note: This can lead to a range overflow for large indentations.
 			p.buf.WriteString("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"[:p.indent])
 		}
 		p.buf.WriteByte(ch)
@@ -58,8 +53,7 @@ func (p *printer) printf(format string, args ...any) {
 func methodsFor(obj *types.TypeName) (*types.Named, []*types.Selection) {
 	named, _ := types.Unalias(obj.Type()).(*types.Named)
 	if named == nil {
-		// A type name's type can also be the
-		// exported basic type unsafe.Pointer.
+		// A type name's type can also be the exported basic type unsafe.Pointer.
 		return nil, nil
 	}
 	if _, ok := named.Underlying().(*types.Interface); ok {
@@ -238,8 +232,7 @@ func floatString(v constant.Value) string {
 	// convert |v| into a big.Rat x
 	x := new(big.Rat).SetFrac(absInt(constant.Num(v)), absInt(constant.Denom(v)))
 
-	// normalize x and determine exponent e
-	// (This is not very efficient, but also not speed-critical.)
+	// normalize x and determine exponent e (This is not efficient, but also not speed-critical.)
 	var e int
 	for x.Cmp(ten) >= 0 {
 		x.Quo(x, ten)
@@ -250,20 +243,14 @@ func floatString(v constant.Value) string {
 		e--
 	}
 
-	// TODO(gri) Values such as 1/2 are easier to read in form 0.5
-	// rather than 5.0e-1. Similarly, 1.0e1 is easier to read as
-	// 10.0. Fine-tune best exponent range for readability.
-
 	s := x.FloatString(100) // good-enough precision
 
-	// trim trailing 0's
 	i := len(s)
 	for i > 0 && s[i-1] == '0' {
 		i--
 	}
 	s = s[:i]
 
-	// add a 0 if the number ends in decimal point
 	if len(s) > 0 && s[len(s)-1] == '.' {
 		s += "0"
 	}
@@ -276,17 +263,14 @@ func floatString(v constant.Value) string {
 		s = "-" + s
 	}
 
-	// TODO(gri) If v is a "small" fraction (i.e., numerator and denominator
-	// are just a small number of decimal digits), add the exact fraction as
-	// a comment. For instance: 3.3333...e-1 /* = 1/3 */
+	// TODO(gri) If v is a "small" fraction (i.e., numerator and denominator are a small number of decimal digits), add the exact fraction as a comment.
 
 	return s
 }
 
-// valString returns the string representation for the value v.
-// Setting floatFmt forces an integer value to be formatted in
-// normalized floating-point format.
-// TODO(gri) Move this code into package constant.
+// valString returns the string representation for the value v. Setting
+// floatFmt forces an integer value to be formatted in normalized
+// floating-point format. TODO(gri) Move this code into package constant.
 func valString(v constant.Value, floatFmt bool) string {
 	switch v.Kind() {
 	case constant.Int:
@@ -319,7 +303,6 @@ func (p *printer) printObj(obj types.Object) {
 
 	typ, basic := obj.Type().Underlying().(*types.Basic)
 	if basic && typ.Info()&types.IsUntyped != 0 {
-		// don't write untyped types
 	} else {
 		p.print(" ")
 		p.writeType(p.pkg, obj.Type())
@@ -344,14 +327,12 @@ func (p *printer) printFunc(recvType types.Type, obj *types.Func) {
 	p.writeSignature(p.pkg, sig)
 }
 
-// combinedMethodSet returns the method set for a named type T
-// merged with all the methods of *T that have different names than
-// the methods of T.
+// combinedMethodSet returns the method set for a named type T merged with all
+// the methods of *T. That T have different names than the methods of T.
 //
-// combinedMethodSet is analogous to types/typeutil.IntuitiveMethodSet
-// but doesn't require a MethodSetCache.
-// TODO(gri) If this functionality doesn't change over time, consider
-// just calling IntuitiveMethodSet eventually.
+// combinedMethodSet is analogous to types/typeutil.IntuitiveMethodSet but
+// doesn't require a MethodSetCache. TODO(gri) If this functionality doesn't
+// change over time, consider calling IntuitiveMethodSet eventually.
 func combinedMethodSet(T *types.Named) []*types.Selection {
 	// method set for T
 	mset := types.NewMethodSet(T)

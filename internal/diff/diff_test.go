@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package diff_test
 
@@ -121,7 +120,7 @@ func TestLineEdits(t *testing.T) {
 }
 
 func TestToUnified(t *testing.T) {
-	// Plan 9 has no patch command, so use ape/patch, the POSIX patch.
+	// A later plan has no patch command, so use ape/patch, the POSIX patch.
 	patch := "patch"
 	if runtime.GOOS == "plan9" {
 		patch = "/bin/ape/patch"

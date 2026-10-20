@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This file defines helper functions for SSA tests.
 
@@ -24,9 +23,8 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// goMod returns a go.mod file containing a name and a go directive
-// for the major version. If major < 0, use the current go toolchain
-// version.
+// goMod returns a go.mod file containing a name and a go directive for the
+// major version. If major < 0, use the current go toolchain version.
 func goMod(name string, major int) []byte {
 	if major < 0 {
 		major = testenv.Go1Point()
@@ -70,8 +68,7 @@ func loadPackages(t testing.TB, src fs.FS, patterns ...string) []*packages.Packa
 	t.Helper()
 	testenv.NeedsGoBuild(t) // for go/packages
 
-	// TODO(taking): src and overlays are very similar. Overlays could have nicer paths.
-	// Look into migrating src to overlays.
+	// TODO(taking): src and overlays are similar. Overlays could have nicer paths. Look into migrating src to overlays.
 	dir := testfiles.CopyToTmp(t, src)
 
 	cfg := &packages.Config{

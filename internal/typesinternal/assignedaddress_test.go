@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typesinternal
 
@@ -20,9 +19,9 @@ import (
 // TestIsAssignedOrAddressTaken tests [IsAssignedOrAddressTaken].
 //
 // Each /*true*/ or /*false*/ comment in the test source asserts the result of
-// IsAssignedOrAddressTaken(info, expr), where expr is the outermost expression
-// ending immediately before that comment.
-// There can be no space before the comment.
+// IsAssignedOrAddressTaken(info, expr). This happens where expr is the
+// outermost expression ending immediately before that comment. There can be no
+// space before the comment.
 func TestIsAssignedOrAddressTaken(t *testing.T) {
 	const src = `package p
 

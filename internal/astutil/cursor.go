@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -11,12 +10,8 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// UnparenCursor returns the cursor for an expression with any
-// enclosing parentheses removed, similar to [ast.Unparen].
-// It is often prudent to call this before switching on the
-// type of cur.Node().
-//
-// See also [UnparenEnclosingCursor].
+// UnparenCursor returns the cursor for an expression with any enclosing
+// parentheses removed, similar to [ast.Unparen].
 func UnparenCursor(cur inspector.Cursor) inspector.Cursor {
 	for is[*ast.ParenExpr](cur) {
 		cur, _ = cur.FirstChild()
@@ -24,12 +19,8 @@ func UnparenCursor(cur inspector.Cursor) inspector.Cursor {
 	return cur
 }
 
-// UnparenEnclosingCursor returns the first element of
-// the [Cursor.Enclosing] sequence that is not itself enclosed
-// in parens. It is often prudent to call this before switching on
-// cur.ParentEdge().
-//
-// See also [UnparenCursor].
+// UnparenEnclosingCursor returns the first element of the [Cursor.Enclosing]
+// sequence that is not itself enclosed in parens.
 func UnparenEnclosingCursor(cur inspector.Cursor) inspector.Cursor {
 	for cur.ParentEdgeKind() == edge.ParenExpr_X {
 		cur = cur.Parent()

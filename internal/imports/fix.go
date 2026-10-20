@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -98,8 +97,7 @@ type ImportFix struct {
 // It returns an error only if ctx is cancelled. Files with parse errors are
 // ignored.
 func parseOtherFiles(ctx context.Context, fset *token.FileSet, srcDir, filename string) ([]*ast.File, error) {
-	// This could use go/packages but it doesn't buy much, and it fails
-	// with https://golang.org/issue/26296 in LoadFiles mode in some cases.
+	// This can use go/packages but it does not buy much.
 	considerTests := strings.HasSuffix(filename, "_test.go")
 
 	fileBase := filepath.Base(filename)
@@ -320,8 +318,8 @@ func (p *pass) importIdentifier(imp *ImportInfo) string {
 
 // load reads in everything necessary to run a pass, and reports whether the
 // file already has all the imports it needs. It fills in p.missingRefs with the
-// file's missing symbols, if any, or removes unused imports if not.
-// This is called 3(!) times: self, otherFiles, loadRealPackageNames
+// file's missing symbols, if any, or removes unused imports if not. times:
+// self, otherFiles, loadRealPackageNames
 func (p *pass) load(ctx context.Context) ([]*ImportFix, bool) {
 	p.knownPackages = map[string]*PackageInfo{}
 	p.missingRefs = References{}
@@ -330,9 +328,7 @@ func (p *pass) load(ctx context.Context) ([]*ImportFix, bool) {
 	// Load basic information about the file in question.
 	p.allRefs = collectReferences(p.f)
 
-	// Load stuff from other files in the same package:
-	// global variables so we know they don't need resolving, and imports
-	// that we might want to mimic.
+	// Load stuff from other files in the same package.
 	globals := map[string]bool{}
 	for _, otherFile := range p.otherFiles {
 		// Don't load globals from files that are in the same directory
@@ -343,8 +339,7 @@ func (p *pass) load(ctx context.Context) ([]*ImportFix, bool) {
 		p.candidates = append(p.candidates, collectImports(otherFile)...)
 	}
 
-	// Resolve all the import paths we've seen to package names, and store
-	// f's imports by the identifier they introduce.
+	// Resolve all the import paths we've seen to package names, and store f's imports by the identifier they introduce.
 	imports := collectImports(p.f)
 	if p.loadRealPackageNames {
 		err := p.loadPackageNames(ctx, append(imports, p.candidates...))
@@ -377,9 +372,9 @@ func (p *pass) load(ctx context.Context) ([]*ImportFix, bool) {
 	return p.fix()
 }
 
-// fix attempts to satisfy missing imports using p.candidates. If it finds
-// everything, or if p.lastTry is true, it updates fixes to add the imports it found,
-// delete anything unused, and update import names, and returns true.
+// fix attempts to satisfy missing imports using p.candidates. Or if p.lastTry is
+// true, it updates fixes to add the imports it found, delete anything unused, and
+// update import names, and returns true. This happens if it finds everything.
 func (p *pass) fix() ([]*ImportFix, bool) {
 	// Find missing imports.
 	var selected []*ImportInfo
@@ -397,11 +392,8 @@ func (p *pass) fix() ([]*ImportFix, bool) {
 	var fixes []*ImportFix
 	for _, identifierImports := range p.existingImports {
 		for _, imp := range identifierImports {
-			// We deliberately ignore globals here, because we can't be sure
-			// they're in the same package. People do things like put multiple
-			// main packages in the same directory, and we don't want to
-			// remove imports if they happen to have the same name as a var in
-			// a different package.
+			// We deliberately ignore globals here, because we can't be sure they're in
+			// the same package.
 			if _, ok := p.allRefs[p.importIdentifier(imp)]; !ok {
 				fixes = append(fixes, &ImportFix{
 					StmtInfo:  *imp,
@@ -424,13 +416,10 @@ func (p *pass) fix() ([]*ImportFix, bool) {
 			}
 		}
 	}
-	// Collecting fixes involved map iteration, so sort for stability. See
-	// golang/go#59976.
+	// Collecting fixes involved map iteration, so sort for stability.
 	sortFixes(fixes)
 
-	// collect selected fixes in a separate slice, so that it can be sorted
-	// separately. Note that these fixes must occur after fixes to existing
-	// imports. TODO(rfindley): figure out why.
+	// collect selected fixes in a separate slice, so that it can be sorted separately. these fixes must occur after fixes to existing imports.
 	var selectedFixes []*ImportFix
 	for _, imp := range selected {
 		selectedFixes = append(selectedFixes, &ImportFix{
@@ -477,8 +466,8 @@ func hasDeleteFix(fixes []*ImportFix) bool {
 // When the import identifier matches the assumed import name, the import name does
 // not appear in the import spec.
 func (p *pass) importSpecName(imp *ImportInfo) string {
-	// If we did not load the real package names, or the name is already set,
-	// we just return the existing name.
+	// If we did not load the real package names, or the name is already set, we
+	// return the existing name.
 	if !p.loadRealPackageNames || imp.Name != "" {
 		return imp.Name
 	}
@@ -555,13 +544,7 @@ func (p *pass) addCandidate(imp *ImportInfo, pkg *PackageInfo) {
 	}
 }
 
-// fixImports adds and removes imports from f so that all its references are
-// satisfied and there are no unused imports.
-//
-// This is declared as a variable rather than a function so goimports can
-// easily be extended by adding a file with an init function.
-//
-// DO NOT REMOVE: used internally at Google.
+// fixImports adds and removes imports from f so that all its references are satisfied and there are no unused imports.
 var fixImports = fixImportsDefault
 
 func fixImportsDefault(fset *token.FileSet, f *ast.File, filename string, env *ProcessEnv) error {
@@ -573,8 +556,8 @@ func fixImportsDefault(fset *token.FileSet, f *ast.File, filename string, env *P
 	return nil
 }
 
-// getFixes gets the import fixes that need to be made to f in order to fix the imports.
-// It does not modify the ast.
+// getFixes gets the import fixes that need to be made to f to fix the
+// imports. It does not modify the ast.
 func getFixes(ctx context.Context, fset *token.FileSet, f *ast.File, filename string, env *ProcessEnv) ([]*ImportFix, error) {
 	source, err := NewProcessEnvSource(env, filename, f.Name.Name)
 	if err != nil {
@@ -599,10 +582,8 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 		logf("fixImports(filename=%q), srcDir=%q ...", filename, srcDir)
 	}
 
-	// First pass: looking only at f, and using the naive algorithm to
-	// derive package names from import paths, see if the file is already
-	// complete. We can't add any imports yet, because we don't know
-	// if missing references are actually package vars.
+	// First pass: looking only at f, and using the naive algorithm to derive
+	// package names from import paths, see if the file is already complete.
 	p := &pass{
 		fset:   fset,
 		f:      f,
@@ -620,8 +601,7 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 		return nil, err
 	}
 
-	// Second pass: add information from other files in the same package,
-	// like their package vars and imports.
+	// Second pass: add information from other files in the same package, like their package vars and imports.
 	p.otherFiles = otherFiles
 	if fixes, done := p.load(ctx); done {
 		return fixes, nil
@@ -634,8 +614,7 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 		return fixes, nil
 	}
 
-	// Third pass: get real package names where we had previously used
-	// the naive algorithm.
+	// Third pass: get real package names where we had used the naive algorithm.
 	p = &pass{
 		fset:   fset,
 		f:      f,
@@ -647,8 +626,7 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 	p.loadRealPackageNames = true
 	p.otherFiles = otherFiles
 
-	// If there is an Index for the GOMODCACHE, remember that, and later make it so that the
-	// directory walk doesn't go into the module cache, since we already have all the information.
+	// If there is an Index for the GOMODCACHE, remember that, and later make it.
 	var ix *modindex.Index
 	if src, ok := source.(*ProcessEnvSource); ok {
 		var err error
@@ -664,10 +642,7 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 			env := *src.env
 			env.Env = maps.Clone(src.env.Env)
 			src.env = &env
-			// avoid looking in the module cache, as we have the index instead:
-			// This makes a later call to newModuleresolver (from
-			// LoadPackageNames) produce a resolver that will not look
-			// in the module cache
+			// avoid looking in the module cache, as we have the index instead.
 			src.env.Env["GOMODCACHE"] = ""
 		}
 	}
@@ -695,7 +670,6 @@ func getFixesWithSource(ctx context.Context, fset *token.FileSet, f *ast.File, f
 }
 
 // MaxRelevance is the highest relevance, used for the standard library.
-// Chosen arbitrarily to match pre-existing gopls code.
 const MaxRelevance = 7.0
 
 // getCandidatePkgs works with the passed callback to find all acceptable packages.
@@ -736,8 +710,7 @@ func getCandidatePkgs(ctx context.Context, wrappedCallback *scanCallback, filena
 
 	scanFilter := &scanCallback{
 		rootFound: func(root gopathwalk.Root) bool {
-			// Exclude goroot results -- getting them is relatively expensive, not cached,
-			// and generally redundant with the in-memory version.
+			// Exclude goroot results -- getting them is relatively expensive, not cached.
 			return root.Type != gopathwalk.RootGOROOT && wrappedCallback.rootFound(root)
 		},
 		dirFound: wrappedCallback.dirFound,
@@ -782,17 +755,15 @@ func ScoreImportPaths(ctx context.Context, env *ProcessEnv, paths []string) (map
 }
 
 func PrimeCache(ctx context.Context, resolver Resolver) error {
-	// Fully scan the disk for directories, but don't actually read any Go files.
+	// Fully scan the disk for directories, but don't read any Go files.
 	callback := &scanCallback{
 		rootFound: func(root gopathwalk.Root) bool {
-			// See getCandidatePkgs: walking GOROOT is apparently expensive and
-			// unnecessary.
+			// See getCandidatePkgs: walking GOROOT is apparently expensive and unnecessary.
 			return root.Type != gopathwalk.RootGOROOT
 		},
 		dirFound: func(pkg *pkg) bool {
 			return false
 		},
-		// packageNameLoaded and exportsLoaded must never be called.
 	}
 
 	return resolver.scan(ctx, callback)
@@ -925,38 +896,18 @@ var requiredGoEnvVars = []string{
 	"GOSUMDB",
 }
 
-// ProcessEnv contains environment variables and settings that affect the use of
-// the go command, the go/build package, etc.
-//
-// ...a ProcessEnv *also* overwrites its Env along with derived state in the
-// form of the resolver. And because it is lazily initialized, an env may just
-// be broken and unusable, but there is no way for the caller to detect that:
-// all queries will just fail.
-//
-// TODO(rfindley): refactor this package so that this type (perhaps renamed to
-// just Env or Config) is an immutable configuration struct, to be exchanged
-// for an initialized object via a constructor that returns an error. Perhaps
-// the signature should be `func NewResolver(*Env) (*Resolver, error)`, where
-// resolver is a concrete type used for resolving imports. Via this
-// refactoring, we can avoid the need to call ProcessEnv.init and
-// ProcessEnv.GoEnv everywhere, and implicitly fix all the places where this
-// these are misused. Also, we'd delegate the caller the decision of how to
-// handle a broken environment.
+// ProcessEnv contains environment variables and settings that affect the use
+// of the go command, the go/build package, etc.
 type ProcessEnv struct {
 	GocmdRunner *gocommand.Runner
 
 	BuildFlags []string
 	ModFlag    string
 
-	// SkipPathInScan returns true if the path should be skipped from scans of
-	// the RootCurrentModule root type. The function argument is a clean,
-	// absolute path.
+	// SkipPathInScan returns true if the path should be skipped from scans of the RootCurrentModule root type.
 	SkipPathInScan func(string) bool
 
-	// Env overrides the OS environment, and can be used to specify
-	// GOPROXY, GO111MODULE, etc. PATH cannot be set here, because
-	// exec.Command will not honor it.
-	// Specifying all of requiredGoEnvVars avoids a call to `go env`.
+	// Env overrides the OS environment, and can be used to specify GOPROXY, GO111MODULE, etc. PATH cannot be set here.
 	Env map[string]string
 
 	WorkingDir string
@@ -964,15 +915,12 @@ type ProcessEnv struct {
 	// If Logf is non-nil, debug logging is enabled through this function.
 	Logf func(format string, args ...any)
 
-	// If set, ModCache holds a shared cache of directory info to use across
-	// multiple ProcessEnvs.
+	// If set, ModCache holds a shared cache of directory info to use across multiple ProcessEnvs.
 	ModCache *DirInfoCache
 
 	initialized bool // see TODO above
 
 	// resolver and resolverErr are lazily evaluated (see GetResolver).
-	// This is unclean, but see the big TODO in the docstring for ProcessEnv
-	// above: for now, we can't be sure that the ProcessEnv is fully initialized.
 	resolver    Resolver
 	resolverErr error
 }
@@ -1056,8 +1004,8 @@ func (e *ProcessEnv) GetResolver() (Resolver, error) {
 
 	if e.resolver == nil && e.resolverErr == nil {
 		// TODO(rfindley): we should only use a gopathResolver here if the working
-		// directory is actually *in* GOPATH. (I seem to recall an open gopls issue
-		// for this behavior, but I can't find it).
+		// directory is *in* GOPATH. (I seem to recall an open gopls issue for this
+		// behavior, but I can't find it).
 		//
 		// For gopls, we can optionally explicitly choose a resolver type, since we
 		// already know the view type.
@@ -1096,8 +1044,6 @@ func (e *ProcessEnv) buildContext() (*build.Context, error) {
 	ctx.GOROOT = goenv["GOROOT"]
 	ctx.GOPATH = goenv["GOPATH"]
 
-	// As of Go 1.14, build.Context has a Dir field
-	// (see golang.org/issue/34860).
 	// Populate it only if present.
 	rc := reflect.ValueOf(&ctx).Elem()
 	dir := rc.FieldByName("Dir")
@@ -1105,15 +1051,6 @@ func (e *ProcessEnv) buildContext() (*build.Context, error) {
 		dir.SetString(e.WorkingDir)
 	}
 
-	// Since Go 1.11, go/build.Context.Import may invoke 'go list' depending on
-	// the value in GO111MODULE in the process's environment. We always want to
-	// run in GOPATH mode when calling Import, so we need to prevent this from
-	// happening. In Go 1.16, GO111MODULE defaults to "on", so this problem comes
-	// up more frequently.
-	//
-	// HACK: setting any of the Context I/O hooks prevents Import from invoking
-	// 'go list', regardless of GO111MODULE. This is undocumented, but it's
-	// unlikely to change before GOPATH support is removed.
 	ctx.ReadDir = ioutil.ReadDir
 
 	return &ctx, nil
@@ -1156,15 +1093,11 @@ func addStdlibCandidates(pass *pass, refs References) error {
 	}
 	for left := range refs {
 		if left == "rand" {
-			// Make sure we try crypto/rand before any version of math/rand as both have Int()
-			// and our policy is to recommend crypto
+			// Make sure we try crypto/rand before any version of math/rand as both have Int() and our policy is to recommend crypto
 			add("crypto/rand")
-			// if the user's no later than go1.21, this should be "math/rand"
-			// but we have no way of figuring out what the user is using
-			// TODO: investigate using the toolchain version to disambiguate in the stdlib
+			// if the user's no later than go1.21, this should be "math/rand" but we have no way of figuring out what the user is using TODO.
 			add("math/rand/v2")
-			// math/rand has an overlapping API
-			// TestIssue66407 fails without this
+			// math/rand has an overlapping API TestIssue66407 fails without this
 			add("math/rand")
 			continue
 		}
@@ -1185,18 +1118,13 @@ type Resolver interface {
 	// scan works with callback to search for packages. See scanCallback for details.
 	scan(ctx context.Context, callback *scanCallback) error
 
-	// loadExports returns the package name and set of exported symbols in the
-	// package at dir. loadExports may be called concurrently.
+	// loadExports returns the package name and set of exported symbols in the package at dir.
 	loadExports(ctx context.Context, pkg *pkg, includeTest bool) (string, []stdlib.Symbol, error)
 
 	// scoreImportPath returns the relevance for an import path.
 	scoreImportPath(ctx context.Context, path string) float64
 
-	// ClearForNewScan returns a new Resolver based on the receiver that has
-	// cleared its internal caches of directory contents.
-	//
-	// The new resolver should be primed and then set via
-	// [ProcessEnv.UpdateResolver].
+	// ClearForNewScan returns a new Resolver based on the receiver that has cleared its internal caches of directory contents.
 	ClearForNewScan() Resolver
 }
 
@@ -1204,16 +1132,11 @@ type Resolver interface {
 // In general, minor errors will be silently discarded; a user should not
 // expect to receive a full series of calls for everything.
 type scanCallback struct {
-	// rootFound is called before scanning a new root dir. If it returns true,
-	// the root will be scanned. Returning false will not necessarily prevent
-	// directories from that root making it to dirFound.
+	// rootFound is called before scanning a new root dir. If it returns true, the root will be scanned.
 	rootFound func(gopathwalk.Root) bool
-	// dirFound is called when a directory is found that is possibly a Go package.
-	// pkg will be populated with everything except packageName.
-	// If it returns true, the package's name will be loaded.
+	// dirFound is called when a directory is found that is possibly.
 	dirFound func(pkg *pkg) bool
 	// packageNameLoaded is called when a package is found and its name is loaded.
-	// If it returns true, the package's exports will be loaded.
 	packageNameLoaded func(pkg *pkg) bool
 	// exportsLoaded is called when a package's exports have been loaded.
 	exportsLoaded func(pkg *pkg, exports []stdlib.Symbol)
@@ -1253,12 +1176,7 @@ func addExternalCandidates(ctx context.Context, pass *pass, refs References, fil
 		// Don't offer completions that would shadow predeclared
 		// names, such as github.com/coreos/etcd/error.
 		if types.Universe.Lookup(result.Package.Name) != nil { // predeclared
-			// Ideally we would skip this candidate only
-			// if the predeclared name is actually
-			// referenced by the file, but that's a lot
-			// trickier to compute and would still create
-			// an import that is likely to surprise the
-			// user before long.
+			// Ideally we would skip this candidate only if the predeclared name is referenced by the file.
 			continue
 		}
 		pass.addCandidate(result.Import, result.Package)
@@ -1275,13 +1193,10 @@ func notIdentifier(ch rune) bool {
 }
 
 // ImportPathToAssumedName returns the assumed package name of an import path.
-// It does this using only string parsing of the import path.
-// It picks the last element of the path that does not look like a major
-// version, and then picks the valid identifier off the start of that element.
-// It is used to determine if a local rename should be added to an import for
-// clarity.
-// This function could be moved to a standard package and exported if we want
-// for use in other tools.
+// It does this using only string parsing of the import path. It picks the
+// last element of the path that does not look like a major version. And then
+// picks the valid identifier off the start of that element. It is used to
+// determine if a local rename should be added to an import for clarity.
 func ImportPathToAssumedName(importPath string) string {
 	base := path.Base(importPath)
 	if strings.HasPrefix(base, "v") {
@@ -1385,13 +1300,11 @@ func packageDirToName(dir string) (packageName string, err error) {
 		}
 		pkgName := f.Name.Name
 		if pkgName == "documentation" {
-			// Special case from go/build.ImportDir, not
-			// handled by ctx.MatchFile.
+			// Special case from go/build.ImportDir, not handled by ctx.MatchFile.
 			continue
 		}
 		if pkgName == "main" {
 			// Also skip package main, assuming it's a +build ignore generator or example.
-			// Since you can't import a package main anyway, there's no harm here.
 			continue
 		}
 		return pkgName, nil
@@ -1406,7 +1319,7 @@ type pkg struct {
 	dir             string  // absolute file path to pkg directory ("/usr/lib/go/src/net/http")
 	importPathShort string  // vendorless import path ("net/http", "a/b")
 	packageName     string  // package name loaded from source if requested
-	relevance       float64 // a weakly-defined score of how relevant a package is. 0 is most relevant.
+	relevance       float64 // a weakly-defined score of how relevant a package is.
 }
 
 type pkgDistance struct {
@@ -1414,8 +1327,7 @@ type pkgDistance struct {
 	distance int // relative distance to target
 }
 
-// byDistanceOrImportPathShortLength sorts by relative distance breaking ties
-// on the short import path length and then the import string itself.
+// byDistanceOrImportPathShortLength sorts by relative distance breaking ties on the short import path length and then the import string itself.
 type byDistanceOrImportPathShortLength []pkgDistance
 
 func (s byDistanceOrImportPathShortLength) Len() int { return len(s) }
@@ -1512,8 +1424,7 @@ func (r *gopathResolver) scan(ctx context.Context, callback *scanCallback) error
 	}
 	// The callback is not necessarily safe to use in the goroutine below. Process roots eagerly.
 	roots = filterRoots(roots, callback.rootFound)
-	// We can't cancel walks, because we need them to finish to have a usable
-	// cache. Instead, run them in a separate goroutine and detach.
+	// We can't cancel walks, because we need them to finish to have a usable cache.
 	scanDone := make(chan struct{})
 	go func() {
 		select {
@@ -1611,8 +1522,7 @@ func loadExportsFromFiles(ctx context.Context, env *ProcessEnv, dir string, incl
 			continue
 		}
 		if f.Name.Name == "documentation" {
-			// Special case from go/build.ImportDir, not
-			// handled by MatchFile above.
+			// Special case from go/build.ImportDir, not handled by MatchFile above.
 			continue
 		}
 		if includeTest && strings.HasSuffix(f.Name.Name, "_test") {
@@ -1655,9 +1565,6 @@ func sortSymbols(syms []stdlib.Symbol) {
 
 // A symbolSearcher searches for a package with a set of symbols, among a set
 // of candidates. See [symbolSearcher.search].
-//
-// The search occurs within the scope of a single file, with context captured
-// in srcDir and xtest.
 type symbolSearcher struct {
 	logf        func(string, ...any)
 	srcDir      string // directory containing the file
@@ -1670,10 +1577,9 @@ type symbolSearcher struct {
 //
 // If successful, returns the resulting package.
 func (s *symbolSearcher) search(ctx context.Context, candidates []pkgDistance, pkgName string, symbols map[string]bool) (*pkg, error) {
-	// Sort the candidates by their import package length,
-	// assuming that shorter package names are better than long
-	// ones.  Note that this sorts by the de-vendored name, so
-	// there's no "penalty" for vendoring.
+	// Sort the candidates by their import package length, assuming that shorter
+	// package names are better than long ones. this sorts by the de-vendored
+	// name, so there's no "penalty" for vendoring.
 	sort.Sort(byDistanceOrImportPathShortLength(candidates))
 	if s.logf != nil {
 		for i, c := range candidates {
@@ -1681,11 +1587,7 @@ func (s *symbolSearcher) search(ctx context.Context, candidates []pkgDistance, p
 		}
 	}
 
-	// Arrange rescv so that we can we can await results in order of relevance
-	// and exit as soon as we find the first match.
-	//
-	// Search with bounded concurrency, returning as soon as the first result
-	// among rescv is non-nil.
+	// Arrange rescv so that we can we can await results in order of relevance and exit as soon as we find the first match.
 	rescv := make([]chan *pkg, len(candidates))
 	for i := range candidates {
 		rescv[i] = make(chan *pkg, 1)
@@ -1751,8 +1653,7 @@ func (s *symbolSearcher) searchOne(ctx context.Context, c pkgDistance, symbols m
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	// If we're considering the package under test from an x_test, load the
-	// test variant.
+	// If we're considering the package under test from an x_test, load the test variant.
 	includeTest := s.xtest && c.pkg.dir == s.srcDir
 	_, exports, err := s.loadExports(ctx, c.pkg, includeTest)
 	if err != nil {
@@ -1772,17 +1673,8 @@ func (s *symbolSearcher) searchOne(ctx context.Context, c pkgDistance, symbols m
 }
 
 // pkgIsCandidate reports whether pkg is a candidate for satisfying the
-// finding which package pkgIdent in the file named by filename is trying
-// to refer to.
-//
-// This check is purely lexical and is meant to be as fast as possible
-// because it's run over all $GOPATH directories to filter out poor
-// candidates in order to limit the CPU and I/O later parsing the
-// exports in candidate packages.
-//
-// filename is the file being formatted.
-// pkgIdent is the package being searched for, like "client" (if
-// searching for "client.New")
+// finding which package pkgIdent in the file named by filename is trying to
+// refer to.
 func pkgIsCandidate(filename string, refs References, pkg *pkg) bool {
 	// Check "internal" and "vendor" visibility:
 	if !CanUse(filename, pkg.dir) {
@@ -1793,13 +1685,6 @@ func pkgIsCandidate(filename string, refs References, pkg *pkg) bool {
 	//
 	// Use the matchesPath heuristic to filter to package paths that could
 	// reasonably match a dangling reference.
-	//
-	// This permits mismatch naming like directory "go-foo" being package "foo",
-	// or "pkg.v3" being "pkg", or directory
-	// "google.golang.org/api/cloudbilling/v1" being package "cloudbilling", but
-	// doesn't permit a directory "foo" to be package "bar", which is strongly
-	// discouraged anyway. There's no reason goimports needs to be slow just to
-	// accommodate that.
 	for pkgIdent := range refs {
 		if matchesPath(pkgIdent, pkg.importPathShort) {
 			return true
@@ -1811,10 +1696,7 @@ func pkgIsCandidate(filename string, refs References, pkg *pkg) bool {
 // CanUse reports whether the package in dir is usable from filename,
 // respecting the Go "internal" and "vendor" visibility rules.
 func CanUse(filename, dir string) bool {
-	// Fast path check, before any allocations. If it doesn't contain vendor
-	// or internal, it's not tricky:
-	// Note that this can false-negative on directories like "notinternal",
-	// but we check it correctly below. This is just a fast path.
+	// Fast path check, before any allocations.
 	if !strings.Contains(dir, "vendor") && !strings.Contains(dir, "internal") {
 		return true
 	}
@@ -1824,11 +1706,6 @@ func CanUse(filename, dir string) bool {
 		return true
 	}
 	// Vendor or internal directory only visible from children of parent.
-	// That means the path from the current directory to the target directory
-	// can contain ../vendor or ../internal but not ../foo/vendor or ../foo/internal
-	// or bar/vendor or bar/internal.
-	// After stripping all the leading ../, the only okay place to see vendor or internal
-	// is at the very beginning of the path.
 	absfile, err := filepath.Abs(filename)
 	if err != nil {
 		return false
@@ -1850,19 +1727,10 @@ func CanUse(filename, dir string) bool {
 
 // matchesPath reports whether ident may match a potential package name
 // referred to by path, using heuristics to filter out unidiomatic package
-// names.
-//
-// Specifically, it checks whether either of the last two '/'- or '\'-delimited
-// path segments matches the identifier. The segment-matching heuristic must
-// allow for various conventions around segment naming, including go-foo,
-// foo-go, and foo.v3. To handle all of these, matching considers both (1) the
-// entire segment, ignoring '-' and '.', as well as (2) the last subsegment
-// separated by '-' or '.'. So the segment foo-go matches all of the following
-// identifiers: foo, go, and foogo. All matches are case insensitive (for ASCII
-// identifiers).
-//
-// See the docstring for [pkgIsCandidate] for an explanation of how this
-// heuristic filters potential candidate packages.
+// names. The segment-matching heuristic must allow for various conventions
+// around segment naming, including go-foo, foo-go, and foo.v3. So the segment
+// foo-go matches all of the following identifiers: foo, go, and foogo. All
+// matches are case insensitive (for ASCII identifiers).
 func matchesPath(ident, path string) bool {
 	// Ignore case, for ASCII.
 	lowerIfASCII := func(b byte) byte {
@@ -1891,24 +1759,17 @@ func matchesPath(ident, path string) bool {
 		return ii < 0 && pi < start // all bytes matched
 	}
 
-	// segmentEnd and subsegmentEnd hold the end points of the current segment
-	// and subsegment intervals.
+	// segmentEnd and subsegmentEnd hold the end points of the current segment and subsegment intervals.
 	segmentEnd := len(path)
 	subsegmentEnd := len(path)
 
-	// Count slashes; we only care about the last two segments.
+	// Count slashes; we only care about the last segments.
 	nslash := 0
 
 	for i := len(path) - 1; i >= 0; i-- {
 		switch b := path[i]; b {
-		// TODO(rfindley): we handle backlashes here only because the previous
-		// heuristic handled backslashes. This is perhaps overly defensive, but is
-		// the result of many lessons regarding Chesterton's fence and the
-		// goimports codebase.
-		//
-		// However, this function is only ever called with something called an
-		// 'importPath'. Is it possible that this is a real import path, and
-		// therefore we need only consider forward slashes?
+		// TODO(rfindley): we handle backlashes here only because the heuristic
+		// handled backslashes.
 		case '/', '\\':
 			if match(i+1, segmentEnd) || match(i+1, subsegmentEnd) {
 				return true

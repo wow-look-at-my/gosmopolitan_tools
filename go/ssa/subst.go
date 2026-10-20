@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -13,48 +12,13 @@ import (
 )
 
 // subster defines a type substitution operation of a set of type parameters
-// to type parameter free replacement types. Substitution is done within
-// the context of a package-level function instantiation. *Named types
-// declared in the function are unique to the instantiation.
-//
-// For example, given a parameterized function F
-//
-//	  func F[S, T any]() any {
-//	    type X struct{ s S; next *X }
-//		var p *X
-//	    return p
-//	  }
-//
-// calling the instantiation F[string, int]() returns an interface
-// value (*X[string,int], nil) where the underlying value of
-// X[string,int] is a struct{s string; next *X[string,int]}.
-//
-// A nil *subster is a valid, empty substitution map. It always acts as
-// the identity function. This allows for treating parameterized and
-// non-parameterized functions identically while compiling to ssa.
-//
-// Not concurrency-safe.
-//
-// Note: Some may find it helpful to think through some of the most
-// complex substitution cases using lambda calculus inspired notation.
-// subst.typ() solves evaluating a type expression E
-// within the body of a function Fn[m] with the type parameters m
-// once we have applied the type arguments N.
-// We can succinctly write this as a function application:
-//
-//	((λm. E) N)
-//
-// go/types does not provide this interface directly.
-// So what subster provides is a type substitution operation
-//
-//	E[m:=N]
+// to type parameter free replacement types.
 type subster struct {
 	replacements map[*types.TypeParam]types.Type // values should contain no type params
 	cache        map[types.Type]types.Type       // cache of subst results
 	origin       *types.Func                     // types.Objects declared within this origin function are unique within this context
 	ctxt         *types.Context                  // speeds up repeated instantiations
 	uniqueness   typeutil.Map                    // determines the uniqueness of the instantiations within the function
-	// TODO(taking): consider adding Pos
 }
 
 // Returns a subster that replaces rtparams[i] with rtargs[i] and tparams[i] with targs[i].
@@ -83,7 +47,8 @@ func makeSubster(ctxt *types.Context, fn *types.Func, rtparams *types.TypeParamL
 }
 
 // typ returns the type of t with the type parameter tparams[i] substituted
-// for the type targs[i] where subst was created using tparams and targs.
+// for the type targs[i]. This happens where subst was created using
+// tparams and targs.
 func (subst *subster) typ(t types.Type) (res types.Type) {
 	if subst == nil {
 		return t // A nil subst is type preserving.
@@ -267,7 +232,6 @@ func (subst *subster) interface_(iface *types.Interface) *types.Interface {
 	}
 
 	// methods for the interface. Initially nil if there is no known change needed.
-	// Signatures for the method where recv is nil. NewInterfaceType fills in the receivers.
 	var methods []*types.Func
 	initMethods := func(n int) { // copy first n explicit methods
 		methods = make([]*types.Func, iface.NumExplicitMethods())
@@ -279,9 +243,7 @@ func (subst *subster) interface_(iface *types.Interface) *types.Interface {
 	}
 	for i := 0; i < iface.NumExplicitMethods(); i++ {
 		f := iface.ExplicitMethod(i)
-		// On interfaces, we need to cycle break on anonymous interface types
-		// being in a cycle with their signatures being in cycles with their receivers
-		// that do not go through a Named.
+		// On interfaces, we need to cycle break on anonymous interface types being in a cycle with their signatures being in cycles with their receivers.
 		norecv := changeRecv(f.Type().(*types.Signature), nil)
 		sig := subst.typ(norecv)
 		if sig != norecv && methods == nil {
@@ -343,17 +305,6 @@ func (subst *subster) alias(t *types.Alias) types.Type {
 
 	if targs.Len() == 0 {
 		// t is declared within the function origin and has no type arguments.
-		//
-		// Example: This corresponds to A or B in F, but not A[int]:
-		//
-		//     func F[T any]() {
-		//       type A[S any] = struct{t T, s S}
-		//       type B = T
-		//       var x A[int]
-		//       ...
-		//     }
-		//
-		// This is somewhat different than *Named as *Alias cannot be created recursively.
 
 		// Copy and substitute type params.
 		var newTParams []*types.TypeParam
@@ -380,14 +331,6 @@ func (subst *subster) alias(t *types.Alias) types.Type {
 	}
 
 	// t is declared within the function origin and has type arguments.
-	//
-	// Example: This corresponds to A[int] in F. Cases A and B are handled above.
-	//     func F[T any]() {
-	//       type A[S any] = struct{t T, s S}
-	//       type B = T
-	//       var x A[int]
-	//       ...
-	//     }
 	subOrigin := subst.typ(torigin)
 	subTArgs := subst.typelist(targs)
 	return subst.instantiate(subOrigin, subTArgs)
@@ -395,69 +338,17 @@ func (subst *subster) alias(t *types.Alias) types.Type {
 
 func (subst *subster) named(t *types.Named) types.Type {
 	// A Named type is a user defined type.
-	// Ignoring generics, Named types are canonical: they are identical if
-	// and only if they have the same defining symbol.
-	// Generics complicate things, both if the type definition itself is
-	// parameterized, and if the type is defined within the scope of a
-	// parameterized function. In this case, two named types are identical if
-	// and only if their identifying symbols are identical, and all type
-	// arguments bindings in scope of the named type definition (including the
-	// type parameters of the definition itself) are equivalent.
-	//
-	// Notably:
-	// 1. For type definition type T[P1 any] struct{}, T[A] and T[B] are identical
-	//    only if A and B are identical.
-	// 2. Inside the generic func Fn[m any]() any { type T struct{}; return T{} },
-	//    the result of Fn[A] and Fn[B] have identical type if and only if A and
-	//    B are identical.
-	// 3. Both 1 and 2 could apply, such as in
-	//    func F[m any]() any { type T[x any] struct{}; return T{} }
-	//
-	// A subster replaces type parameters within a function scope, and therefore must
-	// also replace free type parameters in the definitions of local types.
-	//
-	// Note: There are some detailed notes sprinkled throughout that borrow from
-	// lambda calculus notation. These contain some over simplifying math.
-	//
-	// LC: One way to think about subster is that it is  a way of evaluating
-	//   ((λm. E) N) as E[m:=N].
-	// Each Named type t has an object *TypeName within a scope S that binds an
-	// underlying type expression U. U can refer to symbols within S (+ S's ancestors).
-	// Let x = t.TypeParams() and A = t.TypeArgs().
-	// Each Named type t is then either:
-	//   U              where len(x) == 0 && len(A) == 0
-	//   λx. U          where len(x) != 0 && len(A) == 0
-	//   ((λx. U) A)    where len(x) == len(A)
-	// In each case, we will evaluate t[m:=N].
 	tparams := t.TypeParams() // x
-	targs := t.TypeArgs()     // A
+	targs := t.TypeArgs()
 
 	if !declaredWithin(t.Obj(), subst.origin) {
 		// t is declared outside of Fn[m].
-		//
-		// In this case, we can skip substituting t.Underlying().
-		// The underlying type cannot refer to the type parameters.
-		//
-		// LC: Let free(E) be the set of free type parameters in an expression E.
-		// Then whenever m ∉ free(E), then E = E[m:=N].
-		// t ∉ Scope(fn) so therefore m ∉ free(U) and m ∩ x = ∅.
 		if targs.Len() == 0 {
 			// t has no type arguments. So it does not need to be instantiated.
-			//
-			// This is the normal case in real Go code, where t is not parameterized,
-			// declared at some package scope, and m is a TypeParam from a parameterized
-			// function F[m] or method.
-			//
-			// LC: m ∉ free(A) lets us conclude m ∉ free(t). So t=t[m:=N].
 			return t
 		}
 
 		// t is declared outside of Fn[m] and has type arguments.
-		// The type arguments may contain type parameters m so
-		// substitute the type arguments, and instantiate the substituted
-		// type arguments.
-		//
-		// LC: Evaluate this as ((λx. U) A') where A' = A[m := N].
 		newTArgs := subst.typelist(targs)
 		return subst.instantiate(t.Origin(), newTArgs)
 	}
@@ -468,21 +359,6 @@ func (subst *subster) named(t *types.Named) types.Type {
 		assert(t == t.Origin(), "local parameterized type abstraction must be an origin type")
 
 		// t has no type arguments.
-		// The underlying type of t may contain the function's type parameters,
-		// replace these, and create a new type.
-		//
-		// Subtle: We short circuit substitution and use a newly created type in
-		// subst, i.e. cache[t]=fresh, to preemptively replace t with fresh
-		// in recursive types during traversal. This both breaks infinite cycles
-		// and allows for constructing types with the replacement applied in
-		// subst.typ(U).
-		//
-		// A new copy of the Named and Typename (and constraints) per function
-		// instantiation matches the semantics of Go, which treats all function
-		// instantiations F[N] as having distinct local types.
-		//
-		// LC: x.Len()=0 can be thought of as a special case of λx. U.
-		// LC: Evaluate (λx. U)[m:=N] as (λx'. U') where U'=U[x:=x',m:=N].
 		tname := t.Obj()
 		obj := types.NewTypeName(tname.Pos(), tname.Pkg(), tname.Name(), nil)
 		fresh := types.NewNamed(obj, nil, nil)
@@ -507,11 +383,6 @@ func (subst *subster) named(t *types.Named) types.Type {
 	}
 
 	// t is defined within Fn[m] and t has type arguments (an instantiation).
-	// We reduce this to the two cases above:
-	// (1) substitute the function's type parameters into t.Origin().
-	// (2) substitute t's type arguments A and instantiate the updated t.Origin() with these.
-	//
-	// LC: Evaluate ((λx. U) A)[m:=N] as (t' A') where t' = (λx. U)[m:=N] and A'=A [m:=N]
 	subOrigin := subst.typ(t.Origin())
 	subTArgs := subst.typelist(targs)
 	return subst.instantiate(subOrigin, subTArgs)
@@ -539,24 +410,10 @@ func (subst *subster) signature(t *types.Signature) types.Type {
 	tparams := t.TypeParams()
 
 	// We are choosing not to support tparams.Len() > 0 until a need has been observed in practice.
-	//
-	// There are some known usages for types.Types coming from types.{Eval,CheckExpr}.
-	// To support tparams.Len() > 0, we just need to do the following [pseudocode]:
-	//   targs := {subst.replacements[tparams[i]]]}; Instantiate(ctxt, t, targs, false)
 
 	assert(tparams.Len() == 0, "Substituting types.Signatures with generic functions are currently unsupported.")
 
-	// Either:
-	// (1)non-generic function.
-	//    no type params to substitute
-	// (2)generic method and recv needs to be substituted.
-
-	// Receivers can be either:
-	// named
-	// pointer to named
-	// interface
-	// nil
-	// interface is the problematic case. We need to cycle break there!
+	// Receivers can be either: named pointer to named interface nil interface is the problematic case.
 	recv := subst.var_(t.Recv())
 	params := subst.tuple(t.Params())
 	results := subst.tuple(t.Results())

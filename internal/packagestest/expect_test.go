@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package packagestest_test
 
@@ -61,10 +60,7 @@ func TestExpect(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	// We expect to have walked the @check annotations in all .go files,
-	// including _test.go files (XTest or otherwise). But to have walked the
-	// non-_test.go files only once. Hence wantCheck = 3 (testdata/test.go) + 1
-	// (testdata/test_test.go) + 1 (testdata/x_test.go)
+	// We expect to have walked the @check annotations in all .go files, including _test.go files (XTest or otherwise).
 	wantCheck := 7
 	if wantCheck != checkCount {
 		t.Fatalf("Expected @check count of %v; got %v", wantCheck, checkCount)

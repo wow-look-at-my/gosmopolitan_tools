@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package core provides support for event based telemetry.
 package core
@@ -13,17 +12,11 @@ import (
 	"golang.org/x/tools/internal/event/label"
 )
 
-// Event holds the information about an event of note that occurred.
+// Event holds the information about an event of occurred.
 type Event struct {
 	at time.Time
 
-	// As events are often on the stack, storing the first few labels directly
-	// in the event can avoid an allocation at all for the very common cases of
-	// simple events.
-	// The length needs to be large enough to cope with the majority of events
-	// but no so large as to cause undue stack pressure.
-	// A log message with two values will use 3 labels (one for each value and
-	// one for the message itself).
+	// As events are often on the stack.
 
 	static  [3]label.Label // inline storage for the first few labels
 	dynamic []label.Label  // dynamically sized storage for remaining labels

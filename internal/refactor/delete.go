@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package refactor
 
@@ -22,15 +21,6 @@ import (
 
 // DeleteVar returns edits to delete the declaration of a variable or
 // constant whose defining identifier is curId.
-//
-// It handles variants including:
-// - GenDecl > ValueSpec versus AssignStmt;
-// - RHS expression has effects, or not;
-// - entire statement/declaration may be eliminated;
-// and removes associated comments.
-//
-// If it cannot make the necessary edits, such as for a function
-// parameter or result, it returns nil.
 func DeleteVar(tokFile *token.File, info *types.Info, curId inspector.Cursor) []Edit {
 	switch curId.ParentEdgeKind() {
 	case edge.ValueSpec_Names:
@@ -40,8 +30,7 @@ func DeleteVar(tokFile *token.File, info *types.Info, curId inspector.Cursor) []
 		return deleteVarFromAssignStmt(tokFile, info, curId)
 	}
 
-	// e.g. function receiver, parameter, or result,
-	// or "switch v := expr.(T) {}" (which has no object).
+	// e.g. function receiver, parameter, or result, or "switch v := expr.(T) {}" (which has no object).
 	return nil
 }
 
@@ -65,14 +54,11 @@ func deleteVarFromValueSpec(tokFile *token.File, info *types.Info, curIdent insp
 		return !typesinternal.NoEffects(info, rhs)
 	})
 	if !declaresOtherNames && noRHSEffects {
-		// The spec is no longer needed, either to declare
-		// other variables, or for its side effects.
+		// The spec is no longer needed, either to declare other variables, or for its side effects.
 		return DeleteSpec(tokFile, curSpec)
 	}
 
-	// The spec is still needed, either for
-	// at least one LHS, or for effects on RHS.
-	// Blank out or delete just one LHS.
+	// The spec is still needed, either for at least one LHS, or for effects on RHS. Blank out or delete one LHS.
 
 	index := curIdent.ParentEdgeIndex() // index of LHS within ValueSpec.Names
 
@@ -81,16 +67,10 @@ func deleteVarFromValueSpec(tokFile *token.File, info *types.Info, curIdent insp
 		var pos, end token.Pos
 		if index == len(spec.Names)-1 {
 			// Delete final name.
-			//
-			// var _, lhs1 T
-			//      ------
 			pos = spec.Names[index-1].End()
 			end = spec.Names[index].End()
 		} else {
 			// Delete non-final name.
-			//
-			// var lhs0, _ T
-			//     ------
 			pos = spec.Names[index].Pos()
 			end = spec.Names[index+1].Pos()
 		}
@@ -108,8 +88,7 @@ func deleteVarFromValueSpec(tokFile *token.File, info *types.Info, curIdent insp
 		if index == len(spec.Names)-1 {
 			// Delete final items.
 			//
-			// var _, lhs1 = rhs0, rhs1
-			//      ------       ------
+			// var _, lhs1 = rhs0, rhs1 ------
 			return []Edit{
 				{
 					Pos: spec.Names[index-1].End(),
@@ -123,8 +102,7 @@ func deleteVarFromValueSpec(tokFile *token.File, info *types.Info, curIdent insp
 		} else {
 			// Delete non-final items.
 			//
-			// var lhs0, _ = rhs0, rhs1
-			//     ------    ------
+			// var lhs0, _ = rhs0, rhs1 ------
 			return []Edit{
 				{
 					Pos: spec.Names[index].Pos(),
@@ -138,8 +116,7 @@ func deleteVarFromValueSpec(tokFile *token.File, info *types.Info, curIdent insp
 		}
 	}
 
-	// We cannot delete the RHS.
-	// Blank out the LHS.
+	// We cannot delete the RHS. Blank out the LHS.
 	return []Edit{{
 		Pos:     id.Pos(),
 		End:     id.End(),
@@ -170,17 +147,10 @@ func deleteVarFromAssignStmt(tokFile *token.File, info *types.Info, curIdent ins
 		if edits := DeleteStmt(tokFile, curStmt); edits != nil {
 			return edits
 		}
-		// Statement could not not be deleted in this context.
-		// Fall back to conservative deletion.
 	}
 
-	// The assign is still needed, either for
-	// at least one LHS, or for effects on RHS,
-	// or because it cannot deleted because of its context.
-	// Blank out or delete just one LHS.
+	// The assign is still needed, either for at least one LHS, or for effects on RHS, or because it cannot deleted.
 
-	// If the assignment is 1:1 and the RHS has no effects,
-	// we can delete the LHS and its corresponding RHS.
 	index := curIdent.ParentEdgeIndex()
 	if len(assign.Lhs) > 1 &&
 		len(assign.Lhs) == len(assign.Rhs) &&
@@ -189,8 +159,7 @@ func deleteVarFromAssignStmt(tokFile *token.File, info *types.Info, curIdent ins
 		if index == len(assign.Lhs)-1 {
 			// Delete final items.
 			//
-			// _, lhs1 := rhs0, rhs1
-			//  ------        ------
+			// _, lhs1 := rhs0, rhs1 ------
 			return []Edit{
 				{
 					Pos: assign.Lhs[index-1].End(),
@@ -204,8 +173,7 @@ func deleteVarFromAssignStmt(tokFile *token.File, info *types.Info, curIdent ins
 		} else {
 			// Delete non-final items.
 			//
-			// lhs0, _ := rhs0, rhs1
-			// ------     ------
+			// lhs0, _ := rhs0, rhs1 ------
 			return []Edit{
 				{
 					Pos: assign.Lhs[index].Pos(),
@@ -219,18 +187,16 @@ func deleteVarFromAssignStmt(tokFile *token.File, info *types.Info, curIdent ins
 		}
 	}
 
-	// We cannot delete the RHS.
-	// Blank out the LHS.
+	// We cannot delete the RHS. Blank out the LHS.
 	edits := []Edit{{
 		Pos:     id.Pos(),
 		End:     id.End(),
 		NewText: []byte("_"),
 	}}
 
-	// If this eliminates the final variable declared by
-	// an := statement, we need to turn it into an =
-	// assignment to avoid a "no new variables on left
-	// side of :=" error.
+	// If this eliminates the final variable declared by an := statement, we need
+	// to turn it into an = assignment to avoid a "no new variables on left side
+	// of :=" error.
 	if !declaresOtherNames {
 		edits = append(edits, Edit{
 			Pos:     assign.TokPos,
@@ -252,8 +218,7 @@ func DeleteSpec(tokFile *token.File, curSpec inspector.Cursor) []Edit {
 		decl    = curDecl.Node().(*ast.GenDecl)
 	)
 
-	// If it is the sole spec in the decl,
-	// delete the entire decl.
+	// If it is the sole spec in the decl, delete the entire decl.
 	if len(decl.Specs) == 1 {
 		return DeleteDecl(tokFile, curDecl)
 	}
@@ -271,9 +236,7 @@ func DeleteSpec(tokFile *token.File, curSpec inspector.Cursor) []Edit {
 			end = c.End()
 		}
 	} else {
-		// Delete non-final spec.
-		//   var ( a T; b T )
-		//         -----
+		// Delete non-final spec. var ( a T; b T ) -----
 		end = decl.Specs[index+1].Pos()
 	}
 	return []Edit{{
@@ -348,33 +311,28 @@ func filterPos(nds []*ast.Comment, start, end token.Pos) (token.Pos, token.Pos, 
 }
 
 // DeleteStmt returns the edits to remove the [ast.Stmt] identified by
-// curStmt if it recognizes the context. It returns nil otherwise.
-// TODO(pjw, adonovan): it should not return nil, it should return an error
-//
-// DeleteStmt is called with just the AST so it has trouble deciding if
-// a comment is associated with the statement to be deleted. For instance,
+// curStmt if it recognizes the context, and nil otherwise. TODO(pjw,
+// adonovan): it should not return nil, it should return an error. DeleteStmt
+// is called with the AST, so it has trouble deciding if a comment is
+// associated with the statement to be deleted.
 //
 //	for /*A*/ init()/*B*/;/*C/cond()/*D/;/*E*/post() /*F*/ { /*G*/}
 //
-// comment B and C are indistinguishable, as are D and E. That is, as the
-// AST does not say where the semicolons are, B and C could go either
-// with the init() or the cond(), so cannot be removed safely. The same
-// is true for D, E, and the post(). (And there are other similar cases.)
-// But the other comments can be removed as they are unambiguously
-// associated with the statement being deleted. In particular,
-// it removes whole lines like
+// comment B and C are indistinguishable, as are D and E: the AST does not
+// say where the semicolons are. The other comments can be removed, as they
+// are unambiguously associated with the statement being deleted. In
+// particular, it removes whole lines like
 //
 //	stmt // comment
 func DeleteStmt(file *token.File, curStmt inspector.Cursor) []Edit {
-	// if the stmt is on a line by itself, or a range of lines, delete the whole thing
-	// including comments. Except for the heads of switches, type
-	// switches, and for-statements that's the usual case. Complexity occurs where
-	// there are multiple statements on the same line, and adjacent comments.
+	// if the stmt is on a line by itself, or a range of lines, delete the whole
+	// thing including comments. Except for the heads of switches, type switches,
+	// and for-statements that's the usual case.
 
-	// In that case we remove some adjacent comments:
-	// In me()/*A*/;b(), comment A cannot be removed, because the ast
-	// is indistinguishable from me();/*A*/b()
-	// and the same for cases like switch me()/*A*/; x.(type) {
+	// In that case we remove some adjacent comments: In me()/*A*/. B(), comment
+	// A cannot be removed, because the ast is indistinguishable from me(). This
+	// also covers /*A*/b() and the same for cases like switch me()/*A*/.
+	// X.(type) {
 
 	// this would be more precise with the file contents, or if the ast
 	// contained the location of semicolons
@@ -450,9 +408,7 @@ Big:
 		case parent.Init:
 			use(parent.If, parent.Body.Lbrace)
 		case parent.Else:
-			// stmt is the {...} in "if cond {} else {...}" and removing
-			// it would require removing the 'else' keyword, but the ast
-			// does not contain its position.
+			// stmt is the {...} in "if cond {} else {...}" and removing it would require removing the 'else' keyword.
 			return nil
 		}
 	case *ast.SwitchStmt:
@@ -520,12 +476,9 @@ Big:
 
 // DeleteUnusedVars computes the edits required to delete the
 // declarations of any local variables whose last uses are in the
-// curDelend subtree, which is about to be deleted.
+// curDelend subtree. This is about to be deleted.
 func DeleteUnusedVars(index *typeindex.Index, info *types.Info, tokFile *token.File, curDelend inspector.Cursor) []Edit {
-	// TODO(adonovan): we might want to generalize this by
-	// splitting the two phases below, so that we can gather
-	// across a whole sequence of deletions then finally compute the
-	// set of variables that are no longer wanted.
+	// TODO(adonovan): we might want to generalize this by splitting both phases below.
 
 	// Count number of deletions of each var.
 	delcount := make(map[*types.Var]int)
@@ -550,8 +503,7 @@ func DeleteUnusedVars(index *typeindex.Index, info *types.Info, tokFile *token.F
 }
 
 func eolComment(n ast.Node) *ast.CommentGroup {
-	// TODO(adonovan): support:
-	//    func f() {...} // comment
+	// TODO(adonovan): support: func f() {...} // comment
 	switch n := n.(type) {
 	case *ast.GenDecl:
 		if !n.TokPos.IsValid() && len(n.Specs) == 1 {

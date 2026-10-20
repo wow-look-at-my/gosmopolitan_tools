@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package interp
 
@@ -23,15 +22,12 @@ import (
 
 type externalFn func(fr *frame, args []value) value
 
-// TODO(adonovan): fix: reflect.Value abstracts an lvalue or an
-// rvalue; Set() causes mutations that can be observed via aliases.
-// We have not captured that correctly here.
+// TODO(adonovan): fix: reflect.Value abstracts an lvalue or an rvalue.
 
 // Key strings are from Function.String().
 var externals = make(map[string]externalFn)
 
 func init() {
-	// That little dot ۰ is an Arabic zero numeral (U+06F0), categories [Nd].
 	maps.Copy(externals, map[string]externalFn{
 		"(reflect.Value).Bool":            ext۰reflect۰Value۰Bool,
 		"(reflect.Value).CanAddr":         ext۰reflect۰Value۰CanAddr,
@@ -264,8 +260,7 @@ func ext۰strings۰ToLower(fr *frame, args []value) value {
 }
 
 func ext۰runtime۰GOMAXPROCS(fr *frame, args []value) value {
-	// Ignore args[0]; don't let the interpreted program
-	// set the interpreter's GOMAXPROCS!
+	// Ignore args[0]; don't let the interpreted program set the interpreter's GOMAXPROCS!
 	return runtime.GOMAXPROCS(0)
 }
 
@@ -316,9 +311,8 @@ func ext۰unicode۰utf8۰DecodeRuneInString(fr *frame, args []value) value {
 	return tuple{r, n}
 }
 
-// A fake function for turning an arbitrary value into a string.
-// Handles only the cases needed by the tests.
-// Uses same logic as 'print' built-in.
+// A fake function for turning an arbitrary value into a string. Handles only
+// the cases needed by the tests. Uses same logic as 'print' built-in.
 func ext۰fmt۰Sprint(fr *frame, args []value) value {
 	buf := new(bytes.Buffer)
 	wasStr := false

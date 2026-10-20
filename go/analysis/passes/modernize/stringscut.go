@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -39,93 +38,11 @@ var StringsCutAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_stringscut",
 }
 
-// stringscut offers a fix to replace an occurrence of strings.Index{,Byte} with
-// strings.{Cut,Contains}, strings.LastIndex{,Byte} with strings.CutLast (or
-// Contains when only used as a presence check), and similar fixes for
-// functions in the bytes package.
-// Consider some candidate for replacement i := strings.Index(s, substr)
-// or i := strings.LastIndex(s, substr).
-// The following must hold for a replacement to occur:
-//
-//  1. All instances of i and s must be in one of these forms.
-//
-//     Binary expressions must be inequalities equivalent to
-//     "Index failed" (e.g. i < 0) or "Index succeeded" (i >= 0),
-//     or identities such as these (and their negations):
-//
-//     0 > i                 (flips left and right)
-//     i <= -1, -1 >= i      (replace strict inequality by non-strict)
-//     i == -1, -1 == i      (Index() guarantees i < 0 => i == -1)
-//
-//     Slice expressions:
-//     a: s[:i], s[0:i]
-//     b: s[i+len(substr):], s[len(substr) + i:], s[i + const], s[k + i] (where k = len(substr))
-//
-//  2. There can be no uses of s, substr, or i where they are
-//     potentially modified (i.e. in assignments, or function calls with unknown side
-//     effects).
-//
-// Then, the replacement involves the following substitutions:
-//
-//  1. Replace "i := strings.Index(s, substr)" with "before, after, ok := strings.Cut(s, substr)"
-//     (or CutLast when the call is LastIndex/LastIndexByte; requires Go 1.27).
-//
-//  2. Replace instances of binary expressions (a) with !ok and binary expressions (b) with ok.
-//
-//  3. Replace slice expressions (a) with "before" and slice expressions (b) with after.
-//
-//  4. The assignments to before, after, and ok may use the blank identifier "_" if they are unused.
-//
-//     For example:
-//
-//     i := strings.Index(s, substr)
-//     if i >= 0 {
-//     use(s[:i], s[i+len(substr):])
-//     }
-//
-//     Would become:
-//
-//     before, after, ok := strings.Cut(s, substr)
-//     if ok {
-//     use(before, after)
-//     }
-//
-//     And similarly for LastIndex → CutLast:
-//
-//     i := strings.LastIndex(s, substr)
-//     if i >= 0 {
-//     use(s[:i], s[i+len(substr):])
-//     }
-//
-//     Would become:
-//
-//     before, after, ok := strings.CutLast(s, substr)
-//     if ok {
-//     use(before, after)
-//     }
-//
-// If the condition involving `i` is equivalent to i >= 0, then we replace it with
-// `if ok`.
-// If the condition is negated (e.g. equivalent to `i < 0`), we use `if !ok` instead.
-// If the slices of `s` match `s[:i]` or `s[i+len(substr):]` or their variants listed above,
-// then we replace them with before and after.
-//
-// When the index `i` is used only to check for the presence of the substring or byte slice,
-// the suggested fix uses Contains() instead of Cut/CutLast (available since Go 1.18).
-//
-// For example:
-//
-//	i := strings.Index(s, substr)
-//	if i >= 0 {
-//		return
-//	}
-//
-// Would become:
-//
-//	found := strings.Contains(s, substr)
-//	if found {
-//		return
-//	}
+// stringscut offers a fix to replace an occurrence of strings.Index{,Byte}
+// with strings.{Cut,Contains}, strings.LastIndex{,Byte} with strings.CutLast
+// (or Contains when only used as a presence check). Similar fixes for
+// functions in the bytes package. Consider some candidate for replacement i
+// := strings.Index(s, substr) or i := strings.LastIndex(s, substr).
 func stringscut(pass *analysis.Pass) (any, error) {
 	var (
 		index = pass.ResultOf[typeindexanalyzer.Analyzer].(*typeindex.Index)
@@ -152,9 +69,7 @@ func stringscut(pass *analysis.Pass) (any, error) {
 	nextcall:
 		for curCall := range index.Calls(obj) {
 			file := astutil.EnclosingFile(curCall)
-			// Check file version. Contains and Cut require Go 1.18.
-			// CutLast requires Go 1.27; that gate is applied after we know
-			// the rewrite is not a presence-only Contains fix.
+			// Check file version.
 			if !analyzerutil.FileUsesGoVersion(pass, file, versions.Go1_18) {
 				continue
 			}
@@ -173,7 +88,6 @@ func stringscut(pass *analysis.Pass) (any, error) {
 			switch ek, idx := curCall.ParentEdge(); ek {
 			case edge.ValueSpec_Values:
 				// Have: var i = strings.Index(...)
-				// If the call occurs in a multi-value declaration or assignment, don't suggest a fix because it would produce invalid code (See golang/go#78643).
 				spec := curCall.Parent().Node().(*ast.ValueSpec)
 				if len(spec.Names) != 1 {
 					continue
@@ -181,8 +95,7 @@ func stringscut(pass *analysis.Pass) (any, error) {
 				curName := curCall.Parent().ChildAt(edge.ValueSpec_Names, idx)
 				iIdent = curName.Node().(*ast.Ident)
 			case edge.AssignStmt_Rhs:
-				// Have: i := strings.Index(...)
-				// (Must be i's definition.)
+				// Have: i := strings.Index(...) (Must be i's definition.)
 				assign := curCall.Parent().Node().(*ast.AssignStmt)
 				if len(assign.Lhs) != 1 {
 					continue
@@ -194,8 +107,7 @@ func stringscut(pass *analysis.Pass) (any, error) {
 			if iIdent == nil {
 				continue
 			}
-			// Inv: iIdent is i's definition. The following would be skipped: 'var i int; i = strings.Index(...)'
-			// Get uses of i.
+			// Inv: iIdent is i's definition. The following would be skipped: 'var i int; i = strings.Index(...)' Get uses of i.
 			iObj := info.ObjectOf(iIdent)
 			if iObj == nil {
 				continue
@@ -213,11 +125,7 @@ func stringscut(pass *analysis.Pass) (any, error) {
 				continue nextcall
 			}
 
-			// Next, examine all uses of i. If the only uses are of the
-			// forms mentioned above (e.g. i < 0, i >= 0, s[:i] and s[i +
-			// len(substr)]), then we can replace the call to Index()
-			// with a call to Cut() and use the returned ok, before,
-			// and after variables accordingly.
+			// Next, examine all uses of i.
 			negative, nonnegative, beforeSlice, afterSlice := checkIdxUses(pass.TypesInfo, index.Uses(iObj), s, substr, iObj)
 
 			// Either there are no uses of before, after, or ok, or some use
@@ -229,8 +137,6 @@ func stringscut(pass *analysis.Pass) (any, error) {
 			// If the only uses are ok and !ok, don't suggest a Cut() fix - these should be using Contains()
 			isContains := (len(negative) > 0 || len(nonnegative) > 0) && len(beforeSlice) == 0 && len(afterSlice) == 0
 
-			// CutLast requires Go 1.27. Keep this after isContains so
-			// presence-only LastIndex → Contains still works before 1.27.
 			if !isContains && cutName == "CutLast" &&
 				!analyzerutil.FileUsesGoVersion(pass, file, versions.Go1_27) {
 				continue
@@ -241,13 +147,7 @@ func stringscut(pass *analysis.Pass) (any, error) {
 				continue
 			}
 			scope := iObj.Parent()
-			// Generate fresh names for ok, before, after, found, but only if
-			// they are defined by the end of the enclosing block and used
-			// within the enclosing block after the Index call. We need a Cursor
-			// for the end of the enclosing block, but we can't just find the
-			// Cursor at scope.End() because it corresponds to the entire
-			// enclosingBlock. Instead, get the last child of the enclosing
-			// block.
+			// Generate fresh names for ok, before, after, found.
 			lastStmtCur, _ := enclosingBlock.LastChild()
 			lastStmt := lastStmtCur.Node()
 
@@ -264,12 +164,11 @@ func stringscut(pass *analysis.Pass) (any, error) {
 				afterVarName = fresh("after")
 			}
 
-			// If we are already suggesting a fix within the index's scope, we
-			// must get fresh names for before, after and ok.
-			// This is a specific symptom of the general problem that analyzers
-			// can generate conflicting fixes.
+			// If we are already suggesting a fix within the index's scope, we must get
+			// fresh names for before, after and ok. This is a specific symptom of the
+			// general problem that analyzers can generate conflicting fixes.
 			if scopeFixCount[scope] > 0 {
-				suffix := scopeFixCount[scope] - 1 // start at 0
+				suffix := scopeFixCount[scope] - 1 // start at a set value
 				if isContains {
 					foundVarName = fresh(fmt.Sprintf("%s%d", foundVarName, suffix))
 				} else {
@@ -301,20 +200,16 @@ func stringscut(pass *analysis.Pass) (any, error) {
 					})
 				}
 			}
-			// Get the ident for the call to strings.Index, which could just be
-			// "Index" if the strings package is dot imported.
+			// Get the ident for the call to strings.Index, which could be "Index" if the strings package is dot imported.
 			indexCallId := typesinternal.UsedIdent(info, indexCall.Fun)
 			replacedFunc := cutName
 			if isContains {
 				replacedFunc = "Contains"
-				replace(negative, "!"+foundVarName) // idx < 0   ->  !found
-				replace(nonnegative, foundVarName)  // idx > -1  ->   found
+				replace(negative, "!"+foundVarName) // idx < 0 -> !found
+				replace(nonnegative, foundVarName)
 
-				// Replace the assignment with found, and replace the call to
-				// Index or IndexByte with a call to Contains.
-				// i     := strings.Index   (...)
-				// -----            --------
-				// found := strings.Contains(...)
+				// Replace the assignment with found, and replace the call to Index or
+				// IndexByte with a call to Contains.
 				edits = append(edits, analysis.TextEdit{
 					Pos:     iIdent.Pos(),
 					End:     iIdent.End(),
@@ -325,16 +220,13 @@ func stringscut(pass *analysis.Pass) (any, error) {
 					NewText: []byte("Contains"),
 				})
 			} else {
-				replace(negative, "!"+okVarName)    // idx < 0   ->  !ok
-				replace(nonnegative, okVarName)     // idx > -1  ->   ok
-				replace(beforeSlice, beforeVarName) // s[:idx]   ->   before
-				replace(afterSlice, afterVarName)   // s[idx+k:] ->   after
+				replace(negative, "!"+okVarName) // idx < 0 -> !ok
+				replace(nonnegative, okVarName)
+				replace(beforeSlice, beforeVarName) // s[:idx] -> before
+				replace(afterSlice, afterVarName)   // s[idx+k:] -> after
 
-				// Replace the assignment with before, after, ok, and replace
-				// the call to Index/LastIndex with a call to Cut/CutLast.
-				// i     			 := strings.Index(...)
-				// -----------------            -----
-				// before, after, ok := strings.Cut  (...)
+				// Replace the assignment with before, after, ok, and replace the call to
+				// Index/LastIndex with a call to Cut/CutLast.
 				edits = append(edits, analysis.TextEdit{
 					Pos:     iIdent.Pos(),
 					End:     iIdent.End(),
@@ -346,16 +238,15 @@ func stringscut(pass *analysis.Pass) (any, error) {
 				})
 			}
 
-			// Calls to IndexByte/LastIndexByte have a byte as their second arg,
-			// which must be converted to a string or []byte to be a valid arg
-			// for Cut/CutLast/Contains.
+			// Calls to IndexByte/LastIndexByte have a byte as their second arg.
+			// This is which must be converted to a string or []byte to be a
+			// valid arg for Cut/CutLast/Contains.
 			if strings.HasSuffix(obj.Name(), "Byte") {
 				switch obj.Pkg().Name() {
 				case "strings":
 					searchByteVal := info.Types[substr].Value
 					if searchByteVal == nil {
-						// substr is a variable, e.g. substr := byte('b')
-						// use string(substr)
+						// substr is a variable, e.g. substr := byte('b') use string(substr)
 						edits = append(edits, []analysis.TextEdit{
 							{
 								Pos:     substr.Pos(),
@@ -369,7 +260,6 @@ func stringscut(pass *analysis.Pass) (any, error) {
 					} else {
 						// substr is a byte constant
 						val, _ := constant.Int64Val(searchByteVal) // inv: must be a valid byte
-						// strings.Cut/CutLast/Contains requires a string, so convert byte literal to string literal; e.g. 'a' -> "a", 55 -> "7"
 						edits = append(edits, analysis.TextEdit{
 							Pos:     substr.Pos(),
 							End:     substr.End(),
@@ -409,11 +299,11 @@ func stringscut(pass *analysis.Pass) (any, error) {
 }
 
 // stringsplitCut reports patterns where strings.Split or strings.SplitN with
-// n=2 is immediately indexed at [0], which can be simplified to strings.Cut,
+// n=2 is immediately indexed at [0]. This can be simplified to strings.Cut,
 // when sep is a non-empty string constant. The transformation is
 // semantics-preserving only for non-empty sep: strings.Split(s, "")[0]
-// returns the first character of s, but strings.Cut(s, "").before is "".
-// For variable sep the value is unknown at analysis time, so we conservatively
+// returns the first character of s. But strings.Cut(s, "").before is "". For
+// variable sep the value is unknown at analysis time, so we conservatively
 // skip those cases too.
 //
 // For example:
@@ -421,8 +311,6 @@ func stringscut(pass *analysis.Pass) (any, error) {
 //	x := strings.SplitN(s, ",", 2)[0]
 //	              ------              --
 //	x, _, _ := strings.Cut(s, ",")
-//
-// Requires Go 1.18 (when strings.Cut was added).
 func stringsplitCut(pass *analysis.Pass, index *typeindex.Index) {
 	info := pass.TypesInfo
 
@@ -437,16 +325,12 @@ func stringsplitCut(pass *analysis.Pass, index *typeindex.Index) {
 				continue
 			}
 
-			// For SplitN, the third argument must be the integer constant 2.
+			// For SplitN, the third argument must be the integer a later constant.
 			if expectedArgs == 3 && !isIntLiteral(info, callExpr.Args[2], 2) {
 				continue
 			}
 
 			// Sep must be a non-empty constant string.
-			// strings.Split(s, "")[0] returns the first character of s, but
-			// strings.Cut(s, "").before is "", so the semantics differ for
-			// an empty sep. For a variable sep we cannot rule out "" at
-			// analysis time, so we conservatively skip those cases too.
 			sepTV := info.Types[callExpr.Args[1]]
 			if sepTV.Value == nil || constant.StringVal(sepTV.Value) == "" {
 				continue
@@ -459,7 +343,7 @@ func stringsplitCut(pass *analysis.Pass, index *typeindex.Index) {
 			parent := curCall.Parent()
 			indexExpr := parent.Node().(*ast.IndexExpr)
 
-			// The index must be the integer constant 0.
+			// The index must be the integer the first constant.
 			if !isZeroIntConst(info, indexExpr.Index) {
 				continue
 			}
@@ -479,16 +363,11 @@ func stringsplitCut(pass *analysis.Pass, index *typeindex.Index) {
 				continue
 			}
 
-			// strings.Cut requires Go 1.18.
 			if !analyzerutil.FileUsesGoVersion(pass, astutil.EnclosingFile(curCall), versions.Go1_18) {
 				continue
 			}
 
 			// Build the fix.
-			//
-			//  x  := strings.SplitN(s, sep, 2)[0]
-			//  ---           ------             ---
-			//  x, _, _ := strings.Cut(s, sep)
 			callFunIdent := typesinternal.UsedIdent(info, callExpr.Fun)
 
 			var edits []analysis.TextEdit
@@ -560,40 +439,20 @@ func indexArgValid(info *types.Info, index *typeindex.Index, expr ast.Expr, afte
 		}
 		return true
 	default:
-		// For now, skip instances where s or substr are not
-		// identifiers, basic lits, or call expressions of the form
-		// []byte(s).
-		// TODO(mkalil): Handle s and substr being expressions like ptr.field[i].
-		// From adonovan: We'd need to analyze s and substr to see
-		// whether they are referentially transparent, and if not,
-		// analyze all code between declaration and use and see if
-		// there are statements or expressions with potential side
-		// effects.
+		// Skip instances where s or substr are not identifiers, basic lits, or call expressions of the form []byte(s).
 		return false
 	}
 }
 
-// checkIdxUses inspects the uses of i to make sure they match certain criteria that
-// allows us to suggest a modernization. If all uses of i, s and substr match
-// one of the following four valid formats, it returns a list of occurrences for
-// each format. If any of the uses do not match one of the formats, return nil
-// for all values, since we should not offer a replacement.
-// 1. negative - a condition equivalent to i < 0
-// 2. nonnegative - a condition equivalent to i >= 0
-// 3. beforeSlice - a slice of `s` that matches either s[:i], s[0:i]
-// 4. afterSlice - a slice of `s` that matches one of: s[i+len(substr):], s[len(substr) + i:], s[i + const], s[k + i] (where k = len(substr))
+// checkIdxUses inspects the uses of i to make sure they match certain criteria that allows us to suggest a modernization. If all uses of i,
+// s and substr match one of the following valid formats, it returns a list of occurrences for each format. If any of the uses do not match
+// one of the formats, return nil for all values, since we should not offer a replacement. afterSlice - a slice of `s` that matches one of:
+// s[i+len(substr):], s[len(substr) + i:], s[i + const]. S[k + i] (where k = len(substr))
 //
 // Additionally, all beforeSlice and afterSlice uses must be dominated by a
 // nonnegative guard on i (i.e., inside the body of an if whose condition
-// checks i >= 0, or in the else of a negative check, or after an
-// early-return negative check). This ensures that the rewrite from
-// s[i+len(sep):] to "after" preserves semantics, since when i == -1,
-// s[i+len(sep):] may yield a valid substring (e.g. s[0:] for single-byte
-// separators), but "after" would be "".
-//
-// When len(substr)==1, it's safe to use s[i+1:] even when i < 0.
-// Otherwise, each replacement of s[i+1:] must be guarded by a check
-// that i is nonnegative.
+// checks i >= 0, or in the else of a negative check, or after an early-return
+// negative check).
 func checkIdxUses(info *types.Info, uses iter.Seq[inspector.Cursor], s, substr ast.Expr, iObj types.Object) (negative, nonnegative, beforeSlice, afterSlice []ast.Expr) {
 	requireGuard := true
 	if l := constSubstrLen(info, substr); l != -1 && l != 1 {
@@ -614,11 +473,9 @@ func checkIdxUses(info *types.Info, uses iter.Seq[inspector.Cursor], s, substr a
 				nonnegative = append(nonnegative, check)
 				return true
 			}
-			// Check is not equivalent to that i < 0 or i >= 0.
-			// Might be part of an outer slice expression like s[i + k]
-			// which requires a different check.
-			// Check that the thing being sliced is s and that the slice
-			// doesn't have a max index.
+			// Might be part of an outer slice expression like s[i + k] which requires
+			// a different check. Check that the thing being sliced is s and that the
+			// slice doesn't have a max index.
 			if slice, ok := cur.Parent().Parent().Node().(*ast.SliceExpr); ok &&
 				sameObject(info, s, slice.X) &&
 				slice.Max == nil {
@@ -656,13 +513,8 @@ func checkIdxUses(info *types.Info, uses iter.Seq[inspector.Cursor], s, substr a
 }
 
 // checkIdxComparison reports whether the check is equivalent to i < 0 or its negation, or neither.
-// For equivalent to i >= 0, we only accept this exact BinaryExpr since
-// expressions like i > 0 or i >= 1 make a stronger statement about the value of i.
-// We avoid suggesting a fix in this case since it may result in an invalid
-// transformation (See golang/go#76687).
-// Since strings.Index returns exactly -1 if the substring is not found, we
-// don't need to handle expressions like i <= -3.
-// We return 0 if the expression does not match any of these options.
+// For equivalent to i >= 0, we only accept this exact BinaryExpr since expressions like i > 0 or i
+// >= 1 make a stronger statement about the value of i.
 func checkIdxComparison(info *types.Info, check *ast.BinaryExpr, iObj types.Object) int {
 	isI := func(e ast.Expr) bool {
 		id, ok := e.(*ast.Ident)
@@ -683,14 +535,14 @@ func checkIdxComparison(info *types.Info, check *ast.BinaryExpr, iObj types.Obje
 	}
 
 	if op == token.LSS && yIsInt(0) || // i < 0
-		op == token.EQL && yIsInt(-1) || // i == -1
-		op == token.LEQ && yIsInt(-1) { // i <= -1
+		op == token.EQL && yIsInt(-1) ||
+		op == token.LEQ && yIsInt(-1) {
 		return -1 // check <=> i is negative
 	}
 
 	if op == token.GEQ && yIsInt(0) || // i >= 0
-		op == token.NEQ && yIsInt(-1) || // i != -1
-		op == token.GTR && yIsInt(-1) { // i > -1
+		op == token.NEQ && yIsInt(-1) ||
+		op == token.GTR && yIsInt(-1) {
 		return +1 // check <=> i is non-negative
 	}
 
@@ -698,7 +550,7 @@ func checkIdxComparison(info *types.Info, check *ast.BinaryExpr, iObj types.Obje
 }
 
 // flip changes the comparison token as if the operands were flipped.
-// It is defined only for == and the four inequalities.
+// It is defined only for == and the inequalities.
 func flip(op token.Token) token.Token {
 	switch op {
 	case token.EQL:
@@ -720,7 +572,6 @@ func isBeforeSlice(info *types.Info, ek edge.Kind, slice *ast.SliceExpr) bool {
 	return ek == edge.SliceExpr_High && (slice.Low == nil || isZeroIntConst(info, slice.Low))
 }
 
-// constSubstrLen returns the constant length of substr, or -1 if unknown.
 func constSubstrLen(info *types.Info, substr ast.Expr) int {
 	// Handle len([]byte(substr))
 	if call, ok := substr.(*ast.CallExpr); ok {
@@ -736,9 +587,6 @@ func constSubstrLen(info *types.Info, substr ast.Expr) int {
 		case constant.String:
 			return len(constant.StringVal(substrVal))
 		case constant.Int:
-			// constant.Value is a byte literal, e.g. bytes.IndexByte(_, 'a')
-			// or a numeric byte literal, e.g. bytes.IndexByte(_, 65)
-			// ([]byte(rune) is not legal.)
 			return 1
 		}
 	}
@@ -746,7 +594,7 @@ func constSubstrLen(info *types.Info, substr ast.Expr) int {
 }
 
 // isAfterSlice reports whether the SliceExpr is of the form s[i+len(substr):],
-// or s[i + k:] where k is a const is equal to len(substr).
+// or s[i + k:]. This happens where k is a const is equal to len(substr).
 func isAfterSlice(info *types.Info, ek edge.Kind, slice *ast.SliceExpr, substr ast.Expr) bool {
 	lowExpr, ok := slice.Low.(*ast.BinaryExpr)
 	if !ok || slice.High != nil {
@@ -796,12 +644,9 @@ func isAfterSlice(info *types.Info, ek edge.Kind, slice *ast.SliceExpr, substr a
 //   - It is preceded (in the same block) by an IfStmt whose condition is a
 //     negative check on i with a terminating body (e.g., early return).
 //
-// Conversely, a use is immediately rejected if:
+// Conversely, a use is immediately rejected if.
 //   - It is inside the Body of an IfStmt whose condition is a negative check on i.
 //   - It is inside the Else of an IfStmt whose condition is a nonnegative check on i.
-//
-// We have already checked (see [hasModifyingUses]) that there are no
-// intervening uses (incl. via aliases) of i that might alter its value.
 func isSliceIndexGuarded(info *types.Info, cur inspector.Cursor, iObj types.Object) bool {
 	for anc := range cur.Enclosing() {
 		switch anc.ParentEdgeKind() {
@@ -832,9 +677,8 @@ func isSliceIndexGuarded(info *types.Info, cur inspector.Cursor, iObj types.Obje
 	return false
 }
 
-// condChecksIdx reports whether cond is a BinaryExpr that checks
-// the index variable iObj for negativity or non-negativity.
-// Returns -1 for negative (e.g. i < 0), +1 for nonnegative (e.g. i >= 0), 0 otherwise.
+// condChecksIdx reports whether cond is a BinaryExpr that checks the index
+// variable iObj for negativity or non-negativity.
 func condChecksIdx(info *types.Info, cond ast.Expr, iObj types.Object) int {
 	binExpr, ok := cond.(*ast.BinaryExpr)
 	if !ok {

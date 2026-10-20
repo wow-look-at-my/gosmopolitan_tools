@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize_test
 
@@ -71,25 +70,16 @@ func TestRangeInt(t *testing.T) {
 }
 
 func TestPlusBuild(t *testing.T) {
-	// This test assumes a particular OS/ARCH so that the test
-	// files are selected by the build; otherwise they would
-	// appear in IgnoredFiles, for which file version information
-	// is not available. See https://go.dev/issue/77318.
+	// This test assumes a particular OS/ARCH so that the test files are selected by the build; otherwise they would appear in IgnoredFiles.
 	t.Setenv("GOOS", "linux")
 	t.Setenv("GOARCH", "amd64")
 
-	// This test has a dedicated hack in the analysistest package:
-	// Because it cares about IgnoredFiles, which most analyzers
-	// ignore, the test framework will consider expectations in
-	// ignore files too, but only for this analyzer.
-	// (But see above: IgnoredFiles lack version information
-	// so we can't safely apply any fixes to them.)
+	// This test has a dedicated hack in the analysistest package.
 	RunWithSuggestedFixes(t, TestData(), modernize.PlusBuildAnalyzer, "plusbuild")
 }
 
 func TestImportComment(t *testing.T) {
-	// Loaded in module mode (a go.mod at the testdata root) so that
-	// pass.Module is set, which the analyzer requires.
+	// Loaded in module mode (a go.mod at the testdata root) so that pass.Module is set, which the analyzer requires.
 	dir := filepath.Join(TestData(), "importcommentmod")
 	RunWithSuggestedFixes(t, dir, modernize.ImportCommentAnalyzer, "./...")
 }

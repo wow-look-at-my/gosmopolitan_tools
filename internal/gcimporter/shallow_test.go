@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter_test
 
@@ -27,8 +26,7 @@ func TestShallowStd(t *testing.T) {
 	}
 	testenv.NeedsTool(t, "go")
 
-	// Load import graph of the standard library.
-	// (No parsing or type-checking.)
+	// Load import graph of the standard library. (No parsing or type-checking.)
 	cfg := &packages.Config{
 		Mode: packages.NeedImports |
 			packages.NeedName |
@@ -72,7 +70,7 @@ func typecheck(t *testing.T, ppkg *packages.Package) {
 		return // unsafe is special
 	}
 
-	// Create a local FileSet just for this package.
+	// Create a local FileSet for this package.
 	fset := token.NewFileSet()
 
 	// Parse files in parallel.
@@ -94,8 +92,6 @@ func typecheck(t *testing.T, ppkg *packages.Package) {
 	// Inv: all files were successfully parsed.
 
 	// Build map of dependencies by package path.
-	// (We don't compute this mapping for the entire
-	// packages graph because it is not globally consistent.)
 	depsByPkgPath := make(map[string]*packages.Package)
 	{
 		var visit func(*packages.Package)
@@ -169,11 +165,10 @@ func typecheck(t *testing.T, ppkg *packages.Package) {
 	ppkg.ExportFile = string(data)
 }
 
-// postTypeCheck is called after a package is type checked.
-// We use it to assert additional correctness properties,
-// for example, that the apparent location of "fmt.Println"
-// corresponds to its source location: in other words,
-// export+import preserves high-fidelity positions.
+// postTypeCheck is called after a package is type checked. We use it to
+// assert additional correctness properties, for example, that the apparent
+// location of "fmt.Println" corresponds to its source location. In other
+// words, export+import preserves high-fidelity positions.
 func postTypeCheck(t *testing.T, fset *token.FileSet, pkg *types.Package) {
 	// We hard-code a few interesting test-case objects.
 	var obj types.Object
@@ -213,10 +208,7 @@ func postTypeCheck(t *testing.T, fset *token.FileSet, pkg *types.Package) {
 		t.Errorf("%+v: expected declaration of %v at this offset; got %q", posn, obj, id)
 	}
 
-	// Check commutativity of Position() and start+len(name) operations:
-	// Position(startPos+len(name)) == Position(startPos) + len(name).
-	// This important property is a consequence of the way in which the
-	// decoder fills the gaps in the sparse line-start offset table.
+	// Check commutativity of Position() and start+len(name) operations.
 	endPosn := fset.Position(obj.Pos() + token.Pos(len(obj.Name())))
 	wantEndPosn := token.Position{
 		Filename: posn.Filename,

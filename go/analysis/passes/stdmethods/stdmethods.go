@@ -1,6 +1,5 @@
-// Copyright 2010 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stdmethods
 
@@ -27,22 +26,20 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-// canonicalMethods lists the input and output types for Go methods
-// that are checked using dynamic interface checks. Because the
-// checks are dynamic, such methods would not cause a compile error
-// if they have the wrong signature: instead the dynamic check would
-// fail, sometimes mysteriously. If a method is found with a name listed
-// here but not the input/output types listed here, vet complains.
+// canonicalMethods lists the input and output types for Go methods that are
+// checked using dynamic interface checks. Because the checks are dynamic,
+// such methods would not cause a compile error if they have the wrong
+// signature. Instead the dynamic check would fail, sometimes mysteriously. If
+// a method is found with a name listed here but not the input/output types
+// listed here, vet complains.
 //
-// A few of the canonical methods have very common names.
-// For example, a type might implement a Scan method that
-// has nothing to do with fmt.Scanner, but we still want to check
-// the methods that are intended to implement fmt.Scanner.
-// To do that, the arguments that have a = prefix are treated as
-// signals that the canonical meaning is intended: if a Scan
-// method doesn't have a fmt.ScanState as its first argument,
-// we let it go. But if it does have a fmt.ScanState, then the
-// rest has to match.
+// A few of the canonical methods have common names. For example, a type might
+// implement a Scan method that has nothing to do with fmt.Scanner. However,
+// we still want to check the methods that are intended to implement
+// fmt.Scanner. To do that, the arguments that have a = prefix are treated as
+// signals that the canonical meaning is intended. If a Scan method doesn't
+// have a fmt.ScanState as its first argument, we let it go. But if it does
+// have a fmt.ScanState, then the rest has to match.
 var canonicalMethods = map[string]struct{ args, results []string }{
 	"As": {[]string{"any"}, []string{"bool"}}, // errors.As
 	// "Flush": {{}, {"error"}}, // http.Flusher and jpeg.writer conflict
@@ -102,22 +99,20 @@ func canonicalMethod(pass *analysis.Pass, id *ast.Ident) {
 	args := sign.Params()
 	results := sign.Results()
 
-	// Special case: WriteTo with more than one argument,
-	// not trying at all to implement io.WriterTo,
-	// comes up often enough to skip.
+	// Special case: WriteTo with more than one argument, not trying at all to
+	// implement io.WriterTo, comes up often enough to skip.
 	if id.Name == "WriteTo" && args.Len() > 1 {
 		return
 	}
 
-	// Special case: Is, As and Unwrap only apply when type
-	// implements error.
+	// Special case: Is, As and Unwrap only apply when type implements error.
 	if id.Name == "Is" || id.Name == "As" || id.Name == "Unwrap" {
 		if recv := sign.Recv(); recv == nil || !implementsError(recv.Type()) {
 			return
 		}
 	}
 
-	// Special case: Unwrap has two possible signatures.
+	// Special case: Unwrap has possible signatures.
 	// Check for Unwrap() []error here.
 	if id.Name == "Unwrap" {
 		if args.Len() == 0 && results.Len() == 1 {
@@ -186,7 +181,7 @@ func matchParams(expect []string, actual *types.Tuple, prefix string) bool {
 	return true
 }
 
-// Does this one type match?
+// Does this type match?
 func matchParamType(expect string, actual types.Type) bool {
 	expect = strings.TrimPrefix(expect, "=")
 	// Overkill but easy.

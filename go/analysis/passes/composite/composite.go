@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package composite defines an Analyzer that checks for unkeyed
 // composite literals.
@@ -62,8 +61,7 @@ func run(pass *analysis.Pass) (any, error) {
 			continue
 		}
 
-		// Find struct type.
-		// (For a type parameter, choose an arbitrary term.)
+		// Find struct type. (For a type parameter, choose an arbitrary term.)
 		typ := pass.TypesInfo.Types[complit].Type
 		if typ == nil {
 			continue // no type info
@@ -87,15 +85,13 @@ func run(pass *analysis.Pass) (any, error) {
 			continue
 		}
 
-		// If there is one value per field,
-		// offer to fill in the field names.
+		// If there is one value per field, offer to fill in the field names.
 		var fixes []analysis.SuggestedFix
 		if len(complit.Elts) == strct.NumFields() {
 			var edits []analysis.TextEdit
 			for i, elt := range complit.Elts {
 				field := strct.Field(i)
-				// We cannot fill in the name of an
-				// exported field from another package.
+				// We cannot fill in the name of an exported field from another package.
 				if !field.Exported() {
 					edits = nil
 					break

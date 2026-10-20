@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package importgraph computes the forward and reverse import
 // dependency graphs for all packages in a Go workspace.
@@ -14,14 +13,6 @@ import (
 )
 
 // A Graph is an import dependency graph, either forward or reverse.
-//
-// The graph maps each node (a package import path) to the set of its
-// successors in the graph.  For a forward graph, this is the set of
-// imported packages (prerequisites); for a reverse graph, it is the set
-// of importing packages (clients).
-//
-// Graph construction inspects all imports in each package's directory,
-// including those in _test.go files, so the resulting graph may be cyclic.
 type Graph map[string]map[string]bool
 
 func (g Graph) addEdge(from, to string) {
@@ -53,12 +44,11 @@ func (g Graph) Search(roots ...string) map[string]bool {
 	return seen
 }
 
-// Build scans the specified Go workspace and builds the forward and
-// reverse import dependency graphs for all its packages.
-// It also returns a mapping from canonical import paths to errors for packages
-// whose loading was not entirely successful.
-// A package may appear in the graph and in the errors mapping.
-// All package paths are canonical and may contain "/vendor/".
+// Build scans the specified Go workspace and builds the forward and reverse
+// import dependency graphs for all its packages. It also returns a mapping
+// from canonical import paths to errors for packages whose loading was not
+// entirely successful. A package may appear in the graph and in the errors
+// mapping. All package paths are canonical and may contain "/vendor/".
 func Build(ctxt *build.Context) (forward, reverse Graph, errors map[string]error) {
 	type importEdge struct {
 		from, to string
@@ -87,24 +77,12 @@ func Build(ctxt *build.Context) (forward, reverse Graph, errors map[string]error
 
 				if err != nil {
 					if _, ok := err.(*build.NoGoError); ok {
-						// empty directory is not an error
 					} else {
 						ch <- pathError{path, err}
 					}
-					// Even in error cases, Import usually returns a package.
 				}
 
-				// absolutize resolves an import path relative
-				// to the current package bp.
-				// The absolute form may contain "vendor".
-				//
-				// The vendoring feature slows down Build by 3×.
-				// Here are timings from a 1400 package workspace:
-				//    1100ms: current code (with vendor check)
-				//     880ms: with a nonblocking cache around ctxt.IsDir
-				//     840ms: nonblocking cache with duplicate suppression
-				//     340ms: original code (no vendor check)
-				// TODO(adonovan): optimize, somehow.
+				// absolutize resolves an import path relative to the current package bp. The absolute form may contain "vendor".
 				memo := make(map[string]string)
 				absolutize := func(path string) string {
 					canon, ok := memo[path]

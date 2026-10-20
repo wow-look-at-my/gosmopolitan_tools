@@ -1,73 +1,16 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Bundle creates a single-source-file version of a source package
-// suitable for inclusion in a particular target package.
+// Bundle creates a single-source-file version of a source package suitable
+// for inclusion in a particular target package.
 //
 // Usage:
 //
 //	bundle [-o file] [-dst path] [-pkg name] [-prefix p] [-import old=new] [-tags build_constraints] <src>
 //
-// The src argument specifies the import path of the package to bundle.
-// The bundling of a directory of source files into a single source file
+// The src argument specifies the import path of the package to bundle. The
+// bundling of a directory of source files into a single source file
 // necessarily imposes a number of constraints.
-// The package being bundled must not use cgo; must not use conditional
-// file compilation, whether with build tags or system-specific file names
-// like code_amd64.go; must not depend on any special comments, which
-// may not be preserved; must not use any assembly sources;
-// must not use renaming imports; and must not use reflection-based APIs
-// that depend on the specific names of types or struct fields.
-//
-// By default, bundle writes the bundled code to standard output.
-// If the -o argument is given, bundle writes to the named file
-// and also includes a “//go:generate” comment giving the exact
-// command line used, for regenerating the file with “go generate.”
-//
-// Bundle customizes its output for inclusion in a particular package, the destination package.
-// By default bundle assumes the destination is the package in the current directory,
-// but the destination package can be specified explicitly using the -dst option,
-// which takes an import path as its argument.
-// If the source package imports the destination package, bundle will remove
-// those imports and rewrite any references to use direct references to the
-// corresponding symbols.
-// Bundle also must write a package declaration in the output and must
-// choose a name to use in that declaration.
-// If the -pkg option is given, bundle uses that name.
-// Otherwise, the name of the destination package is used.
-// Build constraints for the generated file can be specified using the -tags option.
-//
-// To avoid collisions, bundle inserts a prefix at the beginning of
-// every package-level const, func, type, and var identifier in src's code,
-// updating references accordingly. The default prefix is the package name
-// of the source package followed by an underscore. The -prefix option
-// specifies an alternate prefix.
-//
-// Occasionally it is necessary to rewrite imports during the bundling
-// process. The -import option, which may be repeated, specifies that
-// an import of "old" should be rewritten to import "new" instead.
-//
-// # Example
-//
-// Bundle archive/zip for inclusion in cmd/dist:
-//
-//	cd $GOROOT/src/cmd/dist
-//	bundle -o zip.go archive/zip
-//
-// Bundle golang.org/x/net/http2 for inclusion in net/http,
-// prefixing all identifiers by "http2" instead of "http2_", and
-// including a "!nethttpomithttp2" build constraint:
-//
-//	cd $GOROOT/src/net/http
-//	bundle -o h2_bundle.go -prefix http2 -tags '!nethttpomithttp2' golang.org/x/net/http2
-//
-// Update the http2 bundle in net/http:
-//
-//	go generate net/http
-//
-// Update all bundles in the standard library:
-//
-//	go generate -run bundle std
 package main
 
 import (
@@ -178,8 +121,7 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 	if testingOnlyPackagesConfig != nil {
 		*cfg = *testingOnlyPackagesConfig
 	} else {
-		// Bypass default vendor mode, as we need a package not available in the
-		// std module vendor folder.
+		// Bypass default vendor mode, as we need a package not available in the std module vendor folder.
 		cfg.Env = append(os.Environ(), "GOFLAGS=-mod=mod")
 	}
 	cfg.Mode = packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo
@@ -202,11 +144,8 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 		if !objsToUpdate[from] {
 			objsToUpdate[from] = true
 
-			// Renaming a type that is used as an embedded field
-			// requires renaming the field too. e.g.
-			// 	type T int // if we rename this to U..
-			// 	var s struct {T}
-			// 	print(s.T) // ...this must change too
+			// Renaming a type that is used as an embedded field requires renaming the
+			// field too.
 			if _, ok := from.(*types.TypeName); ok {
 				for id, obj := range pkg.TypesInfo.Uses {
 					if obj == from {
@@ -251,21 +190,13 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 
 	fmt.Fprintf(&out, "package %s\n\n", dstpkg)
 
-	// BUG(adonovan,shurcooL): bundle may generate incorrect code
-	// due to shadowing between identifiers and imported package names.
-	//
-	// The generated code will either fail to compile or
-	// (unlikely) compile successfully but have different behavior
-	// than the original package. The risk of this happening is higher
-	// when the original package has renamed imports (they're typically
-	// renamed in order to resolve a shadow inside that particular .go file).
+	// BUG(adonovan,shurcooL).
 
 	// TODO(adonovan,shurcooL):
 	// - detect shadowing issues, and either return error or resolve them
 	// - preserve comments from the original import declarations.
 
-	// pkgStd and pkgExt are sets of printed import specs. This is done
-	// to deduplicate instances of the same import name and path.
+	// pkgStd and pkgExt are sets of printed import specs.
 	var pkgStd = make(map[string]bool)
 	var pkgExt = make(map[string]bool)
 	for _, f := range pkg.Syntax {
@@ -321,9 +252,8 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 			}
 		}
 
-		// For each qualified identifier that refers to the
-		// destination package, remove the qualifier.
-		// The "@@@." strings are removed in postprocessing.
+		// For each qualified identifier that refers to the destination package,
+		// remove the qualifier. The "@@@." strings are removed in postprocessing.
 		ast.Inspect(f, func(n ast.Node) bool {
 			if sel, ok := n.(*ast.SelectorExpr); ok {
 				if id, ok := sel.X.(*ast.Ident); ok {
@@ -348,8 +278,7 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 			}
 		}
 
-		// Pretty-print package-level declarations.
-		// but no package or import declarations.
+		// Pretty-print package-level declarations. but no package or import declarations.
 		var buf bytes.Buffer
 		for _, decl := range f.Decls {
 			if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.IMPORT {
@@ -362,8 +291,7 @@ func bundle(src, dst, dstpkg, prefix, buildTags string) ([]byte, error) {
 
 			buf.Reset()
 			format.Node(&buf, pkg.Fset, &printer.CommentedNode{Node: decl, Comments: f.Comments})
-			// Remove each "@@@." in the output.
-			// TODO(adonovan): not hygienic.
+			// Remove each "@@@." in the output. TODO(adonovan): not hygienic.
 			out.Write(bytes.Replace(buf.Bytes(), []byte("@@@."), nil, -1))
 
 			last = printSameLineComment(&out, f.Comments, pkg.Fset, end)
@@ -447,15 +375,7 @@ func printSameLineComment(out *bytes.Buffer, comments []*ast.CommentGroup, fset 
 }
 
 func quoteArgs(ss []string) []string {
-	// From go help generate:
-	//
-	// > The arguments to the directive are space-separated tokens or
-	// > double-quoted strings passed to the generator as individual
-	// > arguments when it is run.
-	//
-	// > Quoted strings use Go syntax and are evaluated before execution; a
-	// > quoted string appears as a single argument to the generator.
-	//
+	// From go help generate:.
 	var qs []string
 	for _, s := range ss {
 		if s == "" || containsSpace(s) {

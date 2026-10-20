@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package httpresponse defines an Analyzer that checks for mistakes
 // using HTTP responses.
@@ -44,8 +43,7 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
-	// Fast path: if the package doesn't import net/http,
-	// skip the traversal.
+	// Fast path: if the package doesn't import net/http, skip the traversal.
 	if !typesinternal.Imports(pass.Pkg, "net/http") {
 		return nil, nil
 	}
@@ -62,16 +60,14 @@ func run(pass *analysis.Pass) (any, error) {
 			return true // the function call is not related to this check.
 		}
 
-		// Find the innermost containing block, and get the list
-		// of statements starting with the one containing call.
+		// Find the innermost containing block, and get the list of statements starting with the one containing call.
 		stmts, ncalls := restOfBlock(stack)
 		if len(stmts) < 2 {
 			// The call to the http function is the last statement of the block.
 			return true
 		}
 
-		// Skip cases in which the call is wrapped by another (#52661).
-		// Example:  resp, err := checkError(http.Get(url))
+		// Example: resp, err := CheckError(http.Get(url))
 		if ncalls > 1 {
 			return true
 		}
@@ -103,9 +99,9 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// isHTTPFuncOrMethodOnClient checks whether the given call expression is on
-// either a function of the net/http package or a method of http.Client that
-// returns (*http.Response, error).
+// isHTTPFuncOrMethodOnClient checks whether the given call. Expression is
+// on either a function of the net/http package or a method of http.Client
+// that returns (*http.Response, error).
 func isHTTPFuncOrMethodOnClient(info *types.Info, expr *ast.CallExpr) bool {
 	fun, _ := expr.Fun.(*ast.SelectorExpr)
 	sig, ok := info.Types[fun].Type.(*types.Signature)
@@ -115,7 +111,7 @@ func isHTTPFuncOrMethodOnClient(info *types.Info, expr *ast.CallExpr) bool {
 
 	res := sig.Results()
 	if res.Len() != 2 {
-		return false // the function called does not return two values.
+		return false // the function called does not return values.
 	}
 	isPtr, named := typesinternal.ReceiverNamed(res.At(0))
 	if !isPtr || named == nil || !typesinternal.IsTypeNamed(named, "net/http", "Response") {
@@ -141,7 +137,7 @@ func isHTTPFuncOrMethodOnClient(info *types.Info, expr *ast.CallExpr) bool {
 }
 
 // restOfBlock, given a traversal stack, finds the innermost containing
-// block and returns the suffix of its statements starting with the current
+// block. It returns the suffix of its statements starting with the current
 // node, along with the number of call expressions encountered.
 func restOfBlock(stack []ast.Node) ([]ast.Stmt, int) {
 	var ncalls int

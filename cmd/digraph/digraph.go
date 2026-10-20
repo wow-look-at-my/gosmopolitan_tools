@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main // import "golang.org/x/tools/cmd/digraph"
 
@@ -176,8 +175,7 @@ func parse(rd io.Reader) (digraph, error) {
 	g := make(digraph)
 
 	var linenum int
-	// We avoid bufio.Scanner as it imposes a (configurable) limit
-	// on line length, whereas Reader.ReadString does not.
+	// We avoid bufio.Scanner as it imposes a (configurable) limit on line length, whereas Reader.ReadString does not.
 	in := bufio.NewReader(rd)
 	for {
 		linenum++
@@ -442,27 +440,13 @@ func split(line string) ([]string, error) {
 }
 
 // quotedLength returns the length in bytes of the prefix of input that
-// contain a possibly-valid double-quoted Go string literal.
-//
-// On success, n is at least two (""); input[:n] may be passed to
-// strconv.Unquote to interpret its value, and input[n:] contains the
-// rest of the input.
-//
-// On failure, quotedLength returns false, and the entire input can be
-// passed to strconv.Unquote if an informative error message is desired.
-//
-// quotedLength does not and need not detect all errors, such as
-// invalid hex or octal escape sequences, since it assumes
-// strconv.Unquote will be applied to the prefix.  It guarantees only
-// that if there is a prefix of input containing a valid string literal,
-// its length is returned.
-//
-// TODO(adonovan): move this into a strconv-like utility package.
+// contain a possibly-valid double-quoted Go string literal. On failure,
+// quotedLength returns false, and the entire input can be passed to
+// strconv.Unquote if an informative error message is desired.
 func quotedLength(input string) (n int, ok bool) {
 	var offset int
 
-	// next returns the rune at offset, or -1 on EOF.
-	// offset advances to just after that rune.
+	// offset advances to after that rune.
 	next := func() rune {
 		if offset < len(input) {
 			r, size := utf8.DecodeRuneInString(input[offset:])

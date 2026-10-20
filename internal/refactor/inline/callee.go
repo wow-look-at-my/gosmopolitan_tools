@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -54,8 +53,7 @@ type gobCallee struct {
 	Falcon           falconResult           // falcon constraint system
 }
 
-// returnOperandFlags records metadata about a single result expression in a return
-// statement.
+// returnOperandFlags records metadata about a single result expression in a return statement.
 type returnOperandFlags int
 
 const (
@@ -64,7 +62,6 @@ const (
 )
 
 // A freeRef records a reference to a free object. Gob-serializable.
-// (This means free relative to the FuncDecl as a whole, i.e. excluding parameters.)
 type freeRef struct {
 	Offset int // byte offset of the reference relative to the FuncDecl
 	Object int // index into Callee.freeObjs
@@ -76,8 +73,7 @@ type object struct {
 	Kind    string // one of {var,func,const,type,pkgname,nil,builtin}
 	PkgPath string // path of object's package (or imported package if kind="pkgname")
 	PkgName string // name of object's package (or imported package if kind="pkgname")
-	// TODO(rfindley): should we also track LocalPkgName here? Do we want to
-	// preserve the local package name?
+	// Do we want to preserve the local package name?
 	ValidPos bool      // Object.Pos().IsValid()
 	Shadow   shadowMap // shadowing info for the object's refs
 }
@@ -88,17 +84,16 @@ type object struct {
 // Inline, each with a different Caller.
 //
 // This design allows separate analysis of callers and callees in the
-// golang.org/x/tools/go/analysis framework: the inlining information
+// golang.org/x/tools/go/analysis framework. The inlining information
 // about a callee can be recorded as a "fact".
 //
 // The content should be the actual input to the compiler, not the
-// apparent source file according to any //line directives that
-// may be present within it.
+// apparent source file according to any //line directives. Those
+// directives may be present within it.
 func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Package, info *types.Info, decl *ast.FuncDecl, content []byte) (*Callee, error) {
 	checkInfoFields(info)
 
-	// The client is expected to have determined that the callee
-	// is a function with a declaration (not a built-in or var).
+	// The client is expected to have determined that the callee is a function with a declaration (not a built-in or var).
 	fn := info.Defs[decl.Name].(*types.Func)
 	sig := fn.Type().(*types.Signature)
 
@@ -116,16 +111,7 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 		return nil, fmt.Errorf("cannot inline function %s as it has no body", name)
 	}
 
-	// Record the file's Go goVersion so that we don't
-	// inline newer code into file using an older dialect.
-	//
-	// Using the file version is overly conservative.
-	// A more precise solution would be for the type checker to
-	// record which language features the callee actually needs;
-	// see https://go.dev/issue/75726.
-	//
-	// We don't have the ast.File handy, so instead of a
-	// lookup we must scan the entire FileVersions map.
+	// Record the file's Go goVersion so that we don't inline newer code into file using an older dialect.
 	var goVersion string
 	for file, v := range info.FileVersions {
 		if file.Pos() < decl.Pos() && decl.Pos() < file.End() {
@@ -163,8 +149,7 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 			return false
 
 		case *ast.CompositeLit:
-			// Check for struct literals that refer to unexported fields,
-			// whether keyed or unkeyed. (Logic assumes well-typedness.)
+			// Check for struct literals that refer to unexported fields, whether keyed or unkeyed.
 			litType := typeparams.Deref(info.TypeOf(n))
 			if s, ok := typeparams.CoreType(litType).(*types.Struct); ok {
 				if n.Type != nil {
@@ -242,12 +227,9 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 	}
 	visit(decl, stack)
 
-	// Analyze callee body for "return expr" form,
-	// where expr is f() or <-ch. These forms are
-	// safe to inline as a standalone statement.
+	// Analyze callee body for "return expr" form, where expr is f() or <-ch.
 	validForCallStmt := false
 	if len(decl.Body.List) != 1 {
-		// not just a return statement
 	} else if ret, ok := decl.Body.List[0].(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
 		validForCallStmt = func() bool {
 			switch expr := ast.Unparen(ret.Results[0]).(type) {
@@ -257,10 +239,9 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 					return false // conversion T(x)
 				}
 
-				// The only non-void built-in functions that may be
-				// called as a statement are copy and recover
-				// (though arguably a call to recover should never
-				// be inlined as that changes its behavior).
+				// The only non-void built-in functions that may be called as a statement
+				// are copy and recover (though arguably a call to recover should never be
+				// inlined as that changes its behavior).
 				if builtin, ok := callee.(*types.Builtin); ok {
 					return builtin.Name() == "copy" ||
 						builtin.Name() == "recover"
@@ -295,8 +276,7 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 			labels = append(labels, n.Label.Name)
 		case *ast.ReturnStmt:
 
-			// Are implicit assignment conversions
-			// to result variables all trivial?
+			// Are implicit assignment conversions to result variables all trivial?
 			var resultInfo []returnOperandFlags
 			if len(n.Results) > 0 {
 				argInfo := func(i int) (ast.Expr, types.Type) {
@@ -304,7 +284,6 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 					return expr, info.TypeOf(expr)
 				}
 				if len(n.Results) == 1 && sig.Results().Len() > 1 {
-					// Spread return: return f() where f.Results > 1.
 					tuple := info.TypeOf(n.Results[0]).(*types.Tuple)
 					argInfo = func(i int) (ast.Expr, types.Type) {
 						return nil, tuple.At(i).Type()
@@ -340,14 +319,7 @@ func AnalyzeCallee(logf func(string, ...any), fset *token.FileSet, pkg *types.Pa
 		}
 	}
 
-	// Compact content to just the FuncDecl.
-	//
-	// As a space optimization, we don't retain the complete
-	// callee file content; all we need is "package _; func f() { ... }".
-	// This reduces the size of analysis facts.
-	//
-	// Offsets in the callee information are "relocatable"
-	// since they are all relative to the FuncDecl.
+	// Compact content to the FuncDecl.
 
 	content = append([]byte("package _\n"),
 		content[offsetOf(fset, decl.Pos()):offsetOf(fset, decl.End())]...)
@@ -410,18 +382,15 @@ type refInfo struct {
 	Assignable       bool // ref appears in context of assignment to known type
 	IfaceAssignment  bool // ref is being assigned to an interface
 	AffectsInference bool // ref type may affect type inference
-	// IsSelectionOperand indicates whether the parameter reference is the
-	// operand of a selection (param.f). If so, and param's argument is itself
-	// a receiver parameter (a common case), we don't need to desugar (&v or *ptr)
-	// the selection: if param.Method is a valid selection, then so is param.fieldOrMethod.
+	// IsSelectionOperand indicates whether the parameter reference is the operand of a selection (param.f).
 	IsSelectionOperand bool
 }
 
 // analyzeParams computes information about parameters of the function declared by decl,
 // including a simple "address taken" escape analysis.
 //
-// It returns two new arrays, one of the receiver and parameters, and
-// the other of the result variables of the function.
+// It returns new arrays, one of the receiver and parameters, and the
+// other of the result variables of the function.
 //
 // The input must be well-typed.
 func analyzeParams(logf func(string, ...any), fset *token.FileSet, info *types.Info, decl *ast.FuncDecl) (params, results []*paramInfo, effects []int, _ falconResult) {
@@ -462,11 +431,7 @@ func analyzeParams(logf func(string, ...any), fset *token.FileSet, info *types.I
 		}
 	})
 
-	// Record locations of all references to parameters.
-	// And record the set of intervening definitions for each parameter.
-	//
-	// TODO(adonovan): combine this traversal with the one that computes
-	// FreeRefs. The tricky part is that calleefx needs this one first.
+	// Record locations of all references to parameters. And record the set of intervening definitions for each parameter.
 	fieldObjs := fieldObjs(sig)
 	var stack []ast.Node
 	stack = append(stack, decl.Type) // for scope of function itself
@@ -475,17 +440,7 @@ func analyzeParams(logf func(string, ...any), fset *token.FileSet, info *types.I
 			if v, ok := info.Uses[id].(*types.Var); ok {
 				if pinfo, ok := paramInfos[v]; ok {
 					// Record ref information, and any intervening (shadowing) names.
-					//
-					// If the parameter v has an interface type, and the reference id
-					// appears in a context where assignability rules apply, there may be
-					// an implicit interface-to-interface widening. In that case it is
-					// not necessary to insert an explicit conversion from the argument
-					// to the parameter's type.
-					//
-					// Contrapositively, if param is not an interface type, then the
-					// assignment may lose type information, for example in the case that
-					// the substituted expression is an untyped constant or unnamed type.
-					stack = append(stack, n) // (the two calls below want n)
+					stack = append(stack, n) // (both calls below want n)
 					assignable, ifaceAssign, affectsInference := analyzeAssignment(info, stack)
 					ref := refInfo{
 						Offset:             int(n.Pos() - decl.Pos()),
@@ -502,8 +457,7 @@ func analyzeParams(logf func(string, ...any), fset *token.FileSet, info *types.I
 		return true
 	})
 
-	// Compute subset and order of parameters that are strictly evaluated.
-	// (Depends on Refs computed above.)
+	// Compute subset and order of parameters that are strictly evaluated. (Depends on Refs computed above.)
 	effects = calleefx(info, decl.Body, paramInfos)
 	logf("effects list = %v", effects)
 
@@ -528,10 +482,10 @@ func analyzeTypeParams(_ logger, fset *token.FileSet, info *types.Info, decl *as
 	collect(sig.RecvTypeParams())
 	collect(sig.TypeParams())
 
-	// Find references.
-	// We don't care about most of the properties that matter for parameter references:
-	// a type is immutable, cannot have its address taken, and does not undergo conversions.
-	// TODO(jba): can we nevertheless combine this with the traversal in analyzeParams?
+	// Find references. We don't care about most of the properties that matter for parameter
+	// references. A type is immutable, cannot have its address taken, and does not undergo
+	// conversions. TODO(jba): can we nevertheless combine this with the traversal in
+	// analyzeParams?
 	visit := func(n ast.Node, stack []ast.Node) bool {
 		if id, ok := n.(*ast.Ident); ok {
 			if v, ok := info.Uses[id].(*types.TypeName); ok {
@@ -571,31 +525,13 @@ func signature(fset *token.FileSet, info *types.Info, decl *ast.FuncDecl) *types
 // attributes of the innermost expression.
 //
 // In all cases we 'fail closed' when we cannot detect (or for simplicity
-// choose not to detect) the condition in question, meaning we err on the side
-// of the more restrictive rule. This is noted for each result below.
-//
-//   - assignable reports whether the expression is used in a position where
-//     assignability rules apply, such as in an actual assignment, as call
-//     argument, or in a send to a channel. Defaults to 'false'. If assignable
-//     is false, the other two results are irrelevant.
-//   - ifaceAssign reports whether that assignment is to an interface type.
-//     This is important as we want to preserve the concrete type in that
-//     assignment. Defaults to 'true'. Notably, if the assigned type is a type
-//     parameter, we assume that it could have interface type.
-//   - affectsInference is (somewhat vaguely) defined as whether or not the
-//     type of the operand may affect the type of the surrounding syntax,
-//     through type inference. It is infeasible to completely reverse engineer
-//     type inference, so we over approximate: if the expression is an argument
-//     to a call to a generic function (but not method!) that uses type
-//     parameters, assume that unification of that argument may affect the
-//     inferred types.
+// choose not to detect) the condition. In question, meaning we err on the
+// side of the more restrictive rule. This is noted for each result below.
 func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAssign, affectsInference bool) {
 	remaining, parent, expr := exprContext(stack)
 	if parent == nil {
 		return false, false, false
 	}
-
-	// TODO(golang/go#70638): simplify when types.Info records implicit conversions.
 
 	// Types do not need to match for assignment to a variable.
 	if assign, ok := parent.(*ast.AssignStmt); ok {
@@ -609,8 +545,7 @@ func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAss
 					// TODO: We could handle spread calls here, but in current usage expr
 					// is an ident.
 					if id, _ := assign.Lhs[i].(*ast.Ident); id != nil && info.Defs[id] != nil {
-						// Types must match for a defining identifier in a short variable
-						// declaration.
+						// Types must match for a defining identifier in a short variable declaration.
 						return false, false, false
 					}
 					// In all other cases, types should be known.
@@ -643,16 +578,13 @@ func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAss
 		}
 	}
 
-	// Types do not need to match for composite literal keys, values, or
-	// fields.
+	// Types do not need to match for composite literal keys, values, or fields.
 	if kv, ok := parent.(*ast.KeyValueExpr); ok {
 		var under types.Type
 		if len(remaining) > 0 {
 			if complit, ok := remaining[len(remaining)-1].(*ast.CompositeLit); ok {
 				if typ := info.TypeOf(complit); typ != nil {
-					// Unpointer to allow for pointers to slices or arrays, which are
-					// permitted as the types of nested composite literals without a type
-					// name.
+					// Unpointer to allow for pointers to slices or arrays, which are permitted as the types of nested composite literals without a type name.
 					under = typesinternal.Unpointer(typeparams.CoreType(typ))
 				}
 			}
@@ -685,8 +617,7 @@ func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAss
 				if typ == nil {
 					return true, true, false
 				}
-				// As in the KeyValueExpr case above, unpointer to handle pointers to
-				// array/slice literals.
+				// As in the KeyValueExpr case above, unpointer to handle pointers to array/slice literals.
 				under := typesinternal.Unpointer(typeparams.CoreType(typ))
 				switch under := under.(type) {
 				case interface{ Elem() types.Type }: // T{expr}: assign to map/array/slice element
@@ -713,9 +644,9 @@ func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAss
 		}
 	}
 
-	// Types do not need to match for an argument to a call, unless the
-	// corresponding parameter has type parameters, as in that case the
-	// argument type may affect inference.
+	// Types do not need to match for an argument to a call. This
+	// applies unless the corresponding parameter has type parameters,
+	// as in that case the argument type may affect inference.
 	if call, ok := parent.(*ast.CallExpr); ok {
 		if _, ok := isConversion(info, call); ok {
 			return false, false, false // redundant conversions are handled at the call site
@@ -735,37 +666,7 @@ func analyzeAssignment(info *types.Info, stack []ast.Node) (assignable, ifaceAss
 					affectsInference := false
 					switch callee := typeutil.Callee(info, call).(type) {
 					case *types.Builtin:
-						// Consider this litmus test:
-						//
-						//   func f(x int64) any { return max(x) }
-						//   func main() { fmt.Printf("%T", f(42)) }
-						//
-						// If we lose the implicit conversion from untyped int
-						// to int64, the type inferred for the max(x) call changes,
-						// resulting in a different dynamic behavior: it prints
-						// int, not int64.
-						//
-						// Inferred result type affected:
-						//    new
-						//    complex, real, imag
-						//    min, max
-						//
-						// Dynamic behavior change:
-						//    append         -- dynamic type of append([]any(nil), x)[0]
-						//    delete(m, x)   -- dynamic key type where m is map[any]unit
-						//    panic          -- dynamic type of panic value
-						//
-						// Unaffected:
-						//    recover
-						//    make
-						//    len, cap
-						//    clear
-						//    close
-						//    copy
-						//    print, println  -- only uses underlying types (?)
-						//
-						// The dynamic type cases are all covered by
-						// the ifaceAssign logic.
+						// Consider this litmus test.
 						switch callee.Name() {
 						case "new", "complex", "real", "imag", "min", "max":
 							affectsInference = true
@@ -802,8 +703,8 @@ func paramTypeAtIndex(sig *types.Signature, call *ast.CallExpr, index int) types
 }
 
 // exprContext returns the innermost parent->child expression nodes for the
-// given outer-to-inner stack, after stripping parentheses, along with the
-// remaining stack up to the parent node.
+// given outer-to-inner stack. This happens after stripping parentheses,
+// along with the remaining stack up to the parent node.
 //
 // If no such context exists, returns (nil, nil, nil).
 func exprContext(stack []ast.Node) (remaining []ast.Node, parent ast.Node, expr ast.Expr) {
@@ -838,34 +739,15 @@ func isSelectionOperand(stack []ast.Node) bool {
 	return ok && sel.X == expr
 }
 
-// A shadowMap records information about shadowing at any of the parameter's
-// references within the callee decl.
-//
-// For each name shadowed at a reference to the parameter within the callee
-// body, shadow map records the 1-based index of the callee decl parameter
-// causing the shadowing, or -1, if the shadowing is not due to a callee decl.
-// A value of zero (or missing) indicates no shadowing. By convention,
-// self-shadowing is excluded from the map.
-//
-// For example, in the following callee
-//
-//	func f(a, b int) int {
-//		c := 2 + b
-//		return a + c
-//	}
-//
-// the shadow map of a is {b: 2, c: -1}, because b is shadowed by the 2nd
-// parameter. The shadow map of b is {a: 1}, because c is not shadowed at the
-// use of b.
+// A shadowMap records information about shadowing at any of the parameter's references within the callee decl.
 type shadowMap map[string]int
 
-// add returns the [shadowMap] augmented by the set of names
-// locally shadowed at the location of the reference in the callee
-// (identified by the stack). The name of the reference itself is
-// excluded.
+// add returns the [shadowMap] augmented by the set of names locally shadowed
+// at the location of the reference in the callee (identified by the stack).
+// The name of the reference itself is excluded.
 //
-// These shadowed names may not be used in a replacement expression
-// for the reference.
+// These shadowed names may not be used in a replacement expression for the
+// reference.
 func (s shadowMap) add(info *types.Info, paramIndexes map[types.Object]int, exclude string, stack []ast.Node) shadowMap {
 	for _, n := range stack {
 		if scope := scopeFor(info, n); scope != nil {

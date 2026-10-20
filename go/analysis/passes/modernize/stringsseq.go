@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -31,9 +30,9 @@ var StringsSeqAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_stringsseq",
 }
 
-// stringsseq offers a fix to replace a call to strings.Split with
-// SplitSeq or strings.Fields with FieldsSeq
-// when it is the operand of a range loop, either directly:
+// stringsseq offers a fix to replace. A call to strings.Split
+// with SplitSeq or strings.Fields with FieldsSeq when it is the
+// operand of a range loop, either directly:
 //
 //	for _, line := range strings.Split() {...}
 //
@@ -69,8 +68,7 @@ func stringsseq(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			// Find the call operand of the range statement,
-			// whether direct or indirect.
+			// Find the call operand of the range statement, whether direct or indirect.
 			call, ok := rng.X.(*ast.CallExpr)
 			if !ok {
 				if id, ok := rng.X.(*ast.Ident); ok {
@@ -83,10 +81,7 @@ func stringsseq(pass *analysis.Pass) (any, error) {
 								len(assign.Rhs) == 1 &&
 								info.Defs[assign.Lhs[0].(*ast.Ident)] == v &&
 								soleUseIs(index, v, id) {
-								// Have:
-								//    lines := ...
-								//    for _, line := range lines {...}
-								// and no other uses of lines.
+								// Have: lines := ... for _, line := range lines {...} and no other uses of lines.
 								call, _ = assign.Rhs[0].(*ast.CallExpr)
 							}
 						}
@@ -97,10 +92,6 @@ func stringsseq(pass *analysis.Pass) (any, error) {
 			if call != nil {
 				var edits []analysis.TextEdit
 				if rng.Key != nil {
-					// Delete (blank) RangeStmt.Key:
-					//  for _, line := -> for line :=
-					//  for _, _    := -> for
-					//  for _       := -> for
 					end := rng.Range
 					if rng.Value != nil {
 						end = rng.Value.Pos()

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package nilness
 
@@ -39,17 +38,14 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 func runFunc(pass *analysis.Pass, fn *ssa.Function) {
-	// Skip cgo-generated functions annotated with
-	// //go:cgo_unsafe_args such as _cgo_cmalloc since
-	// they behave in magical ways not captured by the
-	// SSA representation, leading to false positives.
+	// Skip cgo-generated functions annotated with //go:cgo_unsafe_args such as
+	// _cgo_cmalloc since they behave in magical ways not captured by the SSA.
 	if hasCgoUnsafeArgs(fn) {
 		return
 	}
 
 	reportf := func(category string, pos token.Pos, format string, args ...any) {
-		// We ignore nil-checking ssa.Instructions
-		// that don't correspond to syntax.
+		// We ignore nil-checking ssa.Instructions that don't correspond to syntax.
 		if pos.IsValid() {
 			pass.Report(analysis.Diagnostic{
 				Pos:      pos,
@@ -66,12 +62,7 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 		}
 	}
 
-	// visit visits reachable blocks of the CFG in dominance order,
-	// maintaining a stack of dominating nilness facts.
-	//
-	// By traversing the dom tree, we can pop facts off the stack as
-	// soon as we've visited a subtree.  Had we traversed the CFG,
-	// we would need to retain the set of facts for each block.
+	// visit visits reachable blocks of the CFG in dominance order, maintaining a stack of dominating nilness facts.
 	seen := make([]bool, len(fn.Blocks)) // seen[i] means visit should ignore block i
 	var visit func(b *ssa.BasicBlock, stack []fact)
 	visit = func(b *ssa.BasicBlock, stack []fact) {
@@ -150,16 +141,14 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 		}
 
 		// For nil comparison blocks, report an error if the condition
-		// is degenerate, and push a nilness fact on the stack when
-		// visiting its true and false successor blocks.
+		// is degenerate, and push a nilness fact on the stack. This
+		// happens when visiting its true and false successor blocks.
 		if binop, tsucc, fsucc := eq(b); binop != nil {
 			xnil := nilnessOf(stack, binop.X)
 			ynil := nilnessOf(stack, binop.Y)
 
 			if ynil != unknown && xnil != unknown && (xnil == isnil || ynil == isnil) {
-				// Degenerate condition:
-				// the nilness of both operands is known,
-				// and at least one of them is nil.
+				// Degenerate condition: the nilness of both operands is known, and at least one of them is nil.
 				var adj string
 				if (xnil == ynil) == (binop.Op == token.EQL) {
 					adj = "tautological"
@@ -168,11 +157,7 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 				}
 				reportf("cond", binop.Pos(), "%s condition: %s %s %s", adj, xnil, binop.Op, ynil)
 
-				// If tsucc's or fsucc's sole incoming edge is impossible,
-				// it is unreachable.  Prune traversal of it and
-				// all the blocks it dominates.
-				// (We could be more precise with full dataflow
-				// analysis of control-flow joins.)
+				// If tsucc's or fsucc's sole incoming edge is impossible, it is unreachable.
 				var skip *ssa.BasicBlock
 				if xnil == ynil {
 					skip = fsucc
@@ -192,20 +177,15 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 			if xnil == isnil || ynil == isnil {
 				var newFacts facts
 				if xnil == isnil {
-					// x is nil, y is unknown:
-					// t successor learns y is nil.
+					// x is nil, y is unknown: t successor learns y is nil.
 					newFacts = expandFacts(fact{binop.Y, isnil})
 				} else {
-					// y is nil, x is unknown:
-					// t successor learns x is nil.
+					// y is nil, x is unknown: t successor learns x is nil.
 					newFacts = expandFacts(fact{binop.X, isnil})
 				}
 
 				for _, d := range b.Dominees() {
-					// Successor blocks learn a fact
-					// only at non-critical edges.
-					// (We could do be more precise with full dataflow
-					// analysis of control-flow joins.)
+					// Successor blocks learn a fact only at non-critical edges.
 					s := stack
 					if len(d.Preds) == 1 {
 						if d == tsucc {
@@ -224,8 +204,7 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 		//
 		// 	if ptr, ok := x.(*T); ok { ... } else { fsucc }
 		//
-		// the fsucc block learns that ptr == nil,
-		// since that's its zero value.
+		// the fsucc block learns that ptr == nil, since that's its zero value.
 		if If, ok := b.Instrs[len(b.Instrs)-1].(*ssa.If); ok {
 			// Handle "if ok" and "if !ok" variants.
 			cond, fsucc := If.Cond, b.Succs[1]
@@ -233,11 +212,6 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 				cond, fsucc = unop.X, b.Succs[0]
 			}
 
-			// Match pattern:
-			//   t0 = typeassert (pointerlike)
-			//   t1 = extract t0 #0  // ptr
-			//   t2 = extract t0 #1  // ok
-			//   if t2 goto tsucc, fsucc
 			if extract1, ok := cond.(*ssa.Extract); ok && extract1.Index == 1 {
 				if assert, ok := extract1.Tuple.(*ssa.TypeAssert); ok &&
 					isNillable(assert.AssertedType) {
@@ -261,9 +235,9 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 		}
 	}
 
-	// Visit the entry block.  No need to visit fn.Recover.
+	// Visit the entry block. No need to visit fn.Recover.
 	if fn.Blocks != nil {
-		visit(fn.Blocks[0], make([]fact, 0, 20)) // 20 is plenty
+		visit(fn.Blocks[0], make([]fact, 0, 20))
 	}
 }
 
@@ -295,14 +269,6 @@ func nilnessOf(stack []fact, v ssa.Value) nilness {
 	switch v := v.(type) {
 	// unwrap ChangeInterface and Slice values recursively, to detect if underlying
 	// values have any facts recorded or are otherwise known with regard to nilness.
-	//
-	// This work must be in addition to expanding facts about
-	// ChangeInterfaces during inference/fact gathering because this covers
-	// cases where the nilness of a value is intrinsic, rather than based
-	// on inferred facts, such as a zero value interface variable. That
-	// said, this work alone would only inform us when facts are about
-	// underlying values, rather than outer values, when the analysis is
-	// transitive in both directions.
 	case *ssa.ChangeInterface:
 		if underlying := nilnessOf(stack, v.X); underlying != unknown {
 			return underlying
@@ -314,16 +280,12 @@ func nilnessOf(stack []fact, v ssa.Value) nilness {
 			return isnonnil
 		}
 
-		// A MakeInterface of a type parameter is non-nil if
-		// the type parameter cannot be instantiated as an
-		// interface type (#66835).
 		if terms, err := typeparams.NormalTerms(tparam.Constraint()); err == nil && len(terms) > 0 {
 			return isnonnil
 		}
 
-		// If the type parameter can be instantiated as an
-		// interface (and thus also as a concrete type),
-		// we can't determine the nilness.
+		// If the type parameter can be instantiated as an interface (and thus also
+		// as a concrete type), we can't determine the nilness.
 
 	case *ssa.Slice:
 		if underlying := nilnessOf(stack, v.X); underlying != unknown {
@@ -333,16 +295,10 @@ func nilnessOf(stack []fact, v ssa.Value) nilness {
 		nn := nilnessOf(stack, v.X)
 		if slice2ArrayPtrLen(v) > 0 {
 			if nn == isnil {
-				// We know that *(*[1]byte)(nil) is going to panic because of the
-				// conversion. So return unknown to the caller, prevent useless
-				// nil deference reporting due to * operator.
+				// We know that *(*[1]byte)(nil) is going to panic because of the conversion.
 				return unknown
 			}
-			// Otherwise, the conversion will yield a non-nil pointer to array.
-			// Note that the instruction can still panic if array length greater
-			// than slice length. If the value is used by another instruction,
-			// that instruction can assume the panic did not happen when that
-			// instruction is reached.
+			// Otherwise, the conversion will yield a non-nil pointer to array. the instruction can still panic if array length greater than slice length.
 			return isnonnil
 		}
 		// In case array length is zero, the conversion result depends on nilness of the slice.
@@ -403,23 +359,7 @@ func eq(b *ssa.BasicBlock) (op *ssa.BinOp, tsucc, fsucc *ssa.BasicBlock) {
 }
 
 // expandFacts takes a single fact and returns the set of facts that can be
-// known about it or any of its related values. Some operations, like
-// ChangeInterface, have transitive nilness, such that if you know the
-// underlying value is nil, you also know the value itself is nil, and vice
-// versa. This operation allows callers to match on any of the related values
-// in analyses, rather than just the one form of the value that happened to
-// appear in a comparison.
-//
-// This work must be in addition to unwrapping values within nilnessOf because
-// while this work helps give facts about transitively known values based on
-// inferred facts, the recursive check within nilnessOf covers cases where
-// nilness facts are intrinsic to the underlying value, such as a zero value
-// interface variables.
-//
-// ChangeInterface is the only expansion currently supported, but others, like
-// Slice, could be added. At this time, this tool does not check slice
-// operations in a way this expansion could help. See
-// https://play.golang.org/p/mGqXEp7w4fR for an example.
+// known about it or any of its related values.
 func expandFacts(f fact) []fact {
 	ff := []fact{f}
 
@@ -480,14 +420,6 @@ func isRangeIndex(instr *ssa.IndexAddr) bool {
 	//
 	//      n = len(x)
 	//      jump loop
-	// loop:                                                "rangeindex.loop"
-	//      phi = φ(-1, incr) #rangeindex
-	//      incr = phi + 1
-	//      cond = incr < n
-	//      if cond goto body else done
-	// body:                                                "rangeindex.body"
-	//      instr = &x[incr]
-	//      ...
 	// done:
 	if incr, ok := instr.Index.(*ssa.BinOp); ok && incr.Op == token.ADD {
 		if b := incr.Block(); b.Comment == "rangeindex.loop" {

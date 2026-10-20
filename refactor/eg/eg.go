@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package eg implements the example-based refactoring tool whose
 // command-line is defined in golang.org/x/tools/cmd/eg.
@@ -182,9 +181,7 @@ func NewTransformer(fset *token.FileSet, tmplPkg *types.Package, tmplFile *ast.F
 
 	for _, imp := range tmplFile.Imports {
 		if imp.Name != nil && imp.Name.Name == "." {
-			// Dot imports are currently forbidden.  We
-			// make the simplifying assumption that all
-			// imports are regular, without local renames.
+			// Dot imports are forbidden. We make the simplifying assumption that all imports are regular, without local renames.
 			return nil, fmt.Errorf("dot-import (of %s) in template", imp.Path.Value)
 		}
 	}
@@ -214,27 +211,11 @@ func NewTransformer(fset *token.FileSet, tmplPkg *types.Package, tmplFile *ast.F
 		wildcards[v] = true
 	}
 
-	// checkExprTypes returns an error if Tb (type of before()) is not
-	// safe to replace with Ta (type of after()).
-	//
-	// Only superficial checks are performed, and they may result in both
-	// false positives and negatives.
-	//
-	// Ideally, we would only require that the replacement be assignable
-	// to the context of a specific pattern occurrence, but the type
-	// checker doesn't record that information and it's complex to deduce.
-	// A Go type cannot capture all the constraints of a given expression
-	// context, which may include the size, constness, signedness,
-	// namedness or constructor of its type, and even the specific value
-	// of the replacement.  (Consider the rule that array literal keys
-	// must be unique.)  So we cannot hope to prove the safety of a
-	// transformation in general.
+	// Only superficial checks are performed, and they may result in both false positives and negatives.
 	Tb := tmplInfo.TypeOf(before)
 	Ta := tmplInfo.TypeOf(after)
 	if types.AssignableTo(Tb, Ta) {
-		// safe: replacement is assignable to pattern.
 	} else if tuple, ok := Tb.(*types.Tuple); ok && tuple.Len() == 0 {
-		// safe: pattern has void type (must appear in an ExprStmt).
 	} else {
 		return nil, fmt.Errorf("%s is not a safe replacement for %s", Ta, Tb)
 	}
@@ -251,10 +232,9 @@ func NewTransformer(fset *token.FileSet, tmplPkg *types.Package, tmplFile *ast.F
 		afterStmts:     afterStmts,
 	}
 
-	// Combine type info from the template and input packages, and
-	// type info for the synthesized ASTs too.  This saves us
-	// having to book-keep where each ast.Node originated as we
-	// construct the resulting hybrid AST.
+	// Combine type info from the template and input packages, and type info for
+	// the synthesized ASTs too. This saves us having to book-keep where each
+	// ast.Node originated as we construct the resulting hybrid AST.
 	tr.info = &types.Info{
 		Types:      make(map[ast.Expr]types.TypeAndValue),
 		Defs:       make(map[*ast.Ident]types.Object),

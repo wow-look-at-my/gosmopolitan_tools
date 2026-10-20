@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package unitchecker_test
 
@@ -29,29 +28,14 @@ import (
 
 // TestExampleSeparateAnalysis demonstrates the principle of separate
 // analysis, the distribution of units of type-checking and analysis
-// work across several processes, using serialized summaries to
-// communicate between them.
+// work across several processes. That TestExampleSeparateAnalysis is
+// using serialized summaries to communicate between them.
 //
-// It uses two different kinds of task, "manager" and "worker":
+// It uses different kinds of task, "manager" and "worker":
 //
 //   - The manager computes the graph of package dependencies, and makes
 //     a request to the worker for each package. It does not parse,
 //     type-check, or analyze Go code. It is analogous "go vet".
-//
-//   - The worker, which contains the Analyzers, reads each request,
-//     loads, parses, and type-checks the files of one package,
-//     applies all necessary analyzers to the package, then writes
-//     its results to a file. It is a unitchecker-based driver,
-//     analogous to the program specified by go vet -vettool= flag.
-//
-// In practice these would be separate executables, but for simplicity
-// of this example they are provided by one executable in two
-// different modes: the Example function is the manager, and the same
-// executable invoked with ENTRYPOINT=worker is the worker.
-// (See TestIntegration for how this happens.)
-//
-// Unfortunately this can't be a true Example because of the skip,
-// which requires a testing.T.
 func TestExampleSeparateAnalysis(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
@@ -105,19 +89,15 @@ func MyPrintf(format string, args ...any) {
 		t.Fatal("there were errors among loaded packages")
 	}
 
-	// Now we have loaded the import graph,
-	// let's begin the proper work of the manager.
+	// Now we have loaded the import graph, let's begin the proper work of the manager.
 
-	// Gather root packages. They will get all analyzers,
-	// whereas dependencies get only the subset that
-	// produce facts or are required by them.
+	// Gather root packages.
 	roots := make(map[*packages.Package]bool)
 	for _, pkg := range pkgs {
 		roots[pkg] = true
 	}
 
-	// nextID generates sequence numbers for each unit of work.
-	// We use it to create names of temporary files.
+	// nextID generates sequence numbers for each unit of work. We use it to create names of temporary files.
 	var nextID atomic.Int32
 
 	var allDiagnostics []string
@@ -129,10 +109,7 @@ func MyPrintf(format string, args ...any) {
 			return
 		}
 
-		// Choose a unique prefix for temporary files
-		// (.cfg .vetx) produced by this package.
-		// We stow it in an otherwise unused field of
-		// Package so it can be accessed by our importers.
+		// Choose a unique prefix for temporary files (.cfg .vetx) produced by this package.
 		prefix := fmt.Sprintf("%s/%d", tmpdir, nextID.Add(1))
 		pkg.ExportFile = prefix
 
@@ -214,8 +191,7 @@ func MyPrintf(format string, args ...any) {
 		}
 	})
 
-	// Observe that the example produces a fact-based diagnostic
-	// from separate analysis of "main", "lib", and "fmt":
+	// Observe that the example produces a fact-based diagnostic from separate analysis of "main", "lib", and "fmt":
 
 	const want = `/main/main.go:6:16: [printf] separate/lib.MyPrintf format %s has arg 123 of wrong type int`
 	sort.Strings(allDiagnostics)

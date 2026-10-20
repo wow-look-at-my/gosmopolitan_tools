@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ifaceassert
 
@@ -42,7 +41,6 @@ func assertableTo(free *typeparams.Free, v, t types.Type) *types.Func {
 	}
 
 	// Mitigations for interface comparisons and generics.
-	// TODO(https://github.com/golang/go/issues/50658): Support more precise conclusion.
 	if free.Has(V) || free.Has(T) {
 		return nil
 	}

@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
@@ -122,24 +121,7 @@ func mayFail(obj types.Object) bool {
 		return false // exported package-level non-types
 	}
 
-	// The remaining rules are inaccurate: clearly,
-	// - local interface methods,
-	// - params/results of local functions, and
-	// - fields of local structs
-	// cannot have object paths.
-	// So don't enforce them for now.
-	// TODO(adonovan): clarify the documentation and update this check.
-	//
-	// if fn, ok := obj.(*types.Func); ok && fn.Signature().Recv() != nil {
-	// 	return false // methods
-	// }
-	// if v, ok := obj.(*types.Var); ok {
-	// 	case types.ParamVar, types.ResultVar, types.RecvVar:
-	// 		return false // parameter and result variables
-	// 	case types.FieldVar:
-	// 		return false // struct fields
-	// 	}
-	// }
+	// The remaining rules are inaccurate:, - local interface methods, - params/results of local functions, and - fields of local structs cannot have object paths.
 
 	return true
 }

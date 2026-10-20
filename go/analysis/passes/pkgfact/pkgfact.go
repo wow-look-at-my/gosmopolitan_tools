@@ -1,26 +1,20 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The pkgfact package is a demonstration and test of the package fact
-// mechanism.
-//
-// The output of the pkgfact analysis is a set of key/values pairs
-// gathered from the analyzed package and its imported dependencies.
-// Each key/value pair comes from a top-level constant declaration
-// whose name starts and ends with "_".  For example:
+// mechanism. The analysis output is a set of key/value pairs gathered from
+// the analyzed package and its imported dependencies. Each pair comes from a
+// top-level constant whose name starts and ends with "_". For example:
 //
 //	package p
-//
 //	const _greeting_  = "hello"
 //	const _audience_  = "world"
 //
-// the pkgfact analysis output for package p would be:
+// the analysis output for package p would be:
 //
 //	{"greeting": "hello", "audience": "world"}.
 //
-// In addition, the analysis reports a diagnostic at each import
-// showing which key/value pairs it contributes.
+// A diagnostic at each import shows which pairs it contributes.
 package pkgfact
 
 import (
@@ -44,10 +38,7 @@ var Analyzer = &analysis.Analyzer{
 	ResultType: reflect.TypeFor[map[string]string](),
 }
 
-// A pairsFact is a package-level fact that records
-// a set of key=value strings accumulated from constant
-// declarations in this package and its dependencies.
-// Elements are ordered by keys, which are unique.
+// A pairsFact is a package-level fact that records a set of key=value strings accumulated from constant declarations in this package and its dependencies.
 type pairsFact []string
 
 func (f *pairsFact) AFact()         {}

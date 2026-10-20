@@ -1,6 +1,5 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -11,34 +10,12 @@ import (
 	"sort"
 )
 
-// An ApplyFunc is invoked by Apply for each node n, even if n is nil,
-// before and/or after the node's children, using a Cursor describing
-// the current node and providing operations on it.
-//
-// The return value of ApplyFunc controls the syntax tree traversal.
-// See Apply for details.
+// An ApplyFunc is invoked by Apply for each node n, even if n is nil, before and/or after the node's children.
 type ApplyFunc func(*Cursor) bool
 
-// Apply traverses a syntax tree recursively, starting with root,
-// and calling pre and post for each node as described below.
-// Apply returns the syntax tree, possibly modified.
-//
-// If pre is not nil, it is called for each node before the node's
-// children are traversed (pre-order). If pre returns false, no
-// children are traversed, and post is not called for that node.
-//
-// If post is not nil, and a prior call of pre didn't return false,
-// post is called for each node after its children are traversed
-// (post-order). If post returns false, traversal is terminated and
-// Apply returns immediately.
-//
-// Only fields that refer to AST nodes are considered children;
-// i.e., token.Pos, Scopes, Objects, and fields of basic types
-// (strings, etc.) are ignored.
-//
-// Children are traversed in the order in which they appear in the
-// respective node's struct definition. A package's files are
-// traversed in the filenames' alphabetical order.
+// Apply traverses a syntax tree recursively, starting with root, and calling
+// pre and post for each node. Apply returns the syntax tree, possibly
+// modified.
 func Apply(root ast.Node, pre, post ApplyFunc) (result ast.Node) {
 	parent := &struct{ ast.Node }{root}
 	defer func() {
@@ -55,22 +32,6 @@ func Apply(root ast.Node, pre, post ApplyFunc) (result ast.Node) {
 var abort = new(int) // singleton, to signal termination of Apply
 
 // A Cursor describes a node encountered during Apply.
-// Information about the node and its parent is available
-// from the Node, Parent, Name, and Index methods.
-//
-// If p is a variable of type and value of the current parent node
-// c.Parent(), and f is the field identifier with name c.Name(),
-// the following invariants hold:
-//
-//	p.f            == c.Node()  if c.Index() <  0
-//	p.f[c.Index()] == c.Node()  if c.Index() >= 0
-//
-// The methods Replace, Delete, InsertBefore, and InsertAfter
-// can be used to change the AST without disrupting Apply.
-//
-// This type is not to be confused with [inspector.Cursor] from
-// package [golang.org/x/tools/go/ast/inspector], which provides
-// stateless navigation of immutable syntax trees.
 type Cursor struct {
 	parent ast.Node
 	name   string
@@ -85,14 +46,10 @@ func (c *Cursor) Node() ast.Node { return c.node }
 func (c *Cursor) Parent() ast.Node { return c.parent }
 
 // Name returns the name of the parent Node field that contains the current Node.
-// If the parent is a *ast.Package and the current Node is a *ast.File, Name returns
-// the filename for the current Node.
 func (c *Cursor) Name() string { return c.name }
 
 // Index reports the index >= 0 of the current Node in the slice of Nodes that
-// contains it, or a value < 0 if the current Node is not part of a slice.
-// The index of the current node changes if InsertBefore is called while
-// processing the current node.
+// contains it.
 func (c *Cursor) Index() int {
 	if c.iter != nil {
 		return c.iter.index

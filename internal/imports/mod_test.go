@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -41,8 +40,8 @@ module x
 }
 
 // Tests that we handle a nested module. This is different from other tests
-// where the module is in scope -- here we have to figure out the import path
-// without any help from go list.
+// where the module is in scope -- here we have to figure out the import
+// path. This holds without any help from go list.
 func TestScanOutOfScopeNestedModule(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -62,13 +61,10 @@ package x`, "")
 	if pkg != nil && !strings.HasSuffix(filepath.ToSlash(pkg.dir), "main/v2") {
 		t.Errorf("x/v2 was found in %v, wanted .../main/v2", pkg.dir)
 	}
-	// We can't load the package name from the import path, but that should
-	// be okay -- if we end up adding this result, we'll add it with a name
-	// if necessary.
 }
 
-// Tests that we don't find a nested module contained in a local replace target.
-// The code for this case is too annoying to write, so it's just ignored.
+// Tests that we don't find a nested module contained in a local replace
+// target. The code for this case is too annoying to write, so it's ignored.
 func TestScanNestedModuleInLocalReplace(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -124,7 +120,7 @@ import _ "rsc.io/QUOTE/QUOTE"
 	mt.assertFound("rsc.io/QUOTE/QUOTE", "QUOTE")
 }
 
-// Not obviously relevant to goimports. Adapted from mod_domain_root.txt anyway.
+// Not relevant to goimports. Adapted from mod_domain_root.txt anyway.
 func TestModDomainRoot(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -140,7 +136,7 @@ import _ "example.com"
 	mt.assertFound("example.com", "x")
 }
 
-// Tests that scanning the module cache > 1 time is able to find the same module.
+// Tests that scanning the module cache > 1 time can find the same module.
 func TestModMultipleScans(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -158,8 +154,8 @@ import _ "example.com"
 	mt.assertScanFinds("example.com", "x")
 }
 
-// Tests that scanning the module cache > 1 time is able to find the same module
-// in the module cache.
+// Tests that scanning the module cache > 1 time can find the same module in
+// the module cache.
 func TestModMultipleScansWithSubdirs(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -177,8 +173,8 @@ import _ "rsc.io/quote"
 	mt.assertScanFinds("rsc.io/quote", "quote")
 }
 
-// Tests that scanning the module cache > 1 after changing a package in module cache to make it unimportable
-// is able to find the same module.
+// Tests that scanning the module cache > 1 after changing a package in module
+// cache to make it unimportable can find the same module.
 func TestModCacheEditModFile(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -272,7 +268,6 @@ import _ "rsc.io/sampler"
 	wantDir := `/vendor/`
 
 	// Clear out the resolver's module info, since we've changed the environment.
-	// (the presence of a /vendor directory affects `go list -m`).
 	mt.env.ClearModuleInfo()
 	mt.assertModuleFoundInDir("rsc.io/sampler", "sampler", wantDir)
 }
@@ -333,9 +328,7 @@ package quote
 	mt.assertModuleFoundInDir("rsc.io/quote", "quote", `/main`)
 }
 
-// Tests that a simple module dependency is found. Adapted from the third part
-// of mod_multirepo.txt (We skip the case where it doesn't have a go.mod
-// entry -- we just don't work in that case.)
+// Tests that a simple module dependency is found.
 func TestModMultirepo3(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -451,9 +444,7 @@ package quote
 }
 
 // Tests more local replaces, notably the case where an outer module provides
-// a package that could also be provided by an inner module. Adapted from
-// mod_replace_import.txt, with example.com/v changed to /vv because Go 1.11
-// thinks /v is an invalid major version.
+// a package that could also be provided by an inner module.
 func TestModReplaceImport(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -556,7 +547,7 @@ package v
 	mt.assertModuleFoundInDir("example.com/vv", "v", `main/v12$`)
 }
 
-// Tests that we handle GO111MODULE=on with no go.mod file. See #30855.
+// Tests that we handle GO111MODULE=on with no go.mod file.
 func TestNoMainModule(t *testing.T) {
 	mt := setup(t, map[string]string{"GO111MODULE": "on"}, `
 -- x.go --
@@ -715,9 +706,6 @@ func setup(t *testing.T, extraEnv map[string]string, main, wd string) *modTest {
 
 	// Ensure the resolver is set for tests that (unsafely) access env.resolver
 	// directly.
-	//
-	// TODO(rfindley): fix this after addressing the TODO in the ProcessEnv
-	// docstring.
 	if _, err := env.GetResolver(); err != nil {
 		t.Fatal(err)
 	}
@@ -839,7 +827,6 @@ func removeDir(dir string) {
 	_ = os.RemoveAll(dir) // ignore errors
 }
 
-// Tests that findModFile can find the mod files from a path in the module cache.
 func TestFindModFileModCache(t *testing.T) {
 	mt := setup(t, nil, `
 -- go.mod --
@@ -962,8 +949,6 @@ import (
 func BenchmarkModuleResolver_RescanModCache(b *testing.B) {
 	env := &ProcessEnv{
 		GocmdRunner: &gocommand.Runner{},
-		// Uncomment for verbose logging (too verbose to enable by default).
-		// Logf:        b.Logf,
 	}
 	exclude := []gopathwalk.RootType{gopathwalk.RootGOROOT}
 	resolver, err := env.GetResolver()

@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -37,7 +36,6 @@ func TestIdleTimeout(t *testing.T) {
 	}
 
 	server := HandlerServer(MethodNotFound)
-	// connTimer := &fakeTimer{c: make(chan time.Time, 1)}
 	var (
 		runErr error
 		wg     sync.WaitGroup
@@ -46,8 +44,7 @@ func TestIdleTimeout(t *testing.T) {
 		runErr = Serve(ctx, ln, server, 100*time.Millisecond)
 	})
 
-	// Exercise some connection/disconnection patterns, and then assert that when
-	// our timer fires, the server exits.
+	// Exercise some connection/disconnection patterns, and then assert that when our timer fires, the server exits.
 	conn1 := connect()
 	conn2 := connect()
 	conn1.Close()

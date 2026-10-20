@@ -1,10 +1,8 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// The eg command performs example-based refactoring.
-// For documentation, run the command, or see Help in
-// golang.org/x/tools/refactor/eg.
+// The eg command performs example-based refactoring. For documentation, run
+// the command, or see Help in golang.org/x/tools/refactor/eg.
 package main // import "golang.org/x/tools/cmd/eg"
 
 import (
@@ -144,7 +142,7 @@ func doMain() error {
 			}
 			fmt.Fprintf(os.Stderr, "=== %s (%d matches)\n", filename, n)
 			if *writeFlag {
-				// Run the before-edit command (e.g. "chmod +w",  "checkout") if any.
+				// Run the before-edit command (e.g. "chmod +w", "checkout") if any.
 				if *beforeeditFlag != "" {
 					args := strings.Fields(*beforeeditFlag)
 					// Replace "{}" with the filename, like find(1).

@@ -1,22 +1,16 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Present2md converts legacy-syntax present files to Markdown-syntax present files.
-//
-// It assumes presentation authors are trusted, and should not be used with untrusted inputs.
-//
-// Usage:
+// present2md converts legacy-syntax present files to Markdown-syntax present
+// files. It assumes presentation authors are trusted, and should not be used
+// with untrusted inputs. Usage:
 //
 //	present2md [-w] [file ...]
 //
-// By default, present2md prints the Markdown-syntax form of each input file to standard output.
-// If no input file is listed, standard input is used.
-//
-// The -w flag causes present2md to update the files in place, overwriting each with its
-// Markdown-syntax equivalent.
-//
-// Examples
+// By default, present2md prints the Markdown-syntax form of each input file
+// to standard output. If no input file is listed, standard input is used. The
+// -w flag causes present2md to update the files in place, overwriting each
+// with its Markdown-syntax equivalent. Examples
 //
 //	present2md your.article
 //	present2md -w *.article
@@ -94,8 +88,6 @@ func convert(r io.Reader, file string, writeBack bool) error {
 	}
 
 	// Convert all comments before parsing the document.
-	// The '//' comment is treated as normal text and so
-	// is passed through the translation unaltered.
 	data = bytes.Replace(data, []byte("\n#"), []byte("\n//"), -1)
 
 	doc, err := present.Parse(bytes.NewReader(data), file, 0)
@@ -155,11 +147,8 @@ func convert(r io.Reader, file string, writeBack bool) error {
 		}
 	}
 
-	// Invariant: the output ends in non-blank line now,
-	// and after printing any piece of the file below,
-	// the output should still end in a non-blank line.
-	// If a blank line separator is needed, it should be printed
-	// before the block that needs separating, not after.
+	// Invariant: the output ends in non-blank line now, and after printing any
+	// piece of the file below.
 
 	if len(doc.TitleNotes) > 0 {
 		fmt.Fprintf(&md, "\n")
@@ -170,7 +159,6 @@ func convert(r io.Reader, file string, writeBack bool) error {
 
 	if len(doc.Sections) == 1 && strings.HasSuffix(file, ".article") {
 		// Blog drops section headers when there is only one section.
-		// Don't print a title in this case, to make clear that it's being dropped.
 		fmt.Fprintf(&md, "\n##\n")
 		printSectionBody(file, 1, &md, doc.Sections[0].Elem)
 	} else {
@@ -271,18 +259,8 @@ func markdownEscape(s string) string {
 
 // Copy of ../../present/style.go adjusted to produce Markdown instead of HTML.
 
-/*
-	Fonts are demarcated by an initial and final char bracketing a
-	space-delimited word, plus possibly some terminal punctuation.
-	The chars are
-		_ for italic
-		* for bold
-		` (back quote) for fixed width.
-	Inner appearances of the char become spaces. For instance,
-		_this_is_italic_!
-	becomes
-		<i>this is italic</i>!
-*/
+/* Fonts are demarcated by an initial and final char bracketing a
+   space-delimited word, plus possibly some terminal punctuation. */
 
 func printStyled(w *bytes.Buffer, text string) {
 	w.WriteString(font(text))
@@ -361,10 +339,9 @@ Word:
 				b.WriteRune(' ')
 				continue
 			}
-			// Doubled char becomes real char.
-			// Not worth worrying about "_x__".
+			// Doubled char becomes real char. Not worth worrying about "_x__".
 			b.WriteByte(char)
-			wid++ // Consumed two chars, both ASCII.
+			wid++ // Consumed chars, both ASCII.
 		}
 		text := b.String()
 		if close == "`" {
@@ -388,10 +365,10 @@ func split(s string) []string {
 		start = 0
 	)
 
-	// appendWord appends the string s[start:end] to the words slice.
-	// If the word contains the beginning of a link, the non-link portion
-	// of the word and the entire link are appended as separate words,
-	// and the start index is advanced to the end of the link.
+	// appendWord appends the string s[start:end] to the words slice. If
+	// the word contains the beginning of a link, the non-link portion of
+	// the word and the entire link are appended as separate words. The
+	// start index is advanced to the end of the link.
 	appendWord := func(end int) {
 		if j := strings.Index(s[start:end], "[["); j > -1 {
 			if _, l := parseInlineLink(s[start+j:]); l > 0 {
@@ -406,7 +383,7 @@ func split(s string) []string {
 				return
 			}
 		}
-		// No link; just add the word.
+		// No link; add the word.
 		words = append(words, s[start:end])
 		start = end
 	}
@@ -438,7 +415,7 @@ func parseInlineLink(s string) (link string, length int) {
 	}
 	urlEnd := strings.Index(s, "]")
 	rawURL := s[2:urlEnd]
-	const badURLChars = `<>"{}|\^[] ` + "`" // per RFC2396 section 2.4.3
+	const badURLChars = `<>"{}|\^[] ` + "`"
 	if strings.ContainsAny(rawURL, badURLChars) {
 		return
 	}
@@ -446,9 +423,8 @@ func parseInlineLink(s string) (link string, length int) {
 		simpleURL := ""
 		url, err := url.Parse(rawURL)
 		if err == nil {
-			// If the URL is http://foo.com, drop the http://
-			// In other words, render [[http://golang.org]] as:
-			//   <a href="http://golang.org">golang.org</a>
+			// If the URL is http://foo.com, drop the http:// In other words, render
+			// [[http://golang.org]] as: <a href="http://golang.org">golang.org</a>
 			if after, ok := strings.CutPrefix(rawURL, url.Scheme+"://"); ok {
 				simpleURL = after
 			} else if after, ok := strings.CutPrefix(rawURL, url.Scheme+":"); ok {

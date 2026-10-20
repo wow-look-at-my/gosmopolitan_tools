@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package expect_test
 
@@ -21,8 +20,6 @@ func TestMarker(t *testing.T) {
 		expectNotes   int
 		expectMarkers map[string]string
 		expectChecks  map[string][]any
-		// expectChecks holds {"id": values} for each call check(id, values...).
-		// Any named k=v arguments become a final map[string]any argument.
 	}{
 		{
 			filename:    "testdata/test.go",
@@ -88,8 +85,7 @@ func TestMarker(t *testing.T) {
 			for _, n := range notes {
 				switch {
 				case n.Args == nil:
-					// A //@foo note associates the name foo with the position of the
-					// first match of "foo" on the current line.
+					// A //@foo note associates the name foo with the position of the first match of "foo" on the current line.
 					checkMarker(t, fset, readFile, markers, n.Pos, n.Name, n.Name)
 				case n.Name == "mark":
 					// A //@mark(name, "pattern") note associates the specified name
@@ -106,10 +102,8 @@ func TestMarker(t *testing.T) {
 					checkMarker(t, fset, readFile, markers, n.Pos, string(ident), n.Args[1])
 
 				case n.Name == "check":
-					// A //@check(args, ...) note specifies some hypothetical action to
-					// be taken by the test driver and its expected outcome.
-					// In this test, the action is to compare the arguments
-					// against expectChecks.
+					// A //@check(args, ...) note specifies some hypothetical action to be
+					// taken by the test driver and its expected outcome.
 					if len(n.Args) < 1 {
 						t.Errorf("%v: expected 1 args to check, got %v", fset.Position(n.Pos), len(n.Args))
 						continue

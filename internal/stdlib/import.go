@@ -1,14 +1,9 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stdlib
 
 // This file provides the API for the import graph of the standard library.
-//
-// Be aware that the compiler-generated code for every package
-// implicitly depends on package "runtime" and a handful of others
-// (see runtimePkgs in GOROOT/src/cmd/internal/objabi/pkgspecial.go).
 
 import (
 	"encoding/binary"
@@ -41,13 +36,12 @@ func Imports(pkgs ...string) iter.Seq[string] {
 	}
 }
 
-// Dependencies returns the set of all dependencies of the named
-// standard packages, including the initial package,
-// in a deterministic topological order.
-// The dependencies of an unknown package are the empty set.
+// Dependencies returns the set of all dependencies of the named standard
+// packages, including the initial package, in a deterministic topological
+// order. The dependencies of an unknown package are the empty set.
 //
-// The graph is built into the application and may differ from the
-// graph in the Go source tree being analyzed by the application.
+// The graph is built into the application and may differ from the graph in
+// the Go source tree being analyzed by the application.
 func Dependencies(pkgs ...string) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		for _, pkg := range pkgs {
@@ -88,10 +82,8 @@ func find(pkg string) (int, bool) {
 	})
 }
 
-// IsBootstrapPackage reports whether pkg is one of the low-level
-// packages in the Go distribution that must compile with the older
-// language version specified by [BootstrapVersion] during toolchain
-// bootstrapping; see golang.org/s/go15bootstrap.
+// IsBootstrapPackage reports whether pkg is one of the low-level packages in
+// the Go distribution that must compile with the older language version.
 func IsBootstrapPackage(pkg string) bool {
 	return bootstrap[pkg]
 }

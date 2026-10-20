@@ -1,32 +1,17 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // trie implements persistent Patricia trie maps.
 //
 // Each Map is effectively a map from uint64 to interface{}. Patricia tries are
 // a form of radix tree that are particularly appropriate when many maps will be
-// created, merged together and large amounts of sharing are expected (e.g.
+// created, merged together. And large amounts of sharing are expected (e.g.
 // environment abstract domains in program analysis).
 //
 // This implementation closely follows the paper:
 //
 //	C. Okasaki and A. Gill, “Fast mergeable integer maps,” in ACM SIGPLAN
 //	Workshop on ML, September 1998, pp. 77–86.
-//
-// Each Map is immutable and can be read from concurrently. The map does not
-// guarantee that the value pointed to by the interface{} value is not updated
-// concurrently.
-//
-// These Maps are optimized for situations where there will be many maps created at
-// with a high degree of sharing and combining of maps together. If you do not expect,
-// significant amount of sharing, the builtin map[T]U is much better choice!
-//
-// Each Map is created by a Builder. Each Builder has a unique Scope and each node is
-// created within this scope. Maps x and y are == if they contains the same
-// (key,value) mappings and have equal scopes.
-//
-// Internally these are big endian Patricia trie nodes, and the keys are sorted.
 package trie
 
 import (
@@ -36,11 +21,6 @@ import (
 
 // Map is effectively a finite mapping from uint64 keys to interface{} values.
 // Maps are immutable and can be read from concurrently.
-//
-// Notes on concurrency:
-//   - A Map value itself is an interface and assignments to a Map value can race.
-//   - Map does not guarantee that the value pointed to by the interface{} value
-//     is not updated concurrently.
 type Map struct {
 	s Scope
 	n node
@@ -75,9 +55,8 @@ func (m Map) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(kvs, ", "))
 }
 
-// Range over the leaf (key, value) pairs in the map in order and
-// applies cb(key, value) to each. Stops early if cb returns false.
-// Returns true if all elements were visited without stopping early.
+// Range over the leaf (key, value) pairs in the map in order and applies
+// cb(key, value) to each. Stops early if cb returns false.
 func (m Map) Range(cb func(uint64, any) bool) bool {
 	if m.n != nil {
 		return m.n.visit(cb)
@@ -114,12 +93,10 @@ func Elems(m Map) map[uint64]any {
 type node interface {
 	size() int
 
-	// visit the leaves (key, value) pairs in the map in order and
-	// applies cb(key, value) to each. Stops early if cb returns false.
-	// Returns true if all elements were visited without stopping early.
+	// visit the leaves (key, value) pairs in the map in order and applies cb(key, value) to each.
 	visit(cb func(uint64, any) bool) bool
 
-	// Two nodes contain the same elements regardless of scope.
+	// Nodes contain the same elements regardless of scope.
 	deepEqual(node) bool
 
 	// find the leaf for the given key value or nil if it is not present.
@@ -143,20 +120,12 @@ type leaf struct {
 }
 
 // branch represents a tree node within the Patricia trie.
-//
-// All keys within the branch match a `prefix` of the key
-// up to a `branching` bit, and the left and right nodes
-// contain keys that disagree on the bit at the `branching` bit.
 type branch struct {
 	sz        int    // size. cached for O(1) lookup
 	prefix    prefix // == mask(p0, branching) for some p0
 	branching bitpos
 
-	// Invariants:
-	// - neither is nil.
-	// - neither is *empty.
-	// - all keys in left are <= p.
-	// - all keys in right are > p.
+	// Invariants: - neither is nil.
 	left, right node
 }
 
@@ -210,8 +179,7 @@ func (br *branch) deepEqual(m node) bool {
 		return br.sz == m.sz && br.branching == m.branching && br.prefix == m.prefix &&
 			br.left.deepEqual(m.left) && br.right.deepEqual(m.right)
 	}
-	// if m is not a branch, m contains 0 or 1 elem.
-	// br contains at least 2 keys that disagree on a prefix.
+	// br contains a couple of keys that disagree on a prefix.
 	return false
 }
 

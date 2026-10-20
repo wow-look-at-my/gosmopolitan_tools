@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -17,15 +16,6 @@ import (
 
 // emitAlloc emits to f a new Alloc instruction allocating a variable
 // of type typ.
-//
-// The caller must set Alloc.Heap=true (for a heap-allocated variable)
-// or add the Alloc to f.Locals (for a frame-allocated variable).
-//
-// During building, a variable in f.Locals may have its Heap flag
-// set when it is discovered that its address is taken.
-// These Allocs are removed from f.Locals at the end.
-//
-// The builder should generally call one of the emit{New,Local,LocalVar} wrappers instead.
 func emitAlloc(f *Function, typ types.Type, pos token.Pos, comment string) *Alloc {
 	v := &Alloc{Comment: comment}
 	v.setType(types.NewPointer(typ))
@@ -44,18 +34,14 @@ func emitNew(f *Function, typ types.Type, pos token.Pos, comment string) *Alloc 
 
 // emitLocal creates a local var for (t, pos, comment) and
 // emits an Alloc instruction for it.
-//
-// (Use this function or emitNew for synthetic variables;
-// for source-level variables in the same function, use emitLocalVar.)
 func emitLocal(f *Function, t types.Type, pos token.Pos, comment string) *Alloc {
 	local := emitAlloc(f, t, pos, comment)
 	f.Locals = append(f.Locals, local)
 	return local
 }
 
-// emitLocalVar creates a local var for v and emits an Alloc instruction for it.
-// Subsequent calls to f.lookup(v) return it.
-// It applies the appropriate generic instantiation to the type.
+// emitLocalVar creates a local var for v and emits an Alloc instruction for
+// it. Subsequent calls to f.lookup(v) return it.
 func emitLocalVar(f *Function, v *types.Var) *Alloc {
 	alloc := emitLocal(f, f.typ(v.Type()), v.Pos(), v.Name())
 	f.vars[v] = alloc
@@ -100,24 +86,17 @@ func emitDebugRef(f *Function, e ast.Expr, v Value, isAddr bool) {
 	})
 }
 
-// emitArith emits to f code to compute the binary operation op(x, y)
-// where op is an eager shift, logical or arithmetic operation.
-// (Use emitCompare() for comparisons and Builder.logicalBinop() for
-// non-eager operations.)
+// emitArith emits to f code to compute the binary operation op(x, y) where op
+// is an eager shift, logical or arithmetic operation. (Use emitCompare() for
+// comparisons and Builder.logicalBinop() for non-eager operations.)
 func emitArith(f *Function, op token.Token, x, y Value, t types.Type, pos token.Pos) Value {
 	switch op {
 	case token.SHL, token.SHR:
 		x = emitConv(f, x, t)
 		// y may be signed or an 'untyped' constant.
 
-		// There is a runtime panic if y is signed and <0. Instead of inserting a check for y<0
-		// and converting to an unsigned value (like the compiler) leave y as is.
-
 		if isUntyped(y.Type().Underlying()) {
-			// Untyped conversion:
-			// Spec https://go.dev/ref/spec#Operators:
-			// The right operand in a shift expression must have integer type or be an untyped constant
-			// representable by a value of type uint.
+			// Untyped conversion: Spec https://go.dev/ref/spec#Operators.
 			y = emitConv(f, y, types.Typ[types.Uint])
 		}
 
@@ -145,13 +124,8 @@ func emitCompare(f *Function, op token.Token, x, y Value, pos token.Pos) Value {
 	xt := x.Type().Underlying()
 	yt := y.Type().Underlying()
 
-	// Special case to optimise a tagless SwitchStmt so that
-	// these are equivalent
-	//   switch { case e: ...}
-	//   switch true { case e: ... }
-	//   if e==true { ... }
-	// even in the case when e's type is an interface.
-	// TODO(adonovan): opt: generalise to x==true, false!=y, etc.
+	// Special case to optimise a tagless SwitchStmt so that these are equivalent
+	// switch { case e: ...} switch true { case e.
 	if x == vTrue && op == token.EQL {
 		if yt, ok := yt.(*types.Basic); ok && yt.Info()&types.IsBoolean != 0 {
 			return y
@@ -159,7 +133,6 @@ func emitCompare(f *Function, op token.Token, x, y Value, pos token.Pos) Value {
 	}
 
 	if types.Identical(xt, yt) {
-		// no conversion necessary
 	} else if isNonTypeParamInterface(x.Type()) {
 		y = emitConv(f, y, x.Type())
 	} else if isNonTypeParamInterface(y.Type()) {
@@ -169,7 +142,6 @@ func emitCompare(f *Function, op token.Token, x, y Value, pos token.Pos) Value {
 	} else if _, ok := y.(*Const); ok {
 		y = emitConv(f, y, x.Type())
 	} else {
-		// other cases, e.g. channels.  No-op.
 	}
 
 	v := &BinOp{
@@ -182,9 +154,9 @@ func emitCompare(f *Function, op token.Token, x, y Value, pos token.Pos) Value {
 	return f.emit(v)
 }
 
-// isValuePreserving returns true if a conversion from ut_src to
-// ut_dst is value-preserving, i.e. just a change of type.
-// Precondition: neither argument is a named or alias type.
+// isValuePreserving returns true if a conversion from ut_src to ut_dst is
+// value-preserving, i.e. a change of type. Precondition: neither argument is
+// a named or alias type.
 func isValuePreserving(ut_src, ut_dst types.Type) bool {
 	// Identical underlying types?
 	if types.IdenticalIgnoreTags(ut_dst, ut_src) {
@@ -205,14 +177,13 @@ func isValuePreserving(ut_src, ut_dst types.Type) bool {
 	return false
 }
 
-// emitConv emits to f code to convert Value val to exactly type typ,
-// and returns the converted value.  Implicit conversions are required
-// by language assignability rules in assignments, parameter passing,
-// etc.
+// emitConv emits to f code to convert Value val to exactly type typ, and
+// returns the converted value. Implicit conversions are required by language
+// assignability rules in assignments, parameter passing, etc.
 func emitConv(f *Function, val Value, typ types.Type) Value {
 	t_src := val.Type()
 
-	// Identical types?  Conversion is a no-op.
+	// Identical types? Conversion is a no-op.
 	if types.Identical(t_src, typ) {
 		return val
 	}
@@ -235,7 +206,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 			return f.emit(c)
 		}
 
-		// Untyped nil constant?  Return interface-typed nil constant.
+		// Untyped nil constant? Return interface-typed nil constant.
 		if ut_src == tUntypedNil {
 			return zeroConst(typ)
 		}
@@ -245,8 +216,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 			val = emitConv(f, val, types.Default(ut_src))
 		}
 
-		// Record the types of operands to MakeInterface, if
-		// non-parameterized, as they are the set of runtime types.
+		// Record the types of operands to MakeInterface, if non-parameterized, as they are the set of runtime types.
 		t := val.Type()
 		if !f.Prog.isParameterized(t) {
 			addMakeInterfaceType(f.Prog, t)
@@ -257,9 +227,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 		return f.emit(mi)
 	}
 
-	// conversionCase describes an instruction pattern that maybe emitted to
-	// model d <- s for d in dst_terms and s in src_terms.
-	// Multiple conversions can match the same pattern.
+	// conversionCase describes an instruction pattern that maybe emitted to model d <- s for d in dst_terms and s in src_terms.
 	type conversionCase uint8
 	const (
 		changeType conversionCase = 1 << iota
@@ -272,7 +240,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 	// classify the conversion case of a source type us to a destination type ud.
 	// us and ud are underlying types (not *Named or *Alias)
 	classify := func(us, ud types.Type) conversionCase {
-		// Just a change of type, but not value or representation?
+		// A change of type, but not value or representation?
 		if isValuePreserving(us, ud) {
 			return changeType
 		}
@@ -330,11 +298,7 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 	if c, ok := val.(*Const); ok {
 		// Conversion to a basic type?
 		if isBasic(ut_dst) {
-			// Conversion of a compile-time constant to
-			// another constant type results in a new
-			// constant of the destination type and
-			// (initially) the same abstract value.
-			// We don't truncate the value yet.
+			// Conversion of a compile-time constant to another constant type results in a new constant of the destination type and (initially) the same abstract value.
 			return NewConst(c.Value, typ)
 		}
 		// Can we always convert from zero value without panicking?
@@ -343,8 +307,6 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 			return NewConst(nil, typ)
 		}
 
-		// We're converting from constant to non-constant type,
-		// e.g. string -> []byte/[]rune.
 	}
 
 	switch classifications {
@@ -382,20 +344,8 @@ func emitConv(f *Function, val Value, typ types.Type) Value {
 	}
 }
 
-// emitTypeCoercion emits to f code to coerce the type of a
-// Value v to exactly type typ, and returns the coerced value.
-//
-// Requires that coercing v.Typ() to typ is a value preserving change.
-//
-// Currently used only when v.Type() is a type instance of typ or vice versa.
-// A type v is a type instance of a type t if there exists a
-// type parameter substitution σ s.t. σ(v) == t. Example:
-//
-//	σ(func(T) T) == func(int) int for σ == [T ↦ int]
-//
-// This happens in instantiation wrappers for conversion
-// from an instantiation to a parameterized type (and vice versa)
-// with σ substituting f.typeparams by f.typeargs.
+// emitTypeCoercion emits to f code to coerce the type of a Value v to exactly
+// type typ, and returns the coerced value.
 func emitTypeCoercion(f *Function, v Value, typ types.Type) Value {
 	if types.Identical(v.Type(), typ) {
 		return v // no coercion needed
@@ -431,9 +381,8 @@ func emitJump(f *Function, target *BasicBlock) {
 	f.currentBlock = nil
 }
 
-// emitIf emits to f a conditional jump to tblock or fblock based on
-// cond, and updates the control-flow graph.
-// Postcondition: f.currentBlock is nil.
+// emitIf emits to f a conditional jump to tblock or fblock based on cond, and
+// updates the control-flow graph. Postcondition: f.currentBlock is nil.
 func emitIf(f *Function, cond Value, tblock, fblock *BasicBlock) {
 	b := f.currentBlock
 	b.emit(&If{Cond: cond})
@@ -442,16 +391,16 @@ func emitIf(f *Function, cond Value, tblock, fblock *BasicBlock) {
 	f.currentBlock = nil
 }
 
-// emitExtract emits to f an instruction to extract the index'th
-// component of tuple.  It returns the extracted value.
+// emitExtract emits to f an instruction to extract the index'th component of
+// tuple. It returns the extracted value.
 func emitExtract(f *Function, tuple Value, index int) Value {
 	e := &Extract{Tuple: tuple, Index: index}
 	e.setType(tuple.Type().(*types.Tuple).At(index).Type())
 	return f.emit(e)
 }
 
-// emitTypeAssert emits to f a type assertion value := x.(t) and
-// returns the value.  x.Type() must be an interface.
+// emitTypeAssert emits to f a type assertion value := x.(t) and returns the
+// value. x.Type() must be an interface.
 func emitTypeAssert(f *Function, x Value, t types.Type, pos token.Pos) Value {
 	a := &TypeAssert{X: x, AssertedType: t}
 	a.setPos(pos)
@@ -459,8 +408,8 @@ func emitTypeAssert(f *Function, x Value, t types.Type, pos token.Pos) Value {
 	return f.emit(a)
 }
 
-// emitTypeTest emits to f a type test value,ok := x.(t) and returns
-// a (value, ok) tuple.  x.Type() must be an interface.
+// emitTypeTest emits to f a type test value,ok := x.(t) and returns a (value,
+// ok) tuple. x.Type() must be an interface.
 func emitTypeTest(f *Function, x Value, t types.Type, pos token.Pos) Value {
 	a := &TypeAssert{
 		X:            x,
@@ -475,10 +424,9 @@ func emitTypeTest(f *Function, x Value, t types.Type, pos token.Pos) Value {
 	return f.emit(a)
 }
 
-// emitTailCall emits to f a function call in tail position.  The
-// caller is responsible for all fields of 'call' except its type.
-// Intended for wrapper methods.
-// Precondition: f does/will not use deferred procedure calls.
+// emitTailCall emits to f a function call in tail position. The caller is
+// responsible for all fields of 'call' except its type. Intended for wrapper
+// methods. Precondition: f does/will not use deferred procedure calls.
 // Postcondition: f.currentBlock is nil.
 func emitTailCall(f *Function, call *Call) {
 	tresults := f.Signature.Results()
@@ -498,10 +446,7 @@ func emitTailCall(f *Function, call *Call) {
 	default:
 		for i := range nr {
 			v := emitExtract(f, tuple, i)
-			// TODO(adonovan): in principle, this is required:
-			//   v = emitConv(f, o.Type, f.Signature.Results[i].Type)
-			// but in practice emitTailCall is only used when
-			// the types exactly match.
+			// TODO(adonovan): in principle, this is required.
 			ret.Results = append(ret.Results, v)
 		}
 	}
@@ -530,13 +475,12 @@ func emitCall(fn *Function, call *Call) Value {
 	return res
 }
 
-// emitImplicitSelections emits to f code to apply the sequence of
-// implicit field selections specified by indices to base value v, and
-// returns the selected value.
+// emitImplicitSelections emits to f code to apply the sequence of implicit
+// field selections specified by indices to base value v, and returns the
+// selected value.
 //
-// If v is the address of a struct, the result will be the address of
-// a field; if it is the value of a struct, the result will be the
-// value of a field.
+// If v is the address of a struct, the result will be the address of a field.
+// If it is the value of a struct, the result will be the value of a field.
 func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) Value {
 	for _, index := range indices {
 		if isPointerCore(v.Type()) {
@@ -568,10 +512,9 @@ func emitImplicitSelections(f *Function, v Value, indices []int, pos token.Pos) 
 
 // emitFieldSelection emits to f code to select the index'th field of v.
 //
-// If wantAddr, the input must be a pointer-to-struct and the result
-// will be the field's address; otherwise the result will be the
-// field's value.
-// Ident id is used for position and debug info.
+// If wantAddr, the input must be a pointer-to-struct and the result will be
+// the field's address. Otherwise the result will be the field's value. Ident
+// id is used for position and debug info.
 func emitFieldSelection(f *Function, v Value, index int, wantAddr bool, id *ast.Ident) Value {
 	if isPointerCore(v.Type()) {
 		fld := fieldOf(typeparams.MustDeref(v.Type()), index)
@@ -600,12 +543,11 @@ func emitFieldSelection(f *Function, v Value, index int, wantAddr bool, id *ast.
 	return v
 }
 
-// createRecoverBlock emits to f a block of code to return after a
-// recovered panic, and sets f.Recover to it.
+// createRecoverBlock emits to f a block of code to return after a recovered
+// panic, and sets f.Recover to it.
 //
-// If f's result parameters are named, the code loads and returns
-// their current values, otherwise it returns the zero values of their
-// type.
+// If f's result parameters are named, the code loads and returns their
+// current values, otherwise it returns the zero values of their type.
 //
 // Idempotent.
 func createRecoverBlock(f *Function) {

@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package reflectvaluecompare
 
@@ -70,7 +69,6 @@ func isReflectValue(pass *analysis.Pass, e ast.Expr) bool {
 	}
 	if _, ok := e.(*ast.CompositeLit); ok {
 		// This is reflect.Value{}. Don't treat that as an error.
-		// Users should probably use x.IsValid() rather than x == reflect.Value{}, but the latter isn't wrong.
 		return false
 	}
 	return true

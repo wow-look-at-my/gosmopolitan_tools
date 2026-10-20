@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -61,8 +60,7 @@ var (
 	// dirListTemplate holds the front page template.
 	dirListTemplate *template.Template
 
-	// contentTemplate maps the presentable file extensions to the
-	// template to be executed.
+	// contentTemplate maps the presentable file extensions to the template to be executed.
 	contentTemplate map[string]*template.Template
 )
 
@@ -117,11 +115,10 @@ func parse(name string, mode present.ParseMode) (*present.Doc, error) {
 	return present.Parse(f, name, mode)
 }
 
-// dirList scans the given path and writes a directory listing to w.
-// It parses the first part of each .slide file it encounters to display the
-// presentation title in the listing.
-// If the given path is not a directory, it returns (isDir == false, err == nil)
-// and writes nothing to w.
+// dirList scans the given path and writes a directory listing to w. It parses
+// the first part of each .slide file it encounters to display the
+// presentation title in the listing. If the given path is not a directory, it
+// returns (isDir == false, err == nil) and writes nothing to w.
 func dirList(w io.Writer, name string) (isDir bool, err error) {
 	f, err := os.Open(name)
 	if err != nil {

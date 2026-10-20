@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package otel
 
@@ -130,9 +129,6 @@ func TestConvertHistogramInt64Data(t *testing.T) {
 	key := keys.NewInt("value", "")
 	buckets := []int64{10, 50, 100, 500}
 
-	// Record multiple values across different buckets:
-	// Bucket boundaries: <=10, <=50, <=100, <=500, >500
-	// Values: 5, 8 (<=10), 20, 30, 40 (<=50), 75 (<=100), 200, 300 (<=500), 1000 (>500)
 	values := []int{5, 8, 20, 30, 40, 75, 200, 300, 1000}
 
 	data := captureMetricData("response_time", func(cfg *metric.Config) {
@@ -159,7 +155,6 @@ func TestConvertHistogramInt64Data(t *testing.T) {
 		t.Errorf("expected count 9, got %d", dp.Count)
 	}
 
-	// Verify sum: 5+8+20+30+40+75+200+300+1000 = 1678
 	if dp.Sum == nil || *dp.Sum != 1678 {
 		t.Errorf("expected sum 1678, got %v", dp.Sum)
 	}
@@ -172,12 +167,6 @@ func TestConvertHistogramInt64Data(t *testing.T) {
 		t.Errorf("expected max 1000, got %v", dp.Max)
 	}
 
-	// Verify bucket counts (non-cumulative):
-	// <=10: 2 (5, 8)
-	// <=50: 3 (20, 30, 40)
-	// <=100: 1 (75)
-	// <=500: 2 (200, 300)
-	// >500: 1 (1000)
 	expectedBuckets := []intAsString{2, 3, 1, 2, 1}
 	if len(dp.BucketCounts) != len(expectedBuckets) {
 		t.Fatalf("expected %d buckets, got %d", len(expectedBuckets), len(dp.BucketCounts))
@@ -216,7 +205,7 @@ func TestConvertInt64Data_WithAttributes(t *testing.T) {
 
 	m := convertInt64Data(data)
 
-	// Should have 2 data points (one per method)
+	// Should have data points (one per method)
 	if len(m.Sum.DataPoints) != 2 {
 		t.Fatalf("expected 2 data points, got %d", len(m.Sum.DataPoints))
 	}

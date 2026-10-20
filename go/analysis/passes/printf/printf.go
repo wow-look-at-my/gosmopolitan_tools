@@ -1,6 +1,5 @@
-// Copyright 2010 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package printf
 
@@ -69,8 +68,7 @@ func (kind Kind) String() string {
 	return "(none)"
 }
 
-// Result is the printf analyzer's result type. Clients may query the result
-// to learn whether a function behaves like fmt.Print or fmt.Printf.
+// Result is the printf analyzer's result type.
 type Result struct {
 	funcs map[types.Object]Kind
 }
@@ -79,7 +77,7 @@ type Result struct {
 func (r *Result) Kind(fn *types.Func) Kind {
 	_, ok := isPrint[fn.FullName()]
 	if !ok {
-		// Next look up just "printf", for use with -printf.funcs.
+		// Next look up "printf", for use with -printf.funcs.
 		_, ok = isPrint[strings.ToLower(fn.Name())]
 	}
 	if ok {
@@ -121,14 +119,6 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 // A wrapper is a candidate print/printf wrapper function.
-//
-// We represent functions generally as types.Object, not *Func, so
-// that we can analyze anonymous functions such as
-//
-//	printf := func(format string, args ...any) {...},
-//
-// representing them by the *types.Var symbol for the local variable
-// 'printf'.
 type wrapper struct {
 	obj     types.Object     // *Func or *Var
 	curBody inspector.Cursor // for *ast.BlockStmt
@@ -161,8 +151,7 @@ func formatArgsParams(sig *types.Signature) (format, args *types.Var) {
 		}
 	}
 
-	// Check final parameter is "args ...any".
-	// (variadic => slice)
+	// Check final parameter is "args ...any". (variadic => slice)
 	args = params.At(nparams - 1)
 	iface, ok := types.Unalias(args.Type().(*types.Slice).Elem()).(*types.Interface)
 	if !ok || !iface.Empty() {
@@ -180,26 +169,19 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 		info    = pass.TypesInfo
 	)
 
-	// Pass 1: gather candidate wrapper functions (and populate wrappers).
 	var (
 		wrappers []*wrapper
 		byObj    = make(map[types.Object]*wrapper)
 	)
 	for cur := range inspect.Root().Preorder((*ast.FuncDecl)(nil), (*ast.FuncLit)(nil), (*ast.InterfaceType)(nil)) {
 
-		// addWrapper records that a func (or var representing
-		// a FuncLit) is a potential print{,f} wrapper.
-		// curBody is its *ast.BlockStmt, if any.
+		// addWrapper records that a func (or var representing a FuncLit) is a
+		// potential print{,f} wrapper. curBody is its *ast.BlockStmt, if any.
 		addWrapper := func(obj types.Object, sig *types.Signature, curBody inspector.Cursor) *wrapper {
 			format, args := formatArgsParams(sig)
 			if args != nil {
-				// obj (the symbol for a function/method, or variable
-				// assigned to an anonymous function) is a potential
-				// print or printf wrapper.
-				//
-				// Later processing will analyze the graph of potential
-				// wrappers and their function bodies to pick out the
-				// ones that are true wrappers.
+				// obj (the symbol for a function/method, or variable assigned to an
+				// anonymous function) is a potential print or printf wrapper.
 				w := &wrapper{
 					obj:     obj,
 					curBody: curBody,
@@ -224,15 +206,7 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 			}
 
 		case *ast.FuncLit:
-			// anonymous function directly assigned to a variable:
-			//
-			//    var wrapf = func(format string, args ...any) {...}
-			//    wrapf    := func(format string, args ...any) {...}
-			//    wrapf     = func(format string, args ...any) {...}
-			//
-			// The LHS may also be a struct field x.wrapf or
-			// an imported var pkg.Wrapf.
-			//
+			// anonymous function directly assigned to a variable:.
 			var lhs ast.Expr
 			switch ek, idx := cur.ParentEdge(); ek {
 			case edge.ValueSpec_Values:
@@ -276,44 +250,23 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 	}
 
 	// impls maps abstract methods to implementations.
-	//
-	// Interface methods are modelled as if they have a body
-	// that calls each implementing method.
-	//
-	// In the code below, impls maps Logger.Logf to
-	// [myLogger.Logf], and if myLogger.Logf is discovered to be
-	// printf-like, then so will be Logger.Logf.
-	//
-	//   type Logger interface {
-	// 	Logf(format string, args ...any)
-	//   }
-	//   type myLogger struct{ ... }
-	//   func (myLogger) Logf(format string, args ...any) {...}
-	//   var _ Logger = myLogger{}
 	impls := methodImplementations(pass)
 
 	// doCall records a call from one wrapper to another.
 	doCall := func(w *wrapper, callee types.Object, call *ast.CallExpr) {
-		// Call from one wrapper candidate to another?
-		// Record the edge so that if callee is found to be
-		// a true wrapper, w will be too.
+		// Call from one wrapper candidate to another? Record the edge so that if
+		// callee is found to be a true wrapper, w will be too.
 		if w2, ok := byObj[callee]; ok {
 			w2.callers = append(w2.callers, printfCaller{w, call})
 		}
 
-		// Is the candidate a true wrapper, because it calls
-		// a known print{,f}-like function from the allowlist
-		// or an imported fact, or another wrapper found
-		// to be a true wrapper?
-		// If so, convert all w's callers to kind.
+		// Is the candidate.
 		kind := callKind(pass, callee, res)
 		if kind != KindNone {
 			propagate(pass, w, call, kind, res)
 		}
 	}
 
-	// Pass 2: scan the body of each wrapper function
-	// for calls to other printf-like functions.
 	for _, w := range wrappers {
 
 		// An interface method has no body, but acts
@@ -334,14 +287,12 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 		) {
 			switch n := cur.Node().(type) {
 
-			// Reject tricky cases where the parameters
-			// are potentially mutated by AssignStmt or UnaryExpr.
-			// (This logic checks for mutation only before the call.)
-			// TODO: Relax these checks; issue 26555.
+			// Reject tricky cases where the parameters are potentially mutated by
+			// AssignStmt or UnaryExpr. (This logic checks for mutation only before the
+			// call.)
 
 			case *ast.AssignStmt:
-				// If the wrapper updates format or args
-				// it is not a simple wrapper.
+				// If the wrapper updates format or args it is not a simple wrapper.
 				for _, lhs := range n.Lhs {
 					if w.format != nil && match(info, lhs, w.format) ||
 						match(info, lhs, w.args) {
@@ -350,8 +301,7 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 				}
 
 			case *ast.UnaryExpr:
-				// If the wrapper computes &format or &args,
-				// it is not a simple wrapper.
+				// If the wrapper computes &format or &args, it is not a simple wrapper.
 				if n.Op == token.AND &&
 					(w.format != nil && match(info, n.X, w.format) ||
 						match(info, n.X, w.args)) {
@@ -369,20 +319,13 @@ func findPrintLike(pass *analysis.Pass, res *Result) {
 	}
 }
 
-// methodImplementations returns the mapping from interface methods
-// declared in this package to their corresponding implementing
-// methods (which may also be interface methods), according to the set
-// of assignments to interface types that appear within this package.
+// methodImplementations returns the mapping. From interface methods declared
+// in this package to their corresponding implementing methods (which may also
+// be interface methods), according to the set of assignments to interface
+// types. Those types appear within this package.
 func methodImplementations(pass *analysis.Pass) map[*types.Func]map[*types.Func]bool {
 	impls := make(map[*types.Func]map[*types.Func]bool)
 
-	// To find interface/implementation relations,
-	// we use the 'satisfy' pass, but proposal #70638
-	// provides a better way.
-	//
-	// This pass over the syntax could be factored out as
-	// a separate analysis pass if it is needed by other
-	// analyzers.
 	var f satisfy.Finder
 	f.Find(pass.TypesInfo, pass.Files)
 	for assign := range f.Result {
@@ -420,8 +363,7 @@ func match(info *types.Info, arg ast.Expr, param *types.Var) bool {
 func propagate(pass *analysis.Pass, w *wrapper, call *ast.CallExpr, kind Kind, res *Result) {
 	// Check correct call forwarding.
 	//
-	// Interface methods (call==nil) forward
-	// correctly by construction.
+	// Interface methods (call==nil) forward correctly by construction.
 	if call != nil && !checkForward(pass, w, call, kind) {
 		return
 	}
@@ -431,11 +373,7 @@ func propagate(pass *analysis.Pass, w *wrapper, call *ast.CallExpr, kind Kind, r
 	if res.funcs[w.obj] != kind {
 		res.funcs[w.obj] = kind
 
-		// Export a fact.
-		// (This is a no-op for local symbols.)
-		// We can't export facts on a symbol of another package,
-		// but we can treat the symbol as a wrapper within
-		// the current analysis unit.
+		// Export a fact. (This is a no-op for local symbols.)
 		if w.obj.Pkg() == pass.Pkg {
 			// Facts are associated with origins.
 			pass.ExportObjectFact(origin(w.obj), &isWrapper{Kind: kind})
@@ -463,21 +401,13 @@ func checkForward(pass *analysis.Pass, w *wrapper, call *ast.CallExpr, kind Kind
 	}
 
 	// The args... delegation must be variadic.
-	// (That args is actually delegated was
-	// established before the root call to doCall.)
 	if !call.Ellipsis.IsValid() {
 		typ, ok := pass.TypesInfo.Types[call.Fun].Type.(*types.Signature)
 		if !ok {
 			return false
 		}
 		if len(call.Args) > typ.Params().Len() {
-			// If we're passing more arguments than what the
-			// print/printf function can take, adding an ellipsis
-			// would break the program. For example:
-			//
-			//   func foo(arg1 string, arg2 ...interface{}) {
-			//       fmt.Printf("%s %v", arg1, arg2)
-			//   }
+			// If we're passing more arguments than what the print/printf function can take, adding an ellipsis would break the program.
 			return false
 		}
 		pass.ReportRangef(call, "missing ... in args forwarded to %s-like function", kind)
@@ -497,19 +427,19 @@ func origin(obj types.Object) types.Object {
 	return obj
 }
 
-// isPrint records the print functions.
-// If a key ends in 'f' then it is assumed to be a formatted print.
+// isPrint records the print functions. If a key ends in 'f' then it is
+// assumed to be a formatted print.
 //
-// Keys are either values returned by (*types.Func).FullName,
-// or case-insensitive identifiers such as "errorf".
+// Keys are either values returned by (*types.Func).FullName, or
+// case-insensitive identifiers such as "errorf".
 //
 // The -funcs flag adds to this set.
 //
-// The set below includes facts for many important standard library
-// functions, even though the analysis is capable of deducing that, for
-// example, fmt.Printf forwards to fmt.Fprintf. We avoid relying on the
-// driver applying analyzers to standard packages because "go vet" does
-// not do so with gccgo, and nor do some other build systems.
+// The set below includes facts for many important standard library functions,
+// even though the analysis is capable of deducing that. That set is for
+// example, fmt.Printf forwards to fmt.Fprintf. We avoid relying on the driver
+// applying analyzers to standard packages. This is because "go vet" does not
+// do so with gccgo, and nor do some other build systems.
 var isPrint = stringSet{
 	"fmt.Appendf":  true,
 	"fmt.Append":   true,
@@ -564,9 +494,6 @@ var isPrint = stringSet{
 	"(testing.TB).Skipf":       true,
 }
 
-// formatStringIndex returns the index of the format string (the last
-// non-variadic parameter) within the given printf-like call
-// expression, or -1 if unknown.
 func formatStringIndex(pass *analysis.Pass, call *ast.CallExpr) int {
 	typ := pass.TypesInfo.Types[call.Fun].Type
 	if typ == nil {
@@ -582,8 +509,7 @@ func formatStringIndex(pass *analysis.Pass, call *ast.CallExpr) int {
 	}
 	idx := sig.Params().Len() - 2
 	if idx < 0 {
-		// Skip checking variadic functions without
-		// fixed arguments.
+		// Skip checking variadic functions without fixed arguments.
 		return -1
 	}
 	return idx
@@ -591,8 +517,7 @@ func formatStringIndex(pass *analysis.Pass, call *ast.CallExpr) int {
 
 // stringConstantExpr returns expression's string constant value.
 //
-// ("", false) is returned if expression isn't a string
-// constant.
+// ("", false) is returned if expression isn't a string constant.
 func stringConstantExpr(pass *analysis.Pass, expr ast.Expr) (string, bool) {
 	lit := pass.TypesInfo.Types[expr].Value
 	if lit != nil && lit.Kind() == constant.String {
@@ -637,17 +562,16 @@ func fullname(obj types.Object) string {
 	return obj.Name()
 }
 
-// callKind returns the symbol of the called function
-// and its print/printf kind, if any.
-// (The symbol may be a var for an anonymous function.)
-// The result is memoized in res.funcs.
+// callKind returns the symbol of the called function and its print/printf
+// kind, if any. (The symbol may be a var for an anonymous function.) The
+// result is memoized in res.funcs.
 func callKind(pass *analysis.Pass, obj types.Object, res *Result) Kind {
 	kind, ok := res.funcs[obj]
 	if !ok {
 		// cache miss
 		_, ok := isPrint[fullname(obj)]
 		if !ok {
-			// Next look up just "printf", for use with -printf.funcs.
+			// Next look up "printf", for use with -printf.funcs.
 			_, ok = isPrint[strings.ToLower(obj.Name())]
 		}
 		if ok {
@@ -660,8 +584,7 @@ func callKind(pass *analysis.Pass, obj types.Object, res *Result) Kind {
 				kind = KindPrint
 			}
 		} else {
-			// imported wrappers
-			// Facts are associated with generic declarations, not instantiations.
+			// imported wrappers Facts are associated with generic declarations, not instantiations.
 			obj = origin(obj)
 			var fact isWrapper
 			if pass.ImportObjectFact(obj, &fact) {
@@ -678,9 +601,7 @@ func callKind(pass *analysis.Pass, obj types.Object, res *Result) Kind {
 func isFormatter(typ types.Type) bool {
 	// If the type is an interface, the value it holds might satisfy fmt.Formatter.
 	if _, ok := typ.Underlying().(*types.Interface); ok {
-		// Don't assume type parameters could be formatters. With the greater
-		// expressiveness of constraint interface syntax we expect more type safety
-		// when using type parameters.
+		// Don't assume type parameters could be formatters.
 		if !typeparams.IsTypeParam(typ) {
 			return true
 		}
@@ -708,16 +629,9 @@ func checkPrintf(pass *analysis.Pass, fileVersion string, kind Kind, call *ast.C
 	if !ok {
 		// Format string argument is non-constant.
 
-		// It is a common mistake to call fmt.Printf(msg) with a
-		// non-constant format string and no arguments:
-		// if msg contains "%", misformatting occurs.
+		// It is a common mistake to call fmt.Printf(msg) with a non-constant format
+		// string and no arguments: if msg contains "%", misformatting occurs.
 		// Report the problem and suggest a fix: fmt.Printf("%s", msg).
-		//
-		// However, as described in golang/go#71485, this analysis can produce a
-		// significant number of diagnostics in existing code, and the bugs it
-		// finds are sometimes unlikely or inconsequential, and may not be worth
-		// fixing for some users. Gating on language version allows us to avoid
-		// breaking existing tests and CI scripts.
 		if idx == len(call.Args)-1 &&
 			fileVersion != "" && // fail open
 			versions.AtLeast(fileVersion, versions.Go1_24) {
@@ -748,13 +662,9 @@ func checkPrintf(pass *analysis.Pass, fileVersion string, kind Kind, call *ast.C
 		return
 	}
 
-	// Pass the string constant value so
-	// fmt.Sprintf("%"+("s"), "hi", 3) can be reported as
-	// "fmt.Sprintf call needs 1 arg but has 2 args".
 	operations, err := fmtstr.Parse(format, idx)
 	if err != nil {
-		// All error messages are in predicate form ("call has a problem")
-		// so that they may be affixed into a subject ("log.Printf ").
+		// All error messages are in predicate form ("call has a problem") so that they may be affixed into a subject.
 		pass.ReportRangef(formatArg, "%s %s", name, err)
 		return
 	}
@@ -842,11 +752,7 @@ const (
 
 // printVerbs identifies which flags are known to printf for each verb.
 var printVerbs = []printVerb{
-	// '-' is a width modifier, always valid.
-	// '.' is a precision for float, max width for strings.
-	// '+' is required sign for numbers, Go format for %v.
-	// '#' is alternate format for several verbs.
-	// ' ' is spacer for numbers
+	// '-' is a width modifier, always valid. '.' is a precision for float, max width for strings.
 	{'%', noFlag, 0},
 	{'b', sharpNumFlag, argInt | argFloat | argComplex | argPointer},
 	{'c', "-", argRune | argInt},
@@ -871,9 +777,10 @@ var printVerbs = []printVerb{
 	{'X', sharpNumFlag, argRune | argInt | argString | argPointer | argFloat | argComplex},
 }
 
-// okPrintfArg compares the operation to the arguments actually present,
-// reporting any discrepancies it can discern, maxArgIndex was the index of the highest used index.
-// If the final argument is ellipsissed, there's little it can do for that.
+// okPrintfArg compares the operation to the arguments present, reporting any
+// discrepancies it can discern, maxArgIndex was the index of the highest used
+// index. If the final argument is ellipsissed, there's little it can do for
+// that.
 func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rng analysis.Range, maxArgIndex *int, firstArg int, name string, operation *fmtstr.Operation) (ok bool) {
 	verb := operation.Verb.Verb
 	var v printVerb
@@ -886,22 +793,19 @@ func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rn
 		}
 	}
 
-	// When analyzing go1.26 code, rune and byte are the only %q integers (#72850).
 	if verb == 'q' &&
 		fileVersion != "" && // fail open
 		versions.AtLeast(fileVersion, versions.Go1_26) {
 		v.typ = argRune | argByte | argString
 	}
 
-	// When analyzing go1.27 code, %d does not work on pointers (#62595).
 	if verb == 'd' &&
 		fileVersion != "" && // fail open
 		versions.AtLeast(fileVersion, versions.Go1_27) {
 		v.typ = argInt
 	}
 
-	// Could verb's arg implement fmt.Formatter?
-	// Skip check for the %w verb, which requires an error.
+	// Could verb's arg implement fmt.Formatter? Skip check for the %w verb, which requires an error.
 	formatter := false
 	if v.typ != argError && operation.Verb.ArgIndex < len(call.Args) {
 		if tv, ok := pass.TypesInfo.Types[call.Args[operation.Verb.ArgIndex]]; ok {
@@ -915,8 +819,6 @@ func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rn
 			return false
 		}
 		for _, flag := range operation.Flags {
-			// TODO: Disable complaint about '0' for Go 1.10. To be fixed properly in 1.11.
-			// See issues 23598 and 23605.
 			if flag == '0' {
 				continue
 			}
@@ -952,7 +854,6 @@ func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rn
 		}
 	}
 
-	// Collect to update maxArgNum in one loop.
 	if operation.Verb.ArgIndex != -1 && verb != '%' {
 		argIndexes = append(argIndexes, operation.Verb.ArgIndex)
 	}
@@ -960,9 +861,6 @@ func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rn
 		*maxArgIndex = max(*maxArgIndex, index)
 	}
 
-	// Special case for '%', go will print "fmt.Printf("%10.2%%dhello", 4)"
-	// as "%4hello", discard any runes between the two '%'s, and treat the verb '%'
-	// as an ordinary rune, so early return to skip the type check.
 	if verb == '%' || formatter {
 		return true
 	}
@@ -975,11 +873,6 @@ func okPrintfArg(pass *analysis.Pass, fileVersion string, call *ast.CallExpr, rn
 	arg := call.Args[verbArgIndex]
 	if verb == 'w' {
 		// Check if arg is of type *E where E implements error.
-		// This diagnostic will help prevent potential misuses of errors.As,
-		// errors.Is, etc. If the %w argument in fmt.Errorf is a pointer to an error
-		// type, where the pointer type also happens to implement error, then calls
-		// to errors.Is using the result of fmt.Errorf may behave unexpectedly.
-		// See golang/go#61342.
 		typ := pass.TypesInfo.Types[arg].Type
 		if t, ok := typ.Underlying().(*types.Pointer); ok && types.Implements(t.Elem(), errorType) && versions.AtLeast(fileVersion, versions.Go1_27) {
 			// qual is a qualifier that returns the package name if different from the current package.
@@ -1068,9 +961,7 @@ func recursiveStringer(pass *analysis.Pass, e ast.Expr) (string, bool) {
 		e = u.X // strip off & from &r
 	}
 	if id, ok := e.(*ast.Ident); ok {
-		// Uses refers to the receiver Var for the declared method, but looking up the String
-		// method on the instantiated receiver type may return an instantiated Signature with
-		// distinct parameter variables. Therefore we must compare against the Origin.
+		// Uses refers to the receiver Var for the declared method.
 		if pass.TypesInfo.Uses[id] == sig.Recv().Origin() {
 			return method.FullName(), true
 		}
@@ -1090,7 +981,6 @@ func isStringer(sig *types.Signature) bool {
 func isFunctionValue(pass *analysis.Pass, e ast.Expr) bool {
 	if typ := pass.TypesInfo.Types[e].Type; typ != nil {
 		// Don't call Underlying: a named func type with a String method is ok.
-		// TODO(adonovan): it would be more precise to check isStringer.
 		_, ok := typ.(*types.Signature)
 		return ok
 	}
@@ -1115,15 +1005,12 @@ func argCanBeChecked(pass *analysis.Pass, call *ast.CallExpr, rng analysis.Range
 		return true
 	}
 	// There are bad indexes in the format or there are fewer arguments than the format needs.
-	// This is the argument number relative to the format: Printf("%s", "hi") will give 1 for the "hi".
 	arg := argIndex - firstArg + 1 // People think of arguments as 1-indexed.
 	pass.ReportRangef(rng, "%s format %s reads arg #%d, but call has %v", name, operation.Text, arg, count(len(call.Args)-firstArg, "arg"))
 	return false
 }
 
-// printFormatRE is the regexp we match and report as a possible format string
-// in the first argument to unformatted prints like fmt.Print.
-// We exclude the space flag, so that printing a string like "x % y" is not reported as a format.
+// printFormatRE is the regexp we match and report as a possible format string in the first argument to unformatted prints like fmt.Print.
 var printFormatRE = regexp.MustCompile(`%` + flagsRE + numOptRE + `\.?` + numOptRE + indexOptRE + verbRE)
 
 const (
@@ -1176,13 +1063,11 @@ func checkPrint(pass *analysis.Pass, call *ast.CallExpr, name string) {
 
 	arg := args[0]
 	if s, ok := stringConstantExpr(pass, arg); ok {
-		// Ignore trailing % character
-		// The % in "abc 0.0%" couldn't be a formatting directive.
+		// Ignore trailing % character The % in "abc 0.0%" couldn't be a formatting directive.
 		s = strings.TrimSuffix(s, "%")
 		if strings.Contains(s, "%") {
 			for _, m := range printFormatRE.FindAllString(s, -1) {
-				// Allow %XX where XX are hex digits,
-				// as this is common in URLs.
+				// Allow %XX where XX are hex digits, as this is common in URLs.
 				if len(m) >= 3 && isHex(m[1]) && isHex(m[2]) {
 					continue
 				}
@@ -1219,8 +1104,7 @@ func count(n int, what string) string {
 	return fmt.Sprintf("%d %ss", n, what)
 }
 
-// stringSet is a set-of-nonempty-strings-valued flag.
-// Note: elements without a '.' get lower-cased.
+// stringSet is a set-of-nonempty-strings-valued flag. Note: elements without a '.' get lower-cased.
 type stringSet map[string]bool
 
 func (ss stringSet) String() string {

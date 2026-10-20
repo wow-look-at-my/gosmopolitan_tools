@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package scannererr defines an analyzer for uses of bufio.Scanner
 // in which the user has forgotten to check Scanner.Err.
@@ -73,11 +72,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 callLoop:
 	for curCall := range index.Calls(index.Object("bufio", "NewScanner")) {
-		// If NewScanner's reader operand is infallible (such
-		// as strings.Reader, bytes.Reader, or bytes.Buffer),
-		// disregard it. (Scanning can still fail if a token
-		// or line is longer than the internal buffer, but
-		// that's much less common than an I/O error).
+		// If NewScanner's reader operand is infallible (such as strings.Reader, bytes.Reader, or bytes.Buffer), disregard it.
 		tArg := info.TypeOf(curCall.Node().(*ast.CallExpr).Args[0])
 		if typesinternal.IsPointerToNamed(tArg, "bytes", "Buffer", "Reader") ||
 			typesinternal.IsPointerToNamed(tArg, "strings", "Reader") {
@@ -92,7 +87,7 @@ callLoop:
 			curName := curCall.Parent().ChildAt(edge.ValueSpec_Names, idx)
 			lhs = curName.Node().(*ast.Ident)
 		case edge.AssignStmt_Rhs:
-			// sc := bufio.NewScanner(...)   (or '=')
+			// sc := bufio.NewScanner(...) (or '=')
 			curLhs := curCall.Parent().ChildAt(edge.AssignStmt_Lhs, idx)
 			lhs = curLhs.Node().(ast.Expr)
 		}

@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package generator
 
@@ -108,8 +107,6 @@ func (p structparm) GenElemRef(elidx int, path string) (string, parm) {
 	for fi, f := range p.fields {
 		fne := f.NumElements()
 
-		//verb(4, "+ examining field %d fne %d ct %d", fi, fne, ct)
-
 		// Empty field. Continue on.
 		if elidx == ct && fne == 0 {
 			continue
@@ -118,9 +115,8 @@ func (p structparm) GenElemRef(elidx int, path string) (string, parm) {
 		// Is this field the element we're interested in?
 		if fne == 1 && elidx == ct {
 
-			// The field in question may be a composite that has only
-			// multiple elements but a single non-zero-sized element.
-			// If this is the case, keep going.
+			// The field in question may be a composite that has only multiple elements
+			// but a single non-zero-sized element. If this is the case, keep going.
 			if sp, ok := f.(*structparm); ok {
 				if len(sp.fields) > 1 {
 					ppath := fmt.Sprintf("%s.F%d", path, fi)

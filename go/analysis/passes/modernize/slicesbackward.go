@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -41,15 +40,12 @@ var slicesBackwardAnalyzer = &analysis.Analyzer{
 //	for i := len(s) - 1; i >= 0; i-- {
 //	    use(s[i])
 //	}
-//
-// with a range loop using slices.Backward (added in Go 1.23):
-//
 //	for _, v := range slices.Backward(s) {
 //	    use(v)
 //	}
 //
-// If the loop index is needed beyond just indexing into the slice, both
-// the index and value variables are kept:
+// If the loop index is needed beyond indexing into the slice, both the index
+// and value variables are kept:
 //
 //	for i, v := range slices.Backward(s) { ... }
 func slicesbackward(pass *analysis.Pass) (any, error) {
@@ -71,14 +67,11 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 		for curLoop := range curFile.Preorder((*ast.ForStmt)(nil)) {
 			loop := curLoop.Node().(*ast.ForStmt)
 
-			// Match init:  i := len(s) - 1.
 			init, ok := loop.Init.(*ast.AssignStmt)
 			if !ok || !isSimpleAssign(init) {
 				continue
 			}
 			// We only modernize if the loop defines a new variable with :=.
-			// Rewriting an assignment to a pre-existing variable would change
-			// its value after the loop (the original loop leaves it at -1).
 			if init.Tok != token.DEFINE {
 				continue
 			}
@@ -88,7 +81,6 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 			}
 			indexObj := info.ObjectOf(indexIdent).(*types.Var)
 
-			// RHS must be len(s) - 1.
 			binRhs, ok := init.Rhs[0].(*ast.BinaryExpr)
 			if !ok || binRhs.Op != token.SUB {
 				continue
@@ -108,7 +100,7 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			// Match cond:  i >= 0
+			// Match cond: i >= 0
 			cond, ok := loop.Cond.(*ast.BinaryExpr)
 			if !ok || cond.Op != token.GEQ {
 				continue
@@ -120,7 +112,7 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			// Match post:  i--
+			// Match post: i--
 			dec, ok := loop.Post.(*ast.IncDecStmt)
 			if !ok || dec.Tok != token.DEC {
 				continue
@@ -130,9 +122,6 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 			}
 
 			// Check that i is not used as an lvalue in the loop body.
-			// If init is = (not :=), i is a pre-existing variable; also
-			// check that it is not used as an lvalue outside the loop
-			// (e.g. &i before the loop).
 			bodyCur := curLoop.Child(loop.Body)
 			for curUse := range index.Uses(indexObj) {
 				if !typesinternal.IsAssignedOrAddressTaken(info, curUse) {
@@ -146,9 +135,7 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 				}
 			}
 
-			// Find all uses of i in the loop body. Classify as:
-			//   s[i] — pure element accesses that can be replaced by the value var
-			//   other — index used for non-indexing purposes
+			// Find all uses of i in the loop body.
 			var (
 				// First assignment in the loop body of the form "name := s[i]"; or nil.
 				firstSliceIdxAssign *ast.AssignStmt
@@ -163,15 +150,14 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 				if !bodyCur.Contains(curUse) {
 					continue
 				}
-				// Is i in the Index position of an s[i] expression?
-				// If so, we also need to check whether s[i] is an lvalue. If we're
-				// mutating the slice or taking an element's address, a fix will not
-				// be offered.
-				// Modernization to "for _, v := range slices.Backward(s)" is unsafe if
-				// s[i] is mutated or address-taken (since v would be a local copy of
-				// the element so s[i] wouldn't get mutated).
-				// We don't need to worry about indirect selections (e.g. s[i].n++ where
-				// s is []*item) or indirect references like indexing a slice of slices.
+				// Is i in the Index position of an s[i] expression? If so, we also need
+				// to check whether s[i] is an lvalue. If we're mutating the slice or
+				// taking an element's address, a fix will not be offered. Modernization
+				// to "for _, v := range slices.Backward(s)" is unsafe if s[i] is mutated
+				// or address-taken (since v would be a local copy of the element so s[i]
+				// wouldn't get mutated). We don't need to worry about indirect selections
+				// (e.g. s[i].n++ where s is []*item) or indirect references like indexing
+				// a slice of slices.
 				if curUse.ParentEdgeKind() == edge.IndexExpr_Index {
 					curIdx := curUse.Parent()
 					if typesinternal.IsAssignedOrAddressTaken(info, curIdx) {
@@ -180,18 +166,16 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 					idxExpr := curIdx.Node().(*ast.IndexExpr)
 					if astutil.EqualSyntax(idxExpr.X, sliceExpr) {
 						sliceIdxs++
-						// If the current statement is the first in the body of the form
-						// "name := s[i]", save it so we can use "name" as the value
-						// variable in slices.Backward. We can also remove the entire assign
-						// statement.
+						// If the current statement is the first in the body of the form "name
+						// := s[i]", save it so we can use "name" as the value variable. That
+						// variable is in slices.Backward. We can also remove the entire
+						// assign statement.
 						if firstSliceIdxAssign == nil && curIdx.ParentEdgeKind() == edge.AssignStmt_Rhs {
 							assignStmt := curIdx.Parent().Node().(*ast.AssignStmt)
 							if len(assignStmt.Lhs) == 1 && assignStmt.Tok == token.DEFINE {
-								// The condition above implies that assignStmt.Lhs[0] is a valid
-								// identifier.
+								// The condition above implies that assignStmt.Lhs[0] is a valid identifier.
 								firstSliceIdxAssign = assignStmt
-								// We don't need to replace the index expr with the value variable
-								// name if we are going to remove the entire assignment.
+								// We don't need to replace the index expr with the value variable name if we are going to remove the entire assignment.
 								continue
 							}
 						}
@@ -203,10 +187,6 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 			}
 
 			// Build the suggested fix.
-			//
-			// for i := len(s) - 1;     i >= 0; i-- { ... s[i] ... }
-			//     --------------------------------       ----
-			// for _, v := range slices.Backward(s) { ... v    ... }
 			sliceStr := astutil.Format(pass.Fset, sliceExpr)
 			prefix, edits := refactor.AddImport(info, file, "slices", "slices", "Backward", loop.Pos())
 			elemName := chooseValueName(firstSliceIdxAssign, sliceStr)
@@ -230,9 +210,7 @@ func slicesbackward(pass *analysis.Pass) (any, error) {
 				})
 			}
 
-			// Replace the loop header with a range over slices.Backward. In
-			// well-typed code, at least one of the index or value variables must be
-			// referenced inside the loop body (otherUses + sliceIndexes > 0).
+			// Replace the loop header with a range over slices.Backward.
 			var vars string
 			if otherUses == 0 { // sliceIdxs > 0
 				// All uses of i are s[i]; drop the index variable.

@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -79,9 +78,8 @@ func (b *BasicBlock) replaceSucc(p, q *BasicBlock) {
 	}
 }
 
-// removePred removes all occurrences of p in b's
-// predecessor list and φ-nodes.
-// Ordinarily there should be at most one.
+// removePred removes all occurrences of p in b's predecessor list and
+// φ-nodes. Ordinarily there should be at most one.
 func (b *BasicBlock) removePred(p *BasicBlock) {
 	phis := b.phis()
 

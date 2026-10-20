@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -10,8 +9,8 @@ import (
 	"fmt"
 )
 
-// ID is a Request identifier, which is defined by the spec to be a string, integer, or null.
-// https://www.jsonrpc.org/specification#request_object
+// ID is a Request identifier, which is defined by the spec to be a string,
+// integer, or null.
 type ID struct {
 	value any
 }
@@ -20,10 +19,6 @@ type ID struct {
 // default JSON marshaling of a Request identifier -- nil, float64, or string.
 //
 // Returns an error if the value type was a valid Request ID type.
-//
-// TODO: ID can't be a json.Marshaler/Unmarshaler, because we want to omitzero.
-// Simplify this package by making ID json serializable once we can rely on
-// omitzero.
 func MakeID(v any) (ID, error) {
 	switch v := v.(type) {
 	case nil:
@@ -37,20 +32,15 @@ func MakeID(v any) (ID, error) {
 }
 
 // Message is the interface to all jsonrpc2 message types.
-// They share no common functionality, but are a closed set of concrete types
-// that are allowed to implement this interface. The message types are *Request
-// and *Response.
 type Message interface {
 	// marshal builds the wire form from the API form.
-	// It is private, which makes the set of Message implementations closed.
 	marshal(to *wireCombined)
 }
 
 // Request is a Message sent to a peer to request behavior.
 // If it has an ID it is a call, otherwise it is a notification.
 type Request struct {
-	// ID of this request, used to tie the Response back to the request.
-	// This will be nil for notifications.
+	// ID of this request, used to tie the Response back to the request. This will be nil for notifications.
 	ID ID
 	// Method is a string containing the method name to invoke.
 	Method string
@@ -75,8 +65,7 @@ func StringID(s string) ID { return ID{value: s} }
 // Int64ID creates a new integer request identifier.
 func Int64ID(i int64) ID { return ID{value: i} }
 
-// IsValid returns true if the ID is a valid identifier.
-// The default value for ID will return false.
+// IsValid returns true if the ID is a valid identifier. The default value for ID will return false.
 func (id ID) IsValid() bool { return id.value != nil }
 
 // Raw returns the underlying value of the ID.
@@ -123,14 +112,13 @@ func toWireError(err error) *WireError {
 		return nil
 	}
 	if err, ok := err.(*WireError); ok {
-		// already a wire error, just use it
+		// already a wire error, use it
 		return err
 	}
 	result := &WireError{Message: err.Error()}
 	var wrapped *WireError
 	if errors.As(err, &wrapped) {
-		// if we wrapped a wire error, keep the code from the wrapped error
-		// but the message from the outer error
+		// if we wrapped a wire error, keep the code from the wrapped error but the message from the outer error
 		result.Code = wrapped.Code
 	}
 	return result

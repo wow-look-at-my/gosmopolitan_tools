@@ -1,65 +1,19 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 /*
-Package packagestest creates temporary projects on disk for testing go tools on.
-
-By changing the exporter used, you can create projects for multiple build
+Package packagestest creates temporary projects on disk for testing go tools
+on. By changing the exporter used, you can create projects for multiple build
 systems from the same description, and run the same tests on them in many
-cases.
-
-# Example
-
-As an example of packagestest use, consider the following test that runs
-the 'go list' command on the specified modules:
-
-	// TestGoList exercises the 'go list' command in module mode and in GOPATH mode.
-	func TestGoList(t *testing.T) { packagestest.TestAll(t, testGoList) }
-	func testGoList(t *testing.T, x packagestest.Exporter) {
-		e := packagestest.Export(t, x, []packagestest.Module{
-			{
-				Name: "gopher.example/repoa",
-				Files: map[string]interface{}{
-					"a/a.go": "package a",
-				},
-			},
-			{
-				Name: "gopher.example/repob",
-				Files: map[string]interface{}{
-					"b/b.go": "package b",
-				},
-			},
-		})
-		defer e.Cleanup()
-
-		cmd := exec.Command("go", "list", "gopher.example/...")
-		cmd.Dir = e.Config.Dir
-		cmd.Env = e.Config.Env
-		out, err := cmd.Output()
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("'go list gopher.example/...' with %s mode layout:\n%s", x.Name(), out)
-	}
-
-TestGoList uses TestAll to exercise the 'go list' command with all
-exporters known to packagestest. Currently, packagestest includes
-exporters that produce module mode layouts and GOPATH mode layouts.
-Running the test with verbose output will print:
-
-	=== RUN   TestGoList
-	=== RUN   TestGoList/GOPATH
-	=== RUN   TestGoList/Modules
-	--- PASS: TestGoList (0.21s)
-	    --- PASS: TestGoList/GOPATH (0.03s)
-	        main_test.go:36: 'go list gopher.example/...' with GOPATH mode layout:
-	            gopher.example/repoa/a
-	            gopher.example/repob/b
-	    --- PASS: TestGoList/Modules (0.18s)
-	        main_test.go:36: 'go list gopher.example/...' with Modules mode layout:
-	            gopher.example/repoa/a
-	            gopher.example/repob/b
+cases. # Example As an example of packagestest use, consider the following
+test that runs the 'go list' command on the specified modules: // TestGoList
+exercises the 'go list' command in module mode and in GOPATH mode. func
+TestGoList(t *testing.T) { packagestest.TestAll(t, testGoList) } func
+testGoList(t *testing.T, x packagestest.Exporter) { e :=
+packagestest.Export(t, x, []packagestest.Module{ { Name:
+"gopher.example/repoa", Files: map[string]interface{}{ "a/a.go": "package a",
+}, }, { Name: "gopher.example/repob", Files: map[string]interface{}{
+"b/b.go": "package b", }, }, }) defer e.Cleanup() cmd := exec.
 */
 package packagestest
 
@@ -86,8 +40,7 @@ var (
 	skipCleanup = flag.Bool("skip-cleanup", false, "Do not delete the temporary export folders") // for debugging
 )
 
-// ErrUnsupported indicates an error due to an operation not supported on the
-// current platform.
+// ErrUnsupported indicates an error due to an operation not supported on the current platform.
 var ErrUnsupported = errors.New("operation is not supported")
 
 // Module is a representation of a go module.
@@ -95,27 +48,18 @@ type Module struct {
 	// Name is the base name of the module as it would be in the go.mod file.
 	Name string
 	// Files is the set of source files for all packages that make up the module.
-	// The keys are the file fragment that follows the module name, the value can
-	// be a string or byte slice, in which case it is the contents of the
-	// file, otherwise it must be a Writer function.
 	Files map[string]any
 
 	// Overlay is the set of source file overlays for the module.
-	// The keys are the file fragment as in the Files configuration.
-	// The values are the in memory overlay content for the file.
 	Overlay map[string][]byte
 }
 
 // A Writer is a function that writes out a test file.
-// It is provided the name of the file to write, and may return an error if it
-// cannot write the file.
-// These are used as the content of the Files map in a Module.
 type Writer func(filename string) error
 
 // Exported is returned by the Export function to report the structure that was produced on disk.
 type Exported struct {
 	// Config is a correctly configured packages.Config ready to be passed to packages.Load.
-	// Exactly what it will contain varies depending on the Exporter being used.
 	Config *packages.Config
 
 	// Modules is the module description that was used to produce this exported data set.
@@ -123,8 +67,8 @@ type Exported struct {
 
 	ExpectFileSet *token.FileSet // The file set used when parsing expectations
 
-	Exporter Exporter                     // the exporter used
-	temp     string                       // the temporary directory that was exported to
+	Exporter Exporter // the exporter used
+	temp     string
 	primary  string                       // the first non GOROOT module that was exported
 	written  map[string]map[string]string // the full set of exported files
 	notes    []*expect.Note               // The list of expectations extracted from go source files
@@ -137,22 +81,16 @@ type Exporter interface {
 	// Name reports the name of the exporter, used in logging and sub-test generation.
 	Name() string
 	// Filename reports the system filename for test data source file.
-	// It is given the base directory, the module the file is part of and the filename fragment to
-	// work from.
 	Filename(exported *Exported, module, fragment string) string
-	// Finalize is called once all files have been written to write any extra data needed and modify
-	// the Config to match. It is handed the full list of modules that were encountered while writing
-	// files.
+	// Finalize is called once all files have been written to write any extra data needed and modify the Config to match.
 	Finalize(exported *Exported) error
 }
 
-// All is the list of known exporters.
-// This is used by TestAll to run tests with all the exporters.
+// All is the list of known exporters. This is used by TestAll to run tests with all the exporters.
 var All = []Exporter{GOPATH, Modules}
 
 // TestAll invokes the testing function once for each exporter registered in
 // the All global.
-// Each exporter will be run as a sub-test named after the exporter being used.
 func TestAll(t *testing.T, f func(*testing.T, Exporter)) {
 	t.Helper()
 	for _, e := range All {
@@ -163,9 +101,8 @@ func TestAll(t *testing.T, f func(*testing.T, Exporter)) {
 	}
 }
 
-// BenchmarkAll invokes the testing function once for each exporter registered in
-// the All global.
-// Each exporter will be run as a sub-test named after the exporter being used.
+// BenchmarkAll invokes the testing function once for each exporter registered
+// in the All global.
 func BenchmarkAll(b *testing.B, f func(*testing.B, Exporter)) {
 	b.Helper()
 	for _, e := range All {
@@ -177,14 +114,13 @@ func BenchmarkAll(b *testing.B, f func(*testing.B, Exporter)) {
 }
 
 // Export is called to write out a test directory from within a test function.
-// It takes the exporter and the build system agnostic module descriptions, and
-// uses them to build a temporary directory.
-// It returns an Exported with the results of the export.
-// The Exported.Config is prepared for loading from the exported data.
-// You must invoke Exported.Cleanup on the returned value to clean up.
-// The file deletion in the cleanup can be skipped by setting the skip-cleanup
-// flag when invoking the test, allowing the temporary directory to be left for
-// debugging tests.
+// It takes the exporter and the build system agnostic module descriptions,
+// and uses them to build a temporary directory. It returns an Exported with
+// the results of the export. The Exported.Config is prepared for loading from
+// the exported data. You must invoke Exported.Cleanup on the returned value
+// to clean up. The file deletion in the cleanup can be skipped by setting the
+// skip-cleanup flag. This happens when invoking the test, allowing the
+// temporary directory to be left for debugging tests.
 //
 // If the Writer for any file within any module returns an error equivalent to
 // ErrUnsupported, Export skips the test.
@@ -203,7 +139,7 @@ func Export(t testing.TB, exporter Exporter, modules []Module) *Exported {
 	exported := &Exported{
 		Config: &packages.Config{
 			Dir:     temp,
-			Env:     append(os.Environ(), "GOPACKAGESDRIVER=off", "GOROOT="), // Clear GOROOT to work around #32849.
+			Env:     append(os.Environ(), "GOPACKAGESDRIVER=off", "GOROOT="),
 			Overlay: make(map[string][]byte),
 			Tests:   true,
 			Mode:    packages.LoadImports,
@@ -224,10 +160,8 @@ func Export(t testing.TB, exporter Exporter, modules []Module) *Exported {
 		}
 	}()
 	for _, module := range modules {
-		// Create all parent directories before individual files. If any file is a
-		// symlink to a directory, that directory must exist before the symlink is
-		// created or else it may be created with the wrong type on Windows.
-		// (See https://golang.org/issue/39183.)
+		// Create all parent directories before individual files. Suppose any file
+		// is a symlink to a directory.
 		for fragment := range module.Files {
 			fullpath := exporter.Filename(exported, module.Name, filepath.FromSlash(fragment))
 			if err := os.MkdirAll(filepath.Dir(fullpath), 0755); err != nil {
@@ -273,7 +207,6 @@ func Export(t testing.TB, exporter Exporter, modules []Module) *Exported {
 
 // Script returns a Writer that writes out contents to the file and sets the
 // executable bit on the created file.
-// It is intended for source files that are shell scripts.
 func Script(contents string) Writer {
 	return func(filename string) error {
 		return os.WriteFile(filename, []byte(contents), 0755)
@@ -296,8 +229,7 @@ func Link(source string) Writer {
 			// isn't supported.
 			if stat, err := openAndStat(source); err == nil {
 				if err := createEmpty(filename, stat.Mode()); err == nil {
-					// Successfully opened the source and created the destination,
-					// but the result is empty and not a hard-link.
+					// Successfully opened the source and created the destination, but the result is empty and not a hard-link.
 					return &os.PathError{Op: "Link", Path: filename, Err: ErrUnsupported}
 				}
 			}
@@ -326,12 +258,10 @@ func Symlink(source string) Writer {
 		symlinkErr := os.Symlink(source, filename)
 
 		if symlinkErr != nil && !builderMustSupportLinks() {
-			// Probe to figure out whether Symlink failed because the Symlink
-			// operation isn't supported.
+			// Probe to figure out whether Symlink failed because the Symlink operation isn't supported.
 			fullSource := source
 			if !filepath.IsAbs(source) {
-				// Compute the target path relative to the parent of filename, not the
-				// current working directory.
+				// Compute the target path relative to the parent of filename, not the current working directory.
 				fullSource = filepath.Join(filename, "..", source)
 			}
 			stat, err := openAndStat(fullSource)
@@ -339,15 +269,12 @@ func Symlink(source string) Writer {
 			if err == nil {
 				mode = stat.Mode()
 			} else if !errors.Is(err, os.ErrNotExist) {
-				// We couldn't open the source, but it might exist. We don't expect to be
-				// able to portably create a symlink to a file we can't see.
+				// We couldn't open the source, but it might exist.
 				return symlinkErr
 			}
 
 			if err := createEmpty(filename, mode|0644); err == nil {
-				// Successfully opened the source (or verified that it does not exist) and
-				// created the destination, but we couldn't create it as a symlink.
-				// Probably the OS just doesn't support symlinks in this context.
+				// Successfully opened the source (or verified that it does not exist) and created the destination.
 				return &os.PathError{Op: "Symlink", Path: filename, Err: ErrUnsupported}
 			}
 		}
@@ -360,20 +287,17 @@ func Symlink(source string) Writer {
 // that is known to support hard and symbolic links.
 func builderMustSupportLinks() bool {
 	if os.Getenv("GO_BUILDER_NAME") == "" {
-		// Any OS can be configured to mount an exotic filesystem.
-		// Don't make assumptions about what users are running.
+		// Any OS can be configured to mount an exotic filesystem. Don't make assumptions about what users are running.
 		return false
 	}
 
 	switch runtime.GOOS {
 	case "windows", "plan9":
-		// Some versions of Windows and all versions of plan9 do not support
-		// symlinks by default.
+		// Some versions of Windows and all versions of plan9 do not support symlinks by default.
 		return false
 
 	default:
-		// All other platforms should support symlinks by default, and our builders
-		// should not do anything unusual that would violate that.
+		// All other platforms should support symlinks by default.
 		return true
 	}
 }
@@ -421,8 +345,7 @@ func Copy(source string) Writer {
 			return err
 		}
 		if !stat.Mode().IsRegular() {
-			// cannot copy non-regular files (e.g., directories,
-			// symlinks, devices, etc.)
+			// cannot copy non-regular files (e.g., directories, symlinks, devices, etc.)
 			return fmt.Errorf("cannot copy non regular file %s", source)
 		}
 		return copyFile(filename, source, stat.Mode().Perm())
@@ -449,24 +372,6 @@ func copyFile(dest, source string, perm os.FileMode) error {
 }
 
 // GroupFilesByModules attempts to map directories to the modules within each directory.
-// This function assumes that the folder is structured in the following way:
-//
-//	dir/
-//		primarymod/
-//			*.go files
-//			packages
-//			go.mod (optional)
-//		modules/
-//			repoa/
-//				mod1/
-//					*.go files
-//					packages
-//					go.mod (optional)
-//
-// It scans the directory tree anchored at root and adds a Copy writer to the
-// map for every file found.
-// This is to enable the common case in tests where you have a full copy of the
-// package in your testdata.
 func GroupFilesByModules(root string) ([]Module, error) {
 	root = filepath.FromSlash(root)
 	primarymodPath := filepath.Join(root, "primarymod")
@@ -514,15 +419,7 @@ func GroupFilesByModules(root string) ([]Module, error) {
 			return
 		}
 		// Handle the case where we step into a nested directory that is a module
-		// and then step out into the parent which is also a module.
-		// Example:
-		// - repoa
-		//   - moda
-		//     - go.mod
-		//     - v2
-		//       - go.mod
-		//     - what.go
-		//   - modb
+		// and then step out into the parent. That parent is also a module.
 		for dir != root {
 			if mods[dir] != nil {
 				currentModule = dir
@@ -554,14 +451,12 @@ func GroupFilesByModules(root string) ([]Module, error) {
 			currentRepo = path
 			return nil
 		}
-		// If the path is a directory and it's enclosing folder is not the same
-		// as the current repo and it is not of the form `v1`,`v2`,...
-		// then the path is a folder/package of the current module.
+		// If the path is a directory and it is enclosing folder is not the same as
+		// the current repo and it.
 		if enclosingDir != currentRepo && !versionSuffixRE.MatchString(filepath.Base(path)) {
 			return nil
 		}
-		// If the path is a directory and it's enclosing folder is the current repo
-		// then the path is a new module.
+		// If the path is a directory and it's enclosing folder is the current repo then the path is a new module.
 		module, err := filepath.Rel(modulesPath, path)
 		if err != nil {
 			return err
@@ -650,9 +545,8 @@ func (e *Exported) File(module, fragment string) string {
 	return ""
 }
 
-// FileContents returns the contents of the specified file.
-// It will use the overlay if the file is present, otherwise it will read it
-// from disk.
+// FileContents returns the contents of the specified file. It will use the
+// overlay if the file is present, otherwise it will read it from disk.
 func (e *Exported) FileContents(filename string) ([]byte, error) {
 	if content, found := e.Config.Overlay[filename]; found {
 		return content, nil

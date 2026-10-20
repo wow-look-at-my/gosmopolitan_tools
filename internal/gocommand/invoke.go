@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package gocommand is a helper for calling the go command.
 package gocommand
@@ -37,8 +36,7 @@ type Runner struct {
 	// inFlight tracks available workers.
 	inFlight chan struct{}
 
-	// serialized guards the ability to run a go command serially,
-	// to avoid deadlocks when claiming workers.
+	// serialized guards the ability to run a go command serially, to avoid deadlocks when claiming workers.
 	serialized chan struct{}
 }
 
@@ -51,8 +49,6 @@ func (runner *Runner) initialize() {
 	})
 }
 
-// 1.13: go: updates to go.mod needed, but contents have changed
-// 1.14: go: updating go.mod: existing contents have changed since last read
 var modConcurrencyError = regexp.MustCompile(`go:.*go.mod.*contents have changed`)
 
 // event keys for go command invocations
@@ -86,8 +82,7 @@ func (runner *Runner) RunPiped(ctx context.Context, inv Invocation, stdout, stde
 }
 
 // RunRaw runs the invocation, serializing requests only if they fight over
-// go.mod changes.
-// Postcondition: both error results have same nilness.
+// go.mod changes. Postcondition: both error results have same nilness.
 func (runner *Runner) RunRaw(ctx context.Context, inv Invocation) (*bytes.Buffer, *bytes.Buffer, error, error) {
 	ctx, done := event.Start(ctx, "gocommand.Runner.RunRaw", invLabels(inv)...)
 	defer done()
@@ -112,7 +107,6 @@ func (runner *Runner) RunRaw(ctx context.Context, inv Invocation) (*bytes.Buffer
 
 // Postcondition: both error results have same nilness.
 func (runner *Runner) runConcurrent(ctx context.Context, inv Invocation) (*bytes.Buffer, *bytes.Buffer, error, error) {
-	// Wait for 1 worker to become available.
 	select {
 	case <-ctx.Done():
 		return nil, nil, ctx.Err(), ctx.Err()
@@ -130,8 +124,7 @@ func (runner *Runner) runPiped(ctx context.Context, inv Invocation, stdout, stde
 	// Make sure the runner is always initialized.
 	runner.initialize()
 
-	// Acquire the serialization lock. This avoids deadlocks between two
-	// runPiped commands.
+	// Acquire the serialization lock.
 	select {
 	case <-ctx.Done():
 		return ctx.Err(), ctx.Err()
@@ -160,22 +153,16 @@ type Invocation struct {
 	Args       []string
 	BuildFlags []string
 
-	// If ModFlag is set, the go command is invoked with -mod=ModFlag.
-	// TODO(rfindley): remove, in favor of Args.
+	// If ModFlag is set, the go command is invoked with -mod=ModFlag. TODO(rfindley): remove, in favor of Args.
 	ModFlag string
 
-	// If ModFile is set, the go command is invoked with -modfile=ModFile.
-	// TODO(rfindley): remove, in favor of Args.
+	// If ModFile is set, the go command is invoked with -modfile=ModFile. TODO(rfindley): remove, in favor of Args.
 	ModFile string
 
-	// Overlay is the name of the JSON overlay file that describes
-	// unsaved editor buffers; see [WriteOverlays].
-	// If set, the go command is invoked with -overlay=Overlay.
-	// TODO(rfindley): remove, in favor of Args.
+	// Overlay is the name of the JSON overlay file that describes unsaved editor buffers; see [WriteOverlays].
 	Overlay string
 
-	// If CleanEnv is set, the invocation will run only with the environment
-	// in Env, not starting with os.Environ.
+	// If CleanEnv is set, the invocation will run only with the environment in Env, not starting with os.Environ.
 	CleanEnv   bool
 	Env        []string
 	WorkingDir string
@@ -249,23 +236,10 @@ func (i *Invocation) run(ctx context.Context, stdout, stderr io.Writer) error {
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
-	// https://go.dev/issue/59541: don't wait forever copying stderr
-	// after the command has exited.
-	// After CL 484741 we copy stdout manually, so we we'll stop reading that as
-	// soon as ctx is done. However, we also don't want to wait around forever
-	// for stderr. Give a much-longer-than-reasonable delay and then assume that
-	// something has wedged in the kernel or runtime.
+	// https://go.dev/issue/59541: don't wait forever copying stderr after the command has exited.
 	cmd.WaitDelay = 30 * time.Second
 
-	// The cwd gets resolved to the real path. On Darwin, where
-	// /tmp is a symlink, this breaks anything that expects the
-	// working directory to keep the original path, including the
-	// go command when dealing with modules.
-	//
-	// os.Getwd has a special feature where if the cwd and the PWD
-	// are the same node then it trusts the PWD, so by setting it
-	// in the env for the child process we fix up all the paths
-	// returned by the go command.
+	// The cwd gets resolved to the real path.
 	if !i.CleanEnv {
 		cmd.Env = os.Environ()
 	}
@@ -285,27 +259,13 @@ func (i *Invocation) run(ctx context.Context, stdout, stderr io.Writer) error {
 	return runCmdContext(ctx, cmd)
 }
 
-// DebugHangingGoCommands may be set by tests to enable additional
-// instrumentation (including panics) for debugging hanging Go commands.
-//
-// See golang/go#54461 for details.
+// DebugHangingGoCommands may be set by tests to enable additional instrumentation.
 var DebugHangingGoCommands = false
 
 // runCmdContext is like exec.CommandContext except it sends os.Interrupt
 // before os.Kill.
 func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
-	// If cmd.Stdout is not an *os.File, the exec package will create a pipe and
-	// copy it to the Writer in a goroutine until the process has finished and
-	// either the pipe reaches EOF or command's WaitDelay expires.
-	//
-	// However, the output from 'go list' can be quite large, and we don't want to
-	// keep reading (and allocating buffers) if we've already decided we don't
-	// care about the output. We don't want to wait for the process to finish, and
-	// we don't wait to wait for the WaitDelay to expire either.
-	//
-	// Instead, if cmd.Stdout requires a copying goroutine we explicitly replace
-	// it with a pipe (which is an *os.File), which we can close in order to stop
-	// copying output as soon as we realize we don't care about it.
+	// If cmd.Stdout is not an *os.File, the exec package will create.
 	var stdoutW *os.File
 	if cmd.Stdout != nil {
 		if _, ok := cmd.Stdout.(*os.File); !ok {
@@ -326,18 +286,14 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 				stdoutErr <- err
 			}()
 			defer func() {
-				// We started a goroutine to copy a stdout pipe.
-				// Wait for it to finish, or terminate it if need be.
+				// We started a goroutine to copy a stdout pipe. Wait for it to finish, or terminate it if need be.
 				var err2 error
 				select {
 				case err2 = <-stdoutErr:
 					stdoutR.Close()
 				case <-ctx.Done():
 					stdoutR.Close()
-					// Per https://pkg.go.dev/os#File.Close, the call to stdoutR.Close
-					// should cause the Read call in io.Copy to unblock and return
-					// immediately, but we still need to receive from stdoutErr to confirm
-					// that it has happened.
+					// Per https://pkg.go.dev/os#File.Close.
 					<-stdoutErr
 					err2 = ctx.Err()
 				}
@@ -346,12 +302,8 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 				}
 			}()
 
-			// Per https://pkg.go.dev/os/exec#Cmd, “If Stdout and Stderr are the
-			// same writer, and have a type that can be compared with ==, at most
-			// one goroutine at a time will call Write.”
-			//
-			// Since we're starting a goroutine that writes to cmd.Stdout, we must
-			// also update cmd.Stderr so that it still holds.
+			// Per https://pkg.go.dev/os/exec#Cmd, “If Stdout and Stderr are the same
+			// writer, and have a type that can be compared with ==.
 			func() {
 				defer func() { recover() }()
 				if cmd.Stderr == prevStdout {
@@ -364,8 +316,7 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 	startTime := time.Now()
 	err = cmd.Start()
 	if stdoutW != nil {
-		// The child process has inherited the pipe file,
-		// so close the copy held in this process.
+		// The child process has inherited the pipe file, so close the copy held in this process.
 		stdoutW.Close()
 		stdoutW = nil
 	}
@@ -378,8 +329,7 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 		resChan <- cmd.Wait()
 	}()
 
-	// If we're interested in debugging hanging Go commands, stop waiting after a
-	// minute and panic with interesting information.
+	// If we're interested in debugging hanging Go commands, stop waiting after a minute and panic with interesting information.
 	debug := DebugHangingGoCommands
 	if debug {
 		timer := time.NewTimer(1 * time.Minute)
@@ -388,8 +338,7 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 		case err := <-resChan:
 			return err
 		case <-timer.C:
-			// HandleHangingGoCommand terminates this process.
-			// Pass off resChan in case we can collect the command error.
+			// handleHangingGoCommand terminates this process. Pass off resChan in case we can collect the command error.
 			handleHangingGoCommand(startTime, cmd, resChan)
 		case <-ctx.Done():
 		}
@@ -403,8 +352,7 @@ func runCmdContext(ctx context.Context, cmd *exec.Cmd) (err error) {
 
 	// Cancelled. Interrupt and see if it ends voluntarily.
 	if err := cmd.Process.Signal(os.Interrupt); err == nil {
-		// (We used to wait only 1s but this proved
-		// fragile on loaded builder machines.)
+		// (We used to wait only 1s but this proved fragile on loaded builder machines.)
 		timer := time.NewTimer(5 * time.Second)
 		defer timer.Stop()
 		select {
@@ -496,13 +444,13 @@ func cmdDebugStr(cmd *exec.Cmd) string {
 	return fmt.Sprintf("GOROOT=%v GOPATH=%v GO111MODULE=%v GOPROXY=%v PWD=%v %v", env["GOROOT"], env["GOPATH"], env["GO111MODULE"], env["GOPROXY"], env["PWD"], strings.Join(args, " "))
 }
 
-// WriteOverlays writes each value in the overlay (see the Overlay
-// field of go/packages.Config) to a temporary file and returns the name
-// of a JSON file describing the mapping that is suitable for the "go
-// list -overlay" flag.
+// WriteOverlays writes each value in the overlay (see the Overlay field of
+// go/packages.Config) to a temporary file and returns the name of a JSON file
+// describing the mapping. That mapping is suitable for the "go list -overlay"
+// flag.
 //
-// On success, the caller must call the cleanup function exactly once
-// when the files are no longer needed.
+// On success, the caller must call the cleanup function exactly once when the
+// files are no longer needed.
 func WriteOverlays(overlay map[string][]byte) (filename string, cleanup func(), err error) {
 	// Do nothing if there are no overlays in the config.
 	if len(overlay) == 0 {
@@ -514,10 +462,8 @@ func WriteOverlays(overlay map[string][]byte) (filename string, cleanup func(), 
 		return "", nil, err
 	}
 
-	// The caller must clean up this directory,
-	// unless this function returns an error.
-	// (The cleanup operand of each return
-	// statement below is ignored.)
+	// The caller must clean up this directory, unless this function returns an
+	// error.
 	defer func() {
 		cleanup = func() {
 			os.RemoveAll(dir)
@@ -531,8 +477,7 @@ func WriteOverlays(overlay map[string][]byte) (filename string, cleanup func(), 
 	// Write each map entry to a temporary file.
 	overlays := make(map[string]string)
 	for k, v := range overlay {
-		// Use a unique basename for each file (001-foo.go),
-		// to avoid creating nested directories.
+		// Use a unique basename for each file (001-foo.go), to avoid creating nested directories.
 		base := fmt.Sprintf("%d-%s", 1+len(overlays), filepath.Base(k))
 		filename := filepath.Join(dir, base)
 		err := os.WriteFile(filename, v, 0666)
@@ -543,14 +488,6 @@ func WriteOverlays(overlay map[string][]byte) (filename string, cleanup func(), 
 	}
 
 	// Write the JSON overlay file that maps logical file names to temp files.
-	//
-	// OverlayJSON is the format overlay files are expected to be in.
-	// The Replace map maps from overlaid paths to replacement paths:
-	// the Go command will forward all reads trying to open
-	// each overlaid path to its replacement path, or consider the overlaid
-	// path not to exist if the replacement path is empty.
-	//
-	// From golang/go#39958.
 	type OverlayJSON struct {
 		Replace map[string]string `json:"replace,omitempty"`
 	}

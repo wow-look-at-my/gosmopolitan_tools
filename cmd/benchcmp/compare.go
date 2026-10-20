@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -17,7 +16,6 @@ type BenchCmp struct {
 	After  *parse.Benchmark
 }
 
-// Correlate correlates benchmarks from two BenchSets.
 func Correlate(before, after parse.Set) (cmps []BenchCmp, warnings []string) {
 	cmps = make([]BenchCmp, 0, len(after))
 	for name, beforebb := range before {
@@ -64,8 +62,6 @@ func (d Delta) mag() float64 {
 	case d.Before == 0 && d.After == 0:
 		return 1
 	default:
-		// 0 -> 1 or 1 -> 0
-		// These are significant changes and worth surfacing.
 		return math.Inf(1)
 	}
 }
@@ -73,8 +69,7 @@ func (d Delta) mag() float64 {
 // Changed reports whether the benchmark quantities are different.
 func (d Delta) Changed() bool { return d.Before != d.After }
 
-// Float64 returns After / Before. If Before is 0, Float64 returns
-// 1 if After is also 0, and +Inf otherwise.
+// Float64 returns After / Before.
 func (d Delta) Float64() float64 {
 	switch {
 	case d.Before != 0:
@@ -86,7 +81,6 @@ func (d Delta) Float64() float64 {
 	}
 }
 
-// Percent formats a Delta as a percent change, ranging from -100% up.
 func (d Delta) Percent() string {
 	return fmt.Sprintf("%+.2f%%", 100*d.Float64()-100)
 }
@@ -100,8 +94,7 @@ func (d Delta) String() string {
 	return fmt.Sprintf("Δ(%f, %f)", d.Before, d.After)
 }
 
-// ByParseOrder sorts BenchCmps to match the order in
-// which the Before benchmarks were presented to Parse.
+// ByParseOrder sorts BenchCmps to match the order in which the Before benchmarks were presented to Parse.
 type ByParseOrder []BenchCmp
 
 func (x ByParseOrder) Len() int           { return len(x) }
@@ -119,24 +112,21 @@ func lessByDelta(i, j BenchCmp, calcDelta func(BenchCmp) Delta) bool {
 	return i.Name() < j.Name()
 }
 
-// ByDeltaNsPerOp sorts BenchCmps lexicographically by change
-// in ns/op, descending, then by benchmark name.
+// ByDeltaNsPerOp sorts BenchCmps lexicographically by change in ns/op, descending, then by benchmark name.
 type ByDeltaNsPerOp []BenchCmp
 
 func (x ByDeltaNsPerOp) Len() int           { return len(x) }
 func (x ByDeltaNsPerOp) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByDeltaNsPerOp) Less(i, j int) bool { return lessByDelta(x[i], x[j], BenchCmp.DeltaNsPerOp) }
 
-// ByDeltaMBPerS sorts BenchCmps lexicographically by change
-// in MB/s, descending, then by benchmark name.
+// ByDeltaMBPerS sorts BenchCmps lexicographically by change in MB/s, descending, then by benchmark name.
 type ByDeltaMBPerS []BenchCmp
 
 func (x ByDeltaMBPerS) Len() int           { return len(x) }
 func (x ByDeltaMBPerS) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (x ByDeltaMBPerS) Less(i, j int) bool { return lessByDelta(x[i], x[j], BenchCmp.DeltaMBPerS) }
 
-// ByDeltaAllocedBytesPerOp sorts BenchCmps lexicographically by change
-// in B/op, descending, then by benchmark name.
+// ByDeltaAllocedBytesPerOp sorts BenchCmps lexicographically by change in B/op, descending, then by benchmark name.
 type ByDeltaAllocedBytesPerOp []BenchCmp
 
 func (x ByDeltaAllocedBytesPerOp) Len() int      { return len(x) }
@@ -145,8 +135,7 @@ func (x ByDeltaAllocedBytesPerOp) Less(i, j int) bool {
 	return lessByDelta(x[i], x[j], BenchCmp.DeltaAllocedBytesPerOp)
 }
 
-// ByDeltaAllocsPerOp sorts BenchCmps lexicographically by change
-// in allocs/op, descending, then by benchmark name.
+// ByDeltaAllocsPerOp sorts BenchCmps lexicographically by change in allocs/op, descending, then by benchmark name.
 type ByDeltaAllocsPerOp []BenchCmp
 
 func (x ByDeltaAllocsPerOp) Len() int      { return len(x) }

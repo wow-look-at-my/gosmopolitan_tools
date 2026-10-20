@@ -1,18 +1,12 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package graph
 
 import "iter"
 
-// A CompactGraph is a Graph with nodes that are compactly numbered from [0,
+// A CompactGraph is a Graph with nodes that are compactly numbered from [no
 // NumNodes()).
-//
-// Compactly numbered graphs are useful for many graph algorithms, and many
-// graph representations are naturally compact.
-//
-// To compact an arbitrary graph, use [Compact].
 type CompactGraph interface {
 	Graph[int]
 	IsCompact()
@@ -27,19 +21,16 @@ type nodePreserving interface {
 
 // Compact takes a Graph with arbitrary NodeIDs and returns a compact graph.
 //
-// If g implements [CompactGraph], it assumes g is already compact and simply
-// returns g and an identity mapping.
+// If g implements [CompactGraph], it assumes g is already compact and returns
+// g and an identity mapping.
 func Compact[NodeID comparable](g Graph[NodeID]) (CompactGraph, *Index[NodeID]) {
-	// If it's already compact, simply return it.
+	// If it's already compact, return it.
 	if gc, ok := g.(CompactGraph); ok {
-		// The above assertion ensures NodeID is int, so we know this type
-		// assertion will always succeed.
+		// The above assertion ensures NodeID is int, so we know this type assertion will always succeed.
 		return gc, any(NewIdentityIndex(gc.NumNodes())).(*Index[NodeID])
 	}
 
-	// If it's a transformation and the underlying graph is compact, we can use
-	// an identity index. Though we still need to build a compactGraph to
-	// satisfy the CompactGraph interface.
+	// If it's a transformation and the underlying graph is compact, we can use an identity index.
 	g2, _ := g.(nodePreserving)
 	for g2 != nil {
 		unwrapped := g2.unwrapPreservingNodes()
@@ -51,7 +42,7 @@ func Compact[NodeID comparable](g Graph[NodeID]) (CompactGraph, *Index[NodeID]) 
 		g2, _ = unwrapped.(nodePreserving)
 	}
 
-	// Nope, just build an index.
+	// Nope, build an index.
 	cg := compactGraph[NodeID]{g, NewIndex(g.Nodes())}
 	return &cg, cg.m
 }

@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -17,16 +16,12 @@ import (
 // Listener is implemented by protocols to accept new inbound connections.
 type Listener interface {
 	// Accept accepts an inbound connection to a server.
-	// It blocks until either an inbound connection is made, or the listener is closed.
 	Accept(context.Context) (io.ReadWriteCloser, error)
 
-	// Close closes the listener.
-	// Any blocked Accept or Dial operations will unblock and return errors.
+	// Close closes the listener. Any blocked Accept or Dial operations will unblock and return errors.
 	Close() error
 
-	// Dialer returns a dialer that can be used to connect to this listener
-	// locally.
-	// If a listener does not implement this it will return nil.
+	// Dialer returns a dialer that can be used to connect to this listener locally.
 	Dialer() Dialer
 }
 
@@ -47,15 +42,8 @@ type Server struct {
 }
 
 // Dial uses the dialer to make a new connection, wraps the returned
-// reader and writer using the framer to make a stream, and then builds
+// reader and writer using the framer to make a stream. And then builds
 // a connection on top of that stream using the binder.
-//
-// The returned Connection will operate independently using the Preempter and/or
-// Handler provided by the Binder, and will release its own resources when the
-// connection is broken, but the caller may Close it earlier to stop accepting
-// (or sending) new requests.
-//
-// If non-nil, the onDone function is called when the connection is closed.
 func Dial(ctx context.Context, dialer Dialer, binder Binder, onDone func()) (*Connection, error) {
 	// dial a server
 	rwc, err := dialer.Dial(ctx)
@@ -65,13 +53,9 @@ func Dial(ctx context.Context, dialer Dialer, binder Binder, onDone func()) (*Co
 	return bindConnection(ctx, rwc, binder, onDone), nil
 }
 
-// NewServer starts a new server listening for incoming connections and returns
-// it.
-// This returns a fully running and connected server, it does not block on
-// the listener.
-// You can call Wait to block on the server, or Shutdown to get the sever to
-// terminate gracefully.
-// To notice incoming connections, use an intercepting Binder.
+// NewServer starts a new server listening for incoming connections and
+// returns it. This returns a fully running and connected server, it does not
+// block on the listener.
 func NewServer(ctx context.Context, listener Listener, binder Binder) *Server {
 	server := &Server{
 		listener: listener,
@@ -95,9 +79,9 @@ func (s *Server) Shutdown() {
 	})
 }
 
-// run accepts incoming connections from the listener,
-// If IdleTimeout is non-zero, run exits after there are no clients for this
-// duration, otherwise it exits only on error.
+// run accepts incoming connections from the listener, If IdleTimeout is
+// non-zero, run exits after there are no clients. For this duration,
+// otherwise it exits only on error.
 func (s *Server) run(ctx context.Context) {
 	defer s.async.done()
 
@@ -105,9 +89,7 @@ func (s *Server) run(ctx context.Context) {
 	for {
 		rwc, err := s.listener.Accept(ctx)
 		if err != nil {
-			// Only Shutdown closes the listener. If we get an error after Shutdown is
-			// called, assume that was the cause and don't report the error;
-			// otherwise, report the error in case it is unexpected.
+			// Only Shutdown closes the listener.
 			if s.closing.Load() == 0 {
 				s.async.setError(err)
 			}
@@ -168,42 +150,26 @@ func (l *idleListener) Accept(ctx context.Context) (io.ReadWriteCloser, error) {
 		if ok {
 			l.active <- n + 1
 		} else {
-			// l.wrapped.Close Close has been called, but Accept returned a
-			// connection. This race can occur with concurrent Accept and Close calls
-			// with any net.Listener, and it is benign: since the listener was closed
-			// explicitly, it can't have also timed out.
 		}
 		return l.newConn(rwc), nil
 
 	case <-l.timedOut:
 		if err == nil {
-			// Keeping the connection open would leave the listener simultaneously
-			// active and closed due to idleness, which would be contradictory and
-			// confusing. Close the connection and pretend that it never happened.
+			// Keeping the connection open would leave the listener simultaneously active and closed due to idleness.
 			rwc.Close()
 		} else {
-			// In theory the timeout could have raced with an unrelated error return
-			// from Accept. However, ErrIdleTimeout is arguably still valid (since we
-			// would have closed due to the timeout independent of the error), and the
-			// harm from returning a spurious ErrIdleTimeout is negligible anyway.
 		}
 		return nil, ErrIdleTimeout
 
 	case timer := <-l.idleTimer:
 		if err != nil {
-			// The idle timer doesn't run until it receives itself from the idleTimer
-			// channel, so it can't have called l.wrapped.Close yet and thus err can't
-			// be ErrIdleTimeout. Leave the idle timer as it was and return whatever
-			// error we got.
+			// The idle timer doesn't run until it receives itself from the idleTimer channel.
 			l.idleTimer <- timer
 			return nil, err
 		}
 
 		if !timer.Stop() {
-			// Failed to stop the timer — the timer goroutine is in the process of
-			// firing. Send the timer back to the timer goroutine so that it can
-			// safely close the timedOut channel, and then wait for the listener to
-			// actually be closed before we return ErrIdleTimeout.
+			// Failed to stop the timer — the timer goroutine is in the process of firing.
 			l.idleTimer <- timer
 			rwc.Close()
 			<-l.timedOut
@@ -223,17 +189,12 @@ func (l *idleListener) Close() error {
 		}
 
 	case <-l.timedOut:
-		// Already closed by the timer; take care not to double-close if the caller
-		// only explicitly invokes this Close method once, since the io.Closer
-		// interface explicitly leaves doubled Close calls undefined.
+		// Already closed by the timer; take care not to double-close if the caller only explicitly invokes this Close method once.
 		return ErrIdleTimeout
 
 	case timer := <-l.idleTimer:
 		if !timer.Stop() {
-			// Couldn't stop the timer. It shouldn't take long to run, so just wait
-			// (so that the Listener is guaranteed to be closed before we return)
-			// and pretend that this call happened afterward.
-			// That way we won't leak any timers or goroutines when Close returns.
+			// Couldn't stop the timer.
 			l.idleTimer <- timer
 			<-l.timedOut
 			return ErrIdleTimeout
@@ -261,11 +222,9 @@ func (l *idleListener) timerExpired() {
 		panic("jsonrpc2: idleListener idle timer fired more than once")
 
 	case <-l.idleTimer:
-		// The timer for this very call!
 	}
 
-	// Close the Listener with all channels still blocked to ensure that this call
-	// to l.wrapped.Close doesn't race with the one in l.Close.
+	// Close the Listener with all channels still blocked to ensure that this call to l.wrapped.Close doesn't race with the one in l.Close.
 	defer close(l.timedOut)
 	l.wrapped.Close()
 }
@@ -274,8 +233,7 @@ func (l *idleListener) connClosed() {
 	select {
 	case n, ok := <-l.active:
 		if !ok {
-			// l is already closed, so it can't close due to idleness,
-			// and we don't need to track the number of active connections any more.
+			// l is already closed.
 			return
 		}
 		n--
@@ -306,11 +264,7 @@ func (l *idleListener) newConn(rwc io.ReadWriteCloser) *idleListenerConn {
 	}
 
 	// A caller that forgets to call Close may disrupt the idleListener's
-	// accounting, even though the file descriptor for the underlying connection
-	// may eventually be garbage-collected anyway.
-	//
-	// Set a (best-effort) finalizer to verify that a Close call always occurs.
-	// (We will clear the finalizer explicitly in Close.)
+	// accounting, even though the file descriptor.
 	runtime.SetFinalizer(c, func(c *idleListenerConn) {
 		panic("jsonrpc2: IdleListener connection became unreachable without a call to Close")
 	})

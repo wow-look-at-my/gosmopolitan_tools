@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -32,9 +31,8 @@ func (prog *Program) MethodValue(sel *types.Selection) *Function {
 		return nil // interface method or type parameter
 	}
 
-	// Selection.Type allocates a new Signature on each call, and
-	// isParameterized memoizes by type identity, so an uncanonicalized
-	// argument would add one permanently retained entry per call (#81308).
+	// Selection.Type allocates a new Signature on each call, and isParameterized
+	// memoizes by type identity.
 	if prog.isParameterized(T, prog.canon.Type(sel.Type())) {
 		return nil // method on generic type or generic method
 	}
@@ -86,10 +84,9 @@ func (prog *Program) MethodValue(sel *types.Selection) *Function {
 	return m
 }
 
-// objectMethod returns the Function for a given method symbol.
-// The symbol may be an instance of a generic function. It need not
-// belong to an existing SSA package created by a call to
-// prog.CreatePackage.
+// objectMethod returns the Function for a given method symbol. The symbol may
+// be an instance of a generic function. It need not belong to an existing SSA
+// package created by a call to prog.CreatePackage.
 //
 // objectMethod panics if the function is not a method.
 //
@@ -130,9 +127,9 @@ func (prog *Program) objectMethod(obj *types.Func, targs []types.Type, b *builde
 	return fn
 }
 
-// LookupMethod returns the implementation of the method of type T
-// identified by (pkg, name).  It returns nil if the method exists but
-// is an interface method or generic method, and panics if T has no such method.
+// LookupMethod returns the implementation of the method of type T identified
+// by (pkg, name). It returns nil if the method exists but is an interface
+// method or generic method, and panics if T has no such method.
 func (prog *Program) LookupMethod(T types.Type, pkg *types.Package, name string) *Function {
 	sel := prog.MethodSets.MethodSet(T).Lookup(pkg, name)
 	if sel == nil {
@@ -151,24 +148,17 @@ type methodSet struct {
 //
 // A runtime type is required for any non-parameterized, non-interface
 // type that is converted to an interface, or for any type (including
-// interface types) derivable from one through reflection.
+// interface types). Derivable from one through reflection.
 //
 // The methods of such types may be reachable through reflection or
 // interface calls even if they are never called directly.
 //
 // Thread-safe.
-//
-// Acquires prog.makeInterfaceTypesMu.
 func (prog *Program) RuntimeTypes() []types.Type {
 	prog.makeInterfaceTypesMu.Lock()
 	defer prog.makeInterfaceTypesMu.Unlock()
 
-	// Compute the derived types on demand, since many SSA clients
-	// never call RuntimeTypes, and those that do typically call
-	// it once (often within ssautil.AllFunctions, which will
-	// eventually not use it; see Go issue #69291.) This
-	// eliminates the need to eagerly compute all the element
-	// types during SSA building.
+	// Compute the derived types on demand, since many SSA clients never call.
 	var runtimeTypes []types.Type
 	var set typeutil.Map // for de-duping identical types
 	for t := range prog.makeInterfaceTypes {

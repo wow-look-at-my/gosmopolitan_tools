@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline_test
 
@@ -36,28 +35,14 @@ import (
 )
 
 // TestData executes test scenarios specified by files in testdata/*.txtar.
-// Each txtar file describes two sets of files, some containing Go source
-// and others expected results.
+// Each txtar file describes sets of files, some containing Go source and
+// others expected results.
 //
-// The Go source files and go.mod are parsed and type-checked as a Go module.
-// Some of these files contain marker comments (in a form described below) describing
-// the inlinings to perform and whether they should succeed or fail. A marker
-// indicating success refers to another file in the txtar, not a .go
-// file, that should contain the contents of the first file after inlining.
-//
-// The marker format for success is
-//
-//	@inline(re"pat", wantfile)
-//
-// The first call in the marker's line that matches pat is inlined, and the contents
-// of the resulting file must match the contents of wantfile.
-//
-// The marker format for failure is
-//
-//	@inline(re"pat", re"errpat")
-//
-// The first argument selects the call for inlining as before, and the second
-// is a regular expression that must match the text of resulting error.
+// The Go source files and go.mod are parsed and type-checked as a Go module. Some of
+// these files contain marker comments (in a form described below) describing the
+// inlinings to perform and whether they should succeed or fail. A marker indicating
+// success refers to another file in the txtar, not a .go file. That should contain
+// the contents of the first file after inlining.
 func TestData(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
@@ -69,8 +54,7 @@ func TestData(t *testing.T) {
 		t.Run(filepath.Base(file), func(t *testing.T) {
 			t.Parallel()
 
-			// The few tests that use cgo should be in
-			// files whose name includes "cgo".
+			// The few tests that use cgo should be in files whose name includes "cgo".
 			if strings.Contains(t.Name(), "cgo") {
 				testenv.NeedsTool(t, "cgo")
 			}
@@ -178,13 +162,12 @@ func TestData(t *testing.T) {
 }
 
 // doInlineNote executes an assertion specified by a single
-// @inline(re"pattern", want) note in a comment. It finds the first
-// match of regular expression 'pattern' on the same line, finds the
-// innermost enclosing CallExpr, and inlines it.
+// @inline(re"pattern", want) note in a comment. It finds the first match of
+// regular expression 'pattern' on the same line, finds the innermost
+// enclosing CallExpr, and inlines it.
 //
-// Finally it checks that, on success, the transformed file is equal
-// to want (a []byte), or on failure that the error message matches
-// want (a *Regexp).
+// Finally it checks that, on success, the transformed file is equal to want
+// (a []byte), or on failure that the error message matches want (a *Regexp).
 func doInlineNote(logf func(string, ...any), pkg *packages.Package, file *ast.File, content []byte, pattern *regexp.Regexp, posn token.Position, want any) error {
 	// Find extent of pattern match within commented line.
 	var startPos, endPos token.Pos
@@ -247,10 +230,6 @@ func doInlineNote(logf func(string, ...any), pkg *packages.Package, file *ast.Fi
 			calleePkg = pkg // same as caller
 		} else {
 			// Different package. Load it now.
-			// (The primary load loaded all dependencies,
-			// but we choose to load it again, with
-			// a distinct token.FileSet and types.Importer,
-			// to keep the implementation honest.)
 			cfg := &packages.Config{
 				// TODO(adonovan): get the original module root more cleanly
 				Dir:  filepath.Dir(filepath.Dir(pkg.GoFiles[0])),
@@ -273,8 +252,8 @@ func doInlineNote(logf func(string, ...any), pkg *packages.Package, file *ast.Fi
 		return err
 	}
 
-	// Do the inlining. For the purposes of the test,
-	// AnalyzeCallee and Inline are a single operation.
+	// Do the inlining. the test, AnalyzeCallee and Inline are a single
+	// operation.
 	res, err := func() (*inline.Result, error) {
 		filename := calleePkg.Fset.File(calleeDecl.Pos()).Name()
 		content, err := os.ReadFile(filename)
@@ -339,13 +318,6 @@ func doInlineNote(logf func(string, ...any), pkg *packages.Package, file *ast.Fi
 // findFuncByPosition returns the FuncDecl at the specified (package-agnostic) position.
 func findFuncByPosition(pkg *packages.Package, posn token.Position) (*ast.FuncDecl, error) {
 	same := func(decl *ast.FuncDecl) bool {
-		// We can't rely on columns in export data:
-		// some variants replace it with 1.
-		// We can't expect file names to have the same prefix.
-		// export data for go1.20 std packages have  $GOROOT written in
-		// them, so how are we supposed to find the source? Yuck!
-		// Ugh. need to samefile? Nope $GOROOT just won't work
-		// This is highly client specific anyway.
 		posn2 := pkg.Fset.PositionFor(decl.Name.Pos(), false)
 		return posn.Filename == posn2.Filename &&
 			posn.Line == posn2.Line
@@ -360,19 +332,10 @@ func findFuncByPosition(pkg *packages.Package, posn token.Position) (*ast.FuncDe
 	return nil, fmt.Errorf("can't find FuncDecl at %v in package %q", posn, pkg.PkgPath)
 }
 
-// Each callee must declare a function or method named f,
-// and each caller must call it.
+// Each callee must declare a function or method named f, and each caller must call it.
 const funcName = "f"
 
 // A testcase is an item in a table-driven test.
-//
-// The table-driven tests are less flexible, but enable more compact
-// expression of single-package test cases than is possible with the
-// txtar notation.
-//
-// TODO(adonovan): improve coverage of the cross product of each
-// strategy with the checklist of concerns enumerated in the package
-// doc comment.
 type testcase struct {
 	descr          string // description; substrings enable test or inliner options (e.g. "IgnoreEffects", "NoPackageClause")
 	callee, caller string // Go source files (sans package decl) of caller, callee
@@ -852,7 +815,6 @@ func TestTailCallStrategy(t *testing.T) {
 			`func _() { f() }`,
 			`func _() { func() { defer f(); println() }() }`,
 		},
-		// Tests for issue #63336:
 		{
 			"non-trivial return conversion (caller.sig = callee.sig)",
 			`func f() error { if true { return nil } else { return e } }; var e struct{error}`,
@@ -1254,8 +1216,7 @@ func TestEmbeddedFields(t *testing.T) {
 			`func _(v V) { print(&(&v).U.T) }`,
 		},
 		{
-			// x is a single-assign var, and x.f does not load through a pointer
-			// (despite types.Selection.Indirect=true), so x is pure.
+			// x is a single-assign var, and x.f does not load through a pointer (despite types.Selection.Indirect=true).
 			"No binding decl is required for recv in method-to-method calls.",
 			`type T struct{}; func (x *T) f() { g(); print(*x) }; func g()`,
 			`func (x *T) _() { x.f() }`,
@@ -1282,7 +1243,6 @@ func TestEmbeddedFields(t *testing.T) {
 func TestSubstitutionGroups(t *testing.T) {
 	runTests(t, []testcase{
 		{
-			// b -> a
 			"Basic",
 			`func f(a, b int) { print(a, b) }`,
 			`func _() { var a int; f(a, a) }`,
@@ -1296,9 +1256,7 @@ func TestSubstitutionGroups(t *testing.T) {
 			`func _() { var a, b int; print(a+b, a+b) }`,
 		},
 		{
-			// a <-> b
-			// a -> c
-			// Don't compute b as substitutable due to bad cycle traversal.
+			// a <-> b a -> c Don't compute b as substitutable due to bad cycle traversal.
 			"Middle cycle",
 			`func f(a, b, c int) { var d int; print(a, b, c, d) }`,
 			`func _() { var a, b, c, d int; f(a+b+c, a+b, d) }`,
@@ -1312,12 +1270,7 @@ func TestSubstitutionGroups(t *testing.T) {
 }`,
 		},
 		{
-			// a -> b
-			// b -> c
-			// b -> d
-			// c
-			//
-			// Only c should be substitutable.
+			// a -> b b -> c b -> d c.
 			"Singleton",
 			`func f(a, b, c, d int) { var e int; print(a, b, c, d, e) }`,
 			`func _() { var a, b, c, d, e int; f(a+b, c+d, c, e) }`,
@@ -1420,14 +1373,7 @@ func TestSubstitutionPreservesArgumentEffectOrder(t *testing.T) {
 }`,
 		},
 		{
-			// In this example, the set() call is rejected as a substitution
-			// candidate due to a shadowing conflict (z). This must entail that the
-			// selection x.y (R) is also rejected, because it is lower numbered.
-			//
-			// Incidentally this program (which panics when executed) illustrates
-			// that although effects occur left-to-right, read operations such
-			// as x.y are not ordered wrt writes, depending on the compiler.
-			// Changing x.y to identity(x).y forces the ordering and avoids the panic.
+			// In this example, the set() call is rejected as a substitution candidate due to a shadowing conflict (z).
 			"Hazards with args already rejected (e.g. due to shadowing) are detected too.",
 			`func f(x, y int) (z int) { return x + y }; func set[T any](ptr *T, old, new T) int { println(old); *ptr = new; return 0; }`,
 			`func _() { x := new(struct{ y int }); z := x; f(x.y, set(&x, z, nil)) }`,
@@ -1441,9 +1387,7 @@ func TestSubstitutionPreservesArgumentEffectOrder(t *testing.T) {
 }`,
 		},
 		{
-			// Rejection of a later parameter for reasons other than callee
-			// effects (e.g. escape) may create hazards with lower-numbered
-			// parameters that require them to be rejected too.
+			// Rejection of a later parameter for reasons other than callee effects (e.g. escape) may create hazards with lower-numbered parameters.
 			"Hazards with already eliminated parameters (variant)",
 			`func f(x, y int) { _ = &y }; func g(int) int`,
 			`func _() { f(g(1), g(2)) }`,
@@ -1453,9 +1397,7 @@ func TestSubstitutionPreservesArgumentEffectOrder(t *testing.T) {
 }`,
 		},
 		{
-			// In this case g(2) is rejected for substitution because it is
-			// unreferenced but has effects, so parameter x must also be rejected
-			// so that its argument v can be evaluated earlier in the binding decl.
+			// In this case g(2) is rejected for substitution.
 			"Hazards with already eliminated parameters (unreferenced fx variant)",
 			`func f(x, y int) { _ = x }; func g(int) int; var v int`,
 			`func _() { f(v, g(2)) }`,
@@ -2012,14 +1954,14 @@ func checkTranscode(callee *inline.Callee) error {
 	return nil
 }
 
-// deepHash computes a cryptographic hash of an ast.Node so that
-// if the data structure is mutated, the hash changes.
-// It assumes Go variables do not change address.
+// deepHash computes a cryptographic hash of an ast.Node so that if the data
+// structure is mutated, the hash changes. It assumes Go variables do not
+// change address.
 //
 // TODO(adonovan): consider publishing this in the astutil package.
 //
-// TODO(adonovan): consider a variant that reports where in the tree
-// the mutation occurred (obviously at a cost in space).
+// TODO(adonovan): consider a variant that reports where in the tree the
+// mutation occurred ( at a cost in space).
 func deepHash(n ast.Node) any {
 	seen := make(map[unsafe.Pointer]bool) // to break cycles
 
@@ -2057,8 +1999,7 @@ func deepHash(n ast.Node) any {
 
 		case reflect.Slice:
 			ptr := v.UnsafePointer()
-			// We may encounter different slices at the same address,
-			// so don't mark ptr as "seen".
+			// We may encounter different slices at the same address, so don't mark ptr as "seen".
 			writeUint64(uint64(uintptr(ptr)))
 			writeUint64(uint64(v.Len()))
 			writeUint64(uint64(v.Cap()))
@@ -2103,8 +2044,6 @@ func deepHash(n ast.Node) any {
 func TestDeepHash(t *testing.T) {
 	// This test reproduces a bug in DeepHash that was encountered during work on
 	// the inliner.
-	//
-	// TODO(rfindley): consider replacing this with a fuzz test.
 	id := &ast.Ident{
 		NamePos: 2,
 		Name:    "t",

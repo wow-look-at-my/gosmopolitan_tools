@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -19,17 +18,14 @@ var (
 	ErrParse = NewError(-32700, "JSON RPC parse error")
 	//ErrInvalidRequest is used when the JSON sent is not a valid Request object.
 	ErrInvalidRequest = NewError(-32600, "JSON RPC invalid request")
-	// ErrMethodNotFound should be returned by the handler when the method does
-	// not exist / is not available.
+	// ErrMethodNotFound should be returned by the handler when the method does not exist / is not available.
 	ErrMethodNotFound = NewError(-32601, "JSON RPC method not found")
-	// ErrInvalidParams should be returned by the handler when method
-	// parameter(s) were invalid.
+	// ErrInvalidParams should be returned by the handler when method parameter(s) were invalid.
 	ErrInvalidParams = NewError(-32602, "JSON RPC invalid params")
-	// ErrInternal is not currently returned but defined for completeness.
+	// ErrInternal is not returned but defined for completeness.
 	ErrInternal = NewError(-32603, "JSON RPC internal error")
 
-	//ErrServerOverloaded is returned when a message was refused due to a
-	//server being temporarily unable to accept any new messages.
+	// ErrServerOverloaded is returned when a message was refused due to a server being temporarily unable to accept any new messages.
 	ErrServerOverloaded = NewError(-32000, "JSON RPC overloaded")
 )
 
@@ -41,16 +37,12 @@ type wireRequest struct {
 	Method string `json:"method"`
 	// Params is either a struct or an array with the parameters of the method.
 	Params *json.RawMessage `json:"params,omitempty"`
-	// The id of this request, used to tie the Response back to the request.
-	// Will be either a string or a number. If not set, the Request is a notify,
-	// and no response is possible.
+	// The id of this request, used to tie the Response back to the request. Will be either a string or a number.
 	ID *ID `json:"id,omitempty"`
 }
 
-// wireResponse is a reply to a Request.
-// It will always have the ID field set to tie it back to a request, and will
-// have either the Result or Error fields set depending on whether it is a
-// success or failure response.
+// wireResponse is a reply to a Request. It will always have the ID field set to tie it back to a request. It will have either the Result or Error fields set depending on
+// whether it is a success or failure response.
 type wireResponse struct {
 	// VersionTag is always encoded as the string "2.0"
 	VersionTag wireVersionTag `json:"jsonrpc"`
@@ -83,10 +75,6 @@ type WireError struct {
 	Data *json.RawMessage `json:"data,omitempty"`
 }
 
-// wireVersionTag is a special 0 sized struct that encodes as the jsonrpc version
-// tag.
-// It will fail during decode if it is not the correct version tag in the
-// stream.
 type wireVersionTag struct{}
 
 // ID is a Request identifier.
@@ -127,9 +115,8 @@ func NewIntID(v int64) ID { return ID{number: v} }
 // NewStringID returns a new string request ID.
 func NewStringID(v string) ID { return ID{name: v} }
 
-// Format writes the ID to the formatter.
-// If the rune is q the representation is non ambiguous,
-// string forms are quoted, number forms are preceded by a #
+// Format writes the ID to the formatter. If the rune is q the representation
+// is non ambiguous, string forms are quoted, number forms are preceded by a #
 func (id ID) Format(f fmt.State, r rune) {
 	numF, strF := `%d`, `%s`
 	if r == 'q' {

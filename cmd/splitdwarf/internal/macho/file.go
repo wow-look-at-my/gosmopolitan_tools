@@ -1,6 +1,5 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package macho implements access to Mach-O object files.
 package macho
@@ -43,9 +42,7 @@ func (t *FileTOC) AddLoad(l Load) {
 	t.SizeCommands += l.LoadSize(t)
 }
 
-// AddSegment adds segment s to the file table of contents,
-// and also zeroes out the segment information with the expectation
-// that this will be added next.
+// AddSegment adds segment s to the file table of contents.
 func (t *FileTOC) AddSegment(s *Segment) {
 	t.AddLoad(s)
 	s.Nsect = 0
@@ -74,35 +71,6 @@ type Load interface {
 	Command() LoadCmd
 	LoadSize(*FileTOC) uint32 // Need the TOC for alignment, sigh.
 	Put([]byte, binary.ByteOrder) int
-
-	// command LC_DYLD_INFO_ONLY contains offsets into __LINKEDIT
-	// e.g., from "otool -l a.out"
-	//
-	// 	Load command 3
-	//       cmd LC_SEGMENT_64
-	//   cmdsize 72
-	//   segname __LINKEDIT
-	//    vmaddr 0x0000000100002000
-	//    vmsize 0x0000000000001000
-	//   fileoff 8192
-	//  filesize 520
-	//   maxprot 0x00000007
-	//  initprot 0x00000001
-	//    nsects 0
-	//     flags 0x0
-	// Load command 4
-	//             cmd LC_DYLD_INFO_ONLY
-	//         cmdsize 48
-	//      rebase_off 8192
-	//     rebase_size 8
-	//        bind_off 8200
-	//       bind_size 24
-	//   weak_bind_off 0
-	//  weak_bind_size 0
-	//   lazy_bind_off 8224
-	//  lazy_bind_size 16
-	//      export_off 8240
-	//     export_size 48
 }
 
 // LoadBytes is the uninterpreted bytes of a Mach-O load command.
@@ -112,7 +80,7 @@ type LoadBytes []byte
 type SegmentHeader struct {
 	LoadCmd
 	Len       uint32
-	Name      string // 16 characters or fewer
+	Name      string // A bounded number of characters
 	Addr      uint64 // memory address
 	Memsz     uint64 // memory size
 	Offset    uint64 // file offset
@@ -128,12 +96,7 @@ type SegmentHeader struct {
 type Segment struct {
 	SegmentHeader
 
-	// Embed ReaderAt for ReadAt method.
-	// Do not embed SectionReader directly
-	// to avoid having Read and Seek.
-	// If a client wants Read and Seek it must use
-	// Open() to avoid fighting over the seek offset
-	// with other clients.
+	// Embed ReaderAt for ReadAt method. Do not embed SectionReader directly to avoid having Read and Seek.
 	io.ReaderAt
 	sr *io.SectionReader
 }
@@ -169,9 +132,6 @@ func (s *Segment) Put64(b []byte, o binary.ByteOrder) int {
 }
 
 // LoadCmdBytes is a command-tagged sequence of bytes.
-// This is used for Load Commands that are not (yet)
-// interesting to us, and to common up this behavior for
-// all those that are.
 type LoadCmdBytes struct {
 	LoadCmd
 	LoadBytes
@@ -197,10 +157,8 @@ type Reloc struct {
 	Addr  uint32
 	Value uint32
 	// when Scattered == false && Extern == true, Value is the symbol number.
-	// when Scattered == false && Extern == false, Value is the section number.
-	// when Scattered == true, Value is the value that this reloc refers to.
 	Type      uint8
-	Len       uint8 // 0=byte, 1=word, 2=long, 3=quad
+	Len       uint8
 	Pcrel     bool
 	Extern    bool // valid if Scattered == false
 	Scattered bool
@@ -210,12 +168,7 @@ type Section struct {
 	SectionHeader
 	Relocs []Reloc
 
-	// Embed ReaderAt for ReadAt method.
-	// Do not embed SectionReader directly
-	// to avoid having Read and Seek.
-	// If a client wants Read and Seek it must use
-	// Open() to avoid fighting over the seek offset
-	// with other clients.
+	// Embed ReaderAt for ReadAt method. Do not embed SectionReader directly to avoid having Read and Seek.
 	io.ReaderAt
 	sr *io.SectionReader
 }
@@ -287,7 +240,7 @@ func (s *Section) PutRelocs(b []byte, o binary.ByteOrder) int {
 }
 
 func putAtMost16Bytes(b []byte, n string) {
-	for i := range n { // at most 16 bytes
+	for i := range n { // a bounded number of bytes
 		if i == 16 {
 			break
 		}
@@ -336,10 +289,7 @@ func (t *FileTOC) DerivedCopy(Type HdrType, Flags HdrFlags) *FileTOC {
 	return &FileTOC{FileHeader: h, ByteOrder: t.ByteOrder}
 }
 
-// TOCSize returns the size in bytes of the object file representation
-// of the header and Load Commands (including Segments and Sections, but
-// not their contents) at the beginning of a Mach-O file.  This typically
-// overlaps the text segment in the object file.
+// TOCSize returns the size in bytes of the object.
 func (t *FileTOC) TOCSize() uint32 {
 	return t.HdrSize() + t.LoadSize()
 }
@@ -388,8 +338,7 @@ func (t *FileTOC) LoadSize() uint32 {
 }
 
 // FileSize returns the size in bytes of the header, load commands, and the
-// in-file contents of all the segments and sections included in those
-// load commands, accounting for their offsets within the file.
+// in-file contents of all the segments.
 func (t *FileTOC) FileSize() uint64 {
 	sz := uint64(t.LoadSize()) // ought to be contained in text segment, but just in case.
 	for _, l := range t.Loads {
@@ -402,10 +351,10 @@ func (t *FileTOC) FileSize() uint64 {
 	return sz
 }
 
-// Put writes the header and all load commands to buffer, using
-// the byte ordering specified in FileTOC t.  For sections, this
-// writes the headers that come in-line with the segment Load commands,
-// but does not write the reference data for those sections.
+// Put writes the header and all load commands to buffer, using the byte
+// ordering specified in FileTOC t. For sections, this writes the headers that
+// come in-line with the segment Load commands, but does not write the
+// reference data for those sections.
 func (t *FileTOC) Put(buffer []byte) int {
 	next := t.FileHeader.Put(buffer, t.ByteOrder)
 	for _, l := range t.Loads {
@@ -434,8 +383,8 @@ func (t *FileTOC) Put(buffer []byte) int {
 	return next
 }
 
-// UncompressedSize returns the size of the segment with its sections uncompressed, ignoring
-// its offset within the file.  The returned size is rounded up to the power of two in align.
+// UncompressedSize returns the size of the segment with its sections
+// uncompressed, ignoring its offset within the file.
 func (s *Segment) UncompressedSize(t *FileTOC, align uint64) uint64 {
 	sz := uint64(0)
 	for j := uint32(0); j < s.Nsect; j++ {
@@ -620,7 +569,7 @@ func (s *Dylib) LoadSize(t *FileTOC) uint32 {
 }
 
 type Dylinker struct {
-	DylinkerCmd // shared by 3 commands, need the LoadCmd
+	DylinkerCmd // shared by a set amount commands, need the LoadCmd
 	Name        string
 }
 
@@ -675,7 +624,7 @@ type Uuid struct {
 func (s *Uuid) String() string {
 	return fmt.Sprintf("Uuid %X-%X-%X-%X-%X",
 		s.Id[0:4], s.Id[4:6], s.Id[6:8], s.Id[8:10], s.Id[10:16])
-} // 8-4-4-4-12
+}
 func (s *Uuid) Copy() *Uuid {
 	return &Uuid{UuidCmd: s.UuidCmd}
 }
@@ -757,9 +706,8 @@ func Open(name string) (*File, error) {
 	return ff, nil
 }
 
-// Close closes the File.
-// If the File was created using NewFile directly instead of Open,
-// Close has no effect.
+// Close closes the File. If the File was created using NewFile directly
+// instead of Open, Close has no effect.
 func (f *File) Close() error {
 	var err error
 	if f.closer != nil {
@@ -770,13 +718,12 @@ func (f *File) Close() error {
 }
 
 // NewFile creates a new File for accessing a Mach-O binary in an underlying reader.
-// The Mach-O binary is expected to start at position 0 in the ReaderAt.
+// The Mach-O binary is expected to start at the first position in the ReaderAt.
 func NewFile(r io.ReaderAt) (*File, error) {
 	f := new(File)
 	sr := io.NewSectionReader(r, 0, 1<<63-1)
 
-	// Read and decode Mach magic to determine byte order, size.
-	// Magic32 and Magic64 differ only in the bottom bit.
+	// Read and decode Mach magic to determine byte order, size. Magic32 and Magic64 differ only in the bottom bit.
 	var ident [4]byte
 	if _, err := r.ReadAt(ident[0:], 0); err != nil {
 		return nil, err
@@ -1225,9 +1172,7 @@ func (f *File) DWARF() (*dwarf.Data, error) {
 		return b, nil
 	}
 
-	// There are many other DWARF sections, but these
-	// are the ones the debug/dwarf package uses.
-	// Don't bother loading others.
+	// There are many other DWARF sections, but these are the ones the debug/dwarf package uses.
 	var dat = map[string][]byte{"abbrev": nil, "info": nil, "str": nil, "line": nil, "ranges": nil}
 	for _, s := range f.Sections {
 		suffix := dwarfSuffix(s)
@@ -1270,9 +1215,9 @@ func (f *File) DWARF() (*dwarf.Data, error) {
 	return d, nil
 }
 
-// ImportedSymbols returns the names of all symbols
-// referred to by the binary f that are expected to be
-// satisfied by other libraries at dynamic load time.
+// ImportedSymbols returns the names of all symbols referred to by the binary
+// f. That f are expected to be satisfied by other libraries at dynamic load
+// time.
 func (f *File) ImportedSymbols() ([]string, error) {
 	if f.Dysymtab == nil || f.Symtab == nil {
 		return nil, formatError(0, "missing symbol table, f.Dsymtab=%v, f.Symtab=%v", f.Dysymtab, f.Symtab)
@@ -1288,8 +1233,8 @@ func (f *File) ImportedSymbols() ([]string, error) {
 }
 
 // ImportedLibraries returns the paths of all libraries
-// referred to by the binary f that are expected to be
-// linked with the binary at dynamic link time.
+// referred to by the binary f. That f are expected to
+// be linked with the binary at dynamic link time.
 func (f *File) ImportedLibraries() ([]string, error) {
 	var all []string
 	for _, l := range f.Loads {

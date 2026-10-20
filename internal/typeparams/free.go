@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeparams
 
@@ -8,11 +7,7 @@ import (
 	"go/types"
 )
 
-// Free is a memoization of the set of free type parameters within a
-// type. It makes a sequence of calls to [Free.Has] for overlapping
-// types more efficient. The zero value is ready for use.
-//
-// NOTE: Adapted from go/types/infer.go. If it is later exported, factor.
+// Free is a memoization of the set of free type parameters within a type.
 type Free struct {
 	seen map[types.Type]bool
 }
@@ -39,15 +34,7 @@ func (w *Free) Has(typ types.Type) (res bool) {
 		if t.TypeParams().Len() > t.TypeArgs().Len() {
 			return true // This is an uninstantiated Alias.
 		}
-		// The expansion of an alias can have free type parameters,
-		// whether or not the alias itself has type parameters:
-		//
-		//   func _[K comparable]() {
-		//     type Set      = map[K]bool // free(Set)      = {K}
-		//     type MapTo[V] = map[K]V    // free(Map[foo]) = {V}
-		//   }
-		//
-		// So, we must Unalias.
+		// The expansion of an alias can have free type parameters.
 		return w.Has(types.Unalias(t))
 
 	case *types.Array:
@@ -75,13 +62,7 @@ func (w *Free) Has(typ types.Type) (res bool) {
 		}
 
 	case *types.Signature:
-		// t.tparams may not be nil if we are looking at a signature
-		// of a generic function type (or an interface method) that is
-		// part of the type we're testing. We don't care about these type
-		// parameters.
-		// Similarly, the receiver of a method may declare (rather than
-		// use) type parameters, we don't care about those either.
-		// Thus, we only need to look at the input and result parameters.
+		// t.tparams may not be nil if we are looking at a signature of a generic function type.
 		return w.Has(t.Params()) || w.Has(t.Results())
 
 	case *types.Interface:

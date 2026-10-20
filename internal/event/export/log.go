@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package export
 
@@ -16,9 +15,6 @@ import (
 )
 
 // LogWriter returns an Exporter that logs events to the supplied writer.
-// If onlyErrors is true it does not log any event that did not have an
-// associated error.
-// It ignores all telemetry other than log events.
 func LogWriter(w io.Writer, onlyErrors bool) event.Exporter {
 	lw := &logWriter{writer: w, onlyErrors: onlyErrors}
 	return lw.ProcessEvent

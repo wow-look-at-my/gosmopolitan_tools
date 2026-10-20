@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports_test
 
@@ -16,8 +15,6 @@ import (
 	"golang.org/x/tools/internal/modindex"
 )
 
-// There are two cached packages, both resolving foo.Foo,
-// but only one resolving foo.Bar
 var (
 	foo = tpkg{
 		repo: "foo.com",

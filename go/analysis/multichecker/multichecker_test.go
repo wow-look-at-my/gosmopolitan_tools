@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.12
 
@@ -43,8 +42,7 @@ func TestExitCode(t *testing.T) {
 	if os.Getenv("MULTICHECKER_CHILD") == "1" {
 		// child process
 
-		// replace [progname -test.run=TestExitCode -- ...]
-		//      by [progname ...]
+		// replace [progname -test.run=TestExitCode -- ...] by [progname ...]
 		os.Args = os.Args[2:]
 		os.Args[0] = "vet"
 		main()

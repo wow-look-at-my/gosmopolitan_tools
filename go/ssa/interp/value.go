@@ -1,38 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package interp
 
-// Values
-//
-// All interpreter values are "boxed" in the empty interface, value.
-// The range of possible dynamic types within value are:
-//
-// - bool
-// - numbers (all built-in int/float/complex types are distinguished)
-// - string
-// - map[value]value --- maps for which  usesBuiltinMap(keyType)
-//   *hashmap        --- maps for which !usesBuiltinMap(keyType)
-// - chan value
-// - []value --- slices
-// - iface --- interfaces.
-// - structure --- structs.  Fields are ordered and accessed by numeric indices.
-// - array --- arrays.
-// - *value --- pointers.  Careful: *value is a distinct type from *array etc.
-// - *ssa.Function \
-//   *ssa.Builtin   } --- functions.  A nil 'func' is always of type *ssa.Function.
-//   *closure      /
-// - tuple --- as returned by Return, Next, "value,ok" modes, etc.
-// - iter --- iterators from 'range' over map or string.
-// - bad --- a poison pill for locals that have gone out of scope.
-// - rtype -- the interpreter's concrete implementation of reflect.Type
-// - **deferred -- the address of a frame's defer stack for a Defer._Stack.
-//
-// Note that nil is not on this list.
-//
-// Pay close attention to whether or not the dynamic type is a pointer.
-// The compiler cannot help you since value is an empty interface.
+// Values.
 
 import (
 	"bytes"
@@ -62,8 +33,7 @@ type structure []value
 
 // For map, array, *array, slice, string or channel.
 type iter interface {
-	// next returns a Tuple (key, value, ok).
-	// key and value are unaliased, e.g. copies of the sequence element.
+	// next returns a Tuple (key, value, ok). key and value are unaliased, e.g. copies of the sequence element.
 	next() tuple
 }
 
@@ -98,15 +68,10 @@ func hashType(t types.Type) int {
 	return int(hasher.Hash(t))
 }
 
-// usesBuiltinMap returns true if the built-in hash function and
-// equivalence relation for type t are consistent with those of the
-// interpreter's representation of type t.  Such types are: all basic
-// types (bool, numbers, string), pointers and channels.
-//
-// usesBuiltinMap returns false for types that require a custom map
-// implementation: interfaces, arrays and structs.
-//
-// Panic ensues if t is an invalid map key type: function, map or slice.
+// usesBuiltinMap returns true. This happens if the built-in hash function
+// and equivalence relation for type t are consistent with those of the
+// interpreter's representation of type t. Such types are: all basic types
+// (bool, numbers, string), pointers and channels.
 func usesBuiltinMap(t types.Type) bool {
 	switch t := t.(type) {
 	case *types.Basic, *types.Chan, *types.Pointer:
@@ -188,10 +153,9 @@ func (x rtype) eq(_ types.Type, y any) bool {
 	return types.Identical(x.t, y.(rtype).t)
 }
 
-// equals returns true iff x and y are equal according to Go's
-// linguistic equivalence relation for type t.
-// In a well-typed program, the dynamic types of x and y are
-// guaranteed equal.
+// equals returns true iff x and y are equal according to Go's linguistic
+// equivalence relation for type t. In a well-typed program, the dynamic types
+// of x and y are guaranteed equal.
 func equals(t types.Type, x, y value) bool {
 	switch x := x.(type) {
 	case bool:
@@ -242,9 +206,7 @@ func equals(t types.Type, x, y value) bool {
 		return x.eq(t, y)
 	}
 
-	// Since map, func and slice don't support comparison, this
-	// case is only reachable if one of x or y is literally nil
-	// (handled in eqnil) or via interface{} values.
+	// Since map, func and slice do not support comparison.
 	panic(fmt.Sprintf("comparing uncomparable type %s", t))
 }
 
@@ -305,12 +267,10 @@ func hash(outer, t types.Type, x value) int {
 	panic(fmt.Sprintf("unhashable type %v", outer))
 }
 
-// reflect.Value struct values don't have a fixed shape, since the
-// payload can be a scalar or an aggregate depending on the instance.
-// So store (and load) can't simply use recursion over the shape of the
-// rhs value, or the lhs, to copy the value; we need the static type
-// information.  (We can't make reflect.Value a new basic data type
-// because its "structness" is exposed to Go programs.)
+// Value struct values don't have a fixed shape, since the payload can be a
+// scalar or an aggregate depending on the instance. So store (and load) can't
+// use recursion over the shape of the rhs value, or the lhs, to copy the
+// value. We need the static type information.
 
 // load returns the value of type T in *addr.
 func load(T types.Type, addr *value) value {
@@ -355,8 +315,6 @@ func store(T types.Type, addr *value, v value) {
 }
 
 // Prints in the style of built-in println.
-// (More or less; in gc println is actually a compiler intrinsic and
-// can distinguish println(1) from println(interface{}(1)).)
 func writeValue(buf *bytes.Buffer, v value) {
 	switch v := v.(type) {
 	case nil, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, complex64, complex128, string:

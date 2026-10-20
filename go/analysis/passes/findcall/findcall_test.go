@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package findcall_test
 
@@ -15,10 +14,10 @@ func init() {
 	findcall.Analyzer.Flags.Set("name", "println")
 }
 
-// TestFromStringLiterals demonstrates how to test an analysis using
-// a table of string literals for each test case.
+// TestFromStringLiterals demonstrates how to test an analysis using a table
+// of string literals for each test case.
 //
-// Such tests are typically quite compact.
+// Such tests are typically compact.
 func TestFromStringLiterals(t *testing.T) {
 
 	for _, test := range [...]struct {
@@ -51,15 +50,8 @@ func println(s string) {} // want println:"found"`,
 	}
 }
 
-// TestFromFileSystem demonstrates how to test an analysis using input
-// files stored in the file system.
-//
-// These tests have the advantages that test data can be edited
-// directly, and that files named in error messages can be opened.
-// However, they tend to spread a small number of lines of text across a
-// rather deep directory hierarchy, and obscure similarities among
-// related tests, especially when tests involve multiple packages, or
-// multiple variants of a single scenario.
+// TestFromFileSystem demonstrates how to test an analysis using input files
+// stored in the file system.
 func TestFromFileSystem(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.RunWithSuggestedFixes(t, testdata, findcall.Analyzer, "a") // loads testdata/src/a/a.go.

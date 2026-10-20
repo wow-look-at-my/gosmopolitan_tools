@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -16,7 +15,7 @@ import (
 )
 
 // scc computes strongly connected components (SCCs) of `g` using the
-// classical Tarjan's algorithm for SCCs. The result is two slices:
+// classical Tarjan's algorithm for SCCs. The result is slices:
 //   - sccs: the SCCs, each represented as a slice of node indices
 //   - idxToSccID: the inverse map, from node index to SCC number.
 //
@@ -25,7 +24,7 @@ import (
 func scc(g *vtaGraph) (sccs [][]idx, idxToSccID []int) {
 	// standard data structures used by Tarjan's algorithm.
 	type state struct {
-		pre     int // preorder of the node (0 if unvisited)
+		pre     int
 		lowLink int
 		onStack bool
 	}
@@ -48,8 +47,7 @@ func scc(g *vtaGraph) (sccs [][]idx, idxToSccID []int) {
 				doSCC(s)
 				ns.lowLink = min(ns.lowLink, ss.lowLink)
 			} else if ss.onStack {
-				// The successor is on the stack, meaning it has to be
-				// in the current SCC.
+				// The successor is on the stack, meaning it has to be in the current SCC.
 				ns.lowLink = min(ns.lowLink, ss.pre)
 			}
 		}
@@ -77,11 +75,6 @@ func scc(g *vtaGraph) (sccs [][]idx, idxToSccID []int) {
 	return sccs, idxToSccID
 }
 
-// slicesLastIndex returns the index of the last occurrence of v in s, or -1 if v is
-// not present in s.
-//
-// slicesLastIndex iterates backwards through the elements of s, stopping when the ==
-// operator determines an element is equal to v.
 func slicesLastIndex[S ~[]E, E comparable](s S, v E) int {
 	// TODO: move to / dedup with slices.LastIndex
 	for i := len(s) - 1; i >= 0; i-- {
@@ -92,18 +85,13 @@ func slicesLastIndex[S ~[]E, E comparable](s S, v E) int {
 	return -1
 }
 
-// propType represents type information being propagated
-// over the vta graph. f != nil only for function nodes
-// and nodes reachable from function nodes. There, we also
-// remember the actual *ssa.Function in order to more
-// precisely model higher-order flow.
+// propType represents type information being propagated over the vta graph.
 type propType struct {
 	typ types.Type
 	f   *ssa.Function
 }
 
-// propTypeMap is an auxiliary structure that serves
-// the role of a map from nodes to a set of propTypes.
+// propTypeMap is an auxiliary structure that serves the role of a map from nodes to a set of propTypes.
 type propTypeMap map[node]*trie.MutMap
 
 // propTypes returns an iterator for the propTypes associated with
@@ -118,16 +106,14 @@ func (ptm propTypeMap) propTypes(n node) iter.Seq[propType] {
 	}
 }
 
-// propagate reduces the `graph` based on its SCCs and
-// then propagates type information through the reduced
-// graph. The result is a map from nodes to a set of types
-// and functions, stemming from higher-order data flow,
-// reaching the node. `canon` is used for type uniqueness.
+// propagate reduces the `graph` based on its SCCs and then propagates type
+// information through the reduced graph. The result is a map from nodes to a
+// set of types and functions, stemming from higher-order data flow, reaching
+// the node. `canon` is used for type uniqueness.
 func propagate(graph *vtaGraph, canon *typeutil.Map) propTypeMap {
 	sccs, idxToSccID := scc(graph)
 
-	// propTypeIds are used to create unique ids for
-	// propType, to be used for trie-based type sets.
+	// propTypeIds are used to create unique ids for propType, to be used for trie-based type sets.
 	propTypeIds := make(map[propType]uint64)
 	// Id creation is based on == equality, which works
 	// as types are canonicalized (see getPropType).
@@ -140,8 +126,7 @@ func propagate(graph *vtaGraph, canon *typeutil.Map) propTypeMap {
 		return id
 	}
 	builder := trie.NewBuilder()
-	// Initialize sccToTypes to avoid repeated check
-	// for initialization later.
+	// Initialize sccToTypes to avoid repeated check for initialization later.
 	sccToTypes := make([]*trie.MutMap, len(sccs))
 	for sccID, scc := range sccs {
 		typeSet := builder.MutEmpty()

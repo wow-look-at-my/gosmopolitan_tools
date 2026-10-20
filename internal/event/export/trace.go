@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package export
 
@@ -46,10 +45,9 @@ func GetSpan(ctx context.Context) *Span {
 }
 
 // Spans creates an exporter that maintains hierarchical span structure in the
-// context.
-// It creates new spans on start events, adds events to the current span on
-// log or label, and closes the span on end events.
-// The span structure can then be used by other exporters.
+// context. It creates new spans on start events, adds events to the current
+// span on log or label, and closes the span on end events. The span structure
+// can then be used by other exporters.
 func Spans(output event.Exporter) event.Exporter {
 	return func(ctx context.Context, ev core.Event, lm label.Map) context.Context {
 		switch {

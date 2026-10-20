@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package pkgbits
 
@@ -21,16 +20,13 @@ type PkgEncoder struct {
 	// version of the bitstream.
 	version Version
 
-	// elems holds the bitstream for previously encoded elements.
+	// elems holds the bitstream for encoded elements.
 	elems [numRelocs][]string
 
-	// stringsIdx maps previously encoded strings to their index within
-	// the RelocString section, to allow deduplication. That is,
-	// elems[RelocString][stringsIdx[s]] == s (if present).
+	// stringsIdx maps encoded strings to their index within the RelocString section, to allow deduplication.
 	stringsIdx map[string]Index
 
-	// syncFrames is the number of frames to write at each sync
-	// marker. A negative value means sync markers are omitted.
+	// syncFrames is the number of frames to write at each sync marker. A negative value means sync markers are omitted.
 	syncFrames int
 }
 
@@ -38,12 +34,6 @@ type PkgEncoder struct {
 func (pw *PkgEncoder) SyncMarkers() bool { return pw.syncFrames >= 0 }
 
 // NewPkgEncoder returns an initialized PkgEncoder.
-//
-// syncFrames is the number of caller frames that should be serialized
-// at Sync points. Serializing additional frames results in larger
-// export data files, but can help diagnosing desync errors in
-// higher-level Unified IR reader/writer code. If syncFrames is
-// negative, then sync markers are omitted entirely.
 func NewPkgEncoder(version Version, syncFrames int) PkgEncoder {
 	return PkgEncoder{
 		version:    version,
@@ -118,9 +108,8 @@ func (pw *PkgEncoder) StringIdx(s string) Index {
 	return idx
 }
 
-// NewEncoder returns an Encoder for a new element within the given
-// section, and encodes the given SyncMarker as the start of the
-// element bitstream.
+// NewEncoder returns an Encoder for a new element within the given section,
+// and encodes the given SyncMarker as the start of the element bitstream.
 func (pw *PkgEncoder) NewEncoder(k RelocKind, marker SyncMarker) Encoder {
 	e := pw.NewEncoderRaw(k)
 	e.Sync(marker)
@@ -165,9 +154,8 @@ func (w *Encoder) Flush() Index {
 	var tmp bytes.Buffer
 	io.Copy(&tmp, &w.Data)
 
-	// TODO(mdempsky): Consider writing these out separately so they're
-	// easier to strip, along with function bodies, so that we can prune
-	// down to just the data that's relevant to go/types.
+	// TODO(mdempsky): Consider writing these out separately so they are easier
+	// to strip, along with function bodies.
 	if w.encodingRelocHeader {
 		panic("encodingRelocHeader already true; recursive flush?")
 	}
@@ -231,10 +219,7 @@ func (w *Encoder) Sync(m SyncMarker) {
 		return
 	}
 
-	// Writing out stack frame string references requires working
-	// relocations, but writing out the relocations themselves involves
-	// sync markers. To prevent infinite recursion, we simply trim the
-	// stack frame for sync markers within the relocation header.
+	// Writing out stack frame string references requires working relocations.
 	var frames []string
 	if !w.encodingRelocHeader && w.p.syncFrames > 0 {
 		pcs := make([]uintptr, w.p.syncFrames)
@@ -242,8 +227,7 @@ func (w *Encoder) Sync(m SyncMarker) {
 		frames = fmtFrames(pcs[:n]...)
 	}
 
-	// TODO(mdempsky): Save space by writing out stack frames as a
-	// linked list so we can share common stack frames.
+	// TODO(mdempsky): Save space by writing out stack frames as a linked list so we can share common stack frames.
 	w.rawUvarint(uint64(m))
 	w.rawUvarint(uint64(len(frames)))
 	for _, frame := range frames {
@@ -253,17 +237,6 @@ func (w *Encoder) Sync(m SyncMarker) {
 
 // Bool encodes and writes a bool value into the element bitstream,
 // and then returns the bool value.
-//
-// For simple, 2-alternative encodings, the idiomatic way to call Bool
-// is something like:
-//
-//	if w.Bool(x != 0) {
-//		// alternative #1
-//	} else {
-//		// alternative #2
-//	}
-//
-// For multi-alternative encodings, use Code instead.
 func (w *Encoder) Bool(b bool) bool {
 	w.Sync(SyncBool)
 	var x byte
@@ -298,10 +271,6 @@ func (w *Encoder) Uint(x uint) { w.Uint64(uint64(x)) }
 
 // Reloc encodes and writes a relocation for the given (section,
 // index) pair into the element bitstream.
-//
-// Note: Only the index is formally written into the element
-// bitstream, so bitstream decoders must know from context which
-// section an encoded relocation refers to.
 func (w *Encoder) Reloc(r RelocKind, idx Index) {
 	w.Sync(SyncUseReloc)
 	w.Len(w.rawReloc(r, idx))
@@ -313,18 +282,13 @@ func (w *Encoder) Code(c Code) {
 	w.Len(c.Value())
 }
 
-// String encodes and writes a string value into the element
-// bitstream.
-//
-// Internally, strings are deduplicated by adding them to the strings
-// section (if not already present), and then writing a relocation
-// into the element bitstream.
+// String encodes and writes a string value into the element bitstream.
 func (w *Encoder) String(s string) {
 	w.StringRef(w.p.StringIdx(s))
 }
 
-// StringRef writes a reference to the given index, which must be a
-// previously encoded string value.
+// StringRef writes a reference to the given index, which must be a encoded
+// string value.
 func (w *Encoder) StringRef(idx Index) {
 	w.Sync(SyncString)
 	w.Reloc(RelocString, idx)
@@ -339,8 +303,7 @@ func (w *Encoder) Strings(ss []string) {
 	}
 }
 
-// Value encodes and writes a constant.Value into the element
-// bitstream.
+// Value encodes and writes a constant.Value into the element bitstream.
 func (w *Encoder) Value(val constant.Value) {
 	w.Sync(SyncValue)
 	if w.Bool(val.Kind() == constant.Complex) {

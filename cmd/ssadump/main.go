@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // ssadump: a tool for displaying and interpreting the SSA form of Go programs.
 package main // import "golang.org/x/tools/cmd/ssadump"
@@ -81,8 +80,7 @@ func doMain() error {
 		Tests:      *testFlag,
 	}
 
-	// Choose types.Sizes from conf.Build.
-	// TODO(adonovan): remove this when go/packages provides a better way.
+	// Choose types.Sizes from conf.Build. TODO(adonovan): remove this when go/packages provides a better way.
 	var wordSize int64 = 8
 	switch build.Default.GOARCH {
 	case "386", "arm":
@@ -146,8 +144,7 @@ func doMain() error {
 		// Create SSA for initial packages and all dependencies, instantiating generics.
 		mode |= ssa.InstantiateGenerics
 
-		// TODO(adonovan): opt: use noreturn analysis over transitive
-		// dependencies to prune spurious control flow graph edges.
+		// TODO(adonovan): opt: use noreturn analysis over transitive dependencies to prune spurious control flow graph edges.
 
 		prog, pkgs := ssautil.AllPackages(initial, mode)
 		for i, p := range pkgs {
@@ -156,17 +153,12 @@ func doMain() error {
 			}
 		}
 
-		// Run the interpreter.
-		// Build SSA for all packages.
+		// Run the interpreter. Build SSA for all packages.
 		prog.Build()
 
-		// Earlier versions of the interpreter needed the runtime
-		// package; however, interp cannot handle unsafe constructs
-		// used during runtime's package initialization at the moment.
-		// The key construct blocking support is:
-		//    *((*T)(unsafe.Pointer(p)))
-		// Unfortunately, this means only trivial programs can be
-		// interpreted by ssadump.
+		// Earlier versions of the interpreter needed the runtime package; however,
+		// interp cannot handle unsafe constructs used during runtime's package
+		// initialization at the moment.
 		if prog.ImportedPackage("runtime") != nil {
 			return fmt.Errorf("-run: program depends on runtime package (interpreter can run only trivial programs)")
 		}
@@ -187,7 +179,6 @@ func doMain() error {
 }
 
 // stringListValue is a flag.Value that accumulates strings.
-// e.g. --flag=one --flag=two would produce []string{"one", "two"}.
 type stringListValue []string
 
 func (ss *stringListValue) Get() any { return []string(*ss) }

@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeparams_test
 
@@ -157,10 +156,6 @@ func TestFuncOriginUses(t *testing.T) {
 	}
 }
 
-// Issue #60628 was a crash in gopls caused by inconsistency (#60634) between
-// LookupFieldOrMethod and NewFileSet for methods with an illegal
-// *T receiver type, where T itself is a pointer.
-// This is a regression test for the workaround in the (now deleted) OriginMethod.
 func TestFuncOrigin60628(t *testing.T) {
 	const src = `package p; type T[P any] *int; func (r *T[A]) f() {}`
 	fset := token.NewFileSet()
@@ -188,7 +183,6 @@ func TestFuncOrigin60628(t *testing.T) {
 	for sel := range mset.Methods() {
 		m := sel.Obj().(*types.Func)
 
-		// TODO(adonovan): check the consistency property required to fix #60634.
 		if false {
 			m2, _, _ := types.LookupFieldOrMethod(T, true, m.Pkg(), m.Name())
 			if m2 != m {

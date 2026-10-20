@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2_test
 
@@ -35,8 +34,6 @@ func TestWireMessage(t *testing.T) {
 		msg:     newCall(1, "poke", nil),
 		encoded: []byte(`{"jsonrpc":"2.0","id":1,"method":"poke"}`),
 	}, {
-		// originally reported in #39719, this checks that result is not present if
-		// it is an error response
 		name: "computing fix edits",
 		msg:  newResponse(3, nil, jsonrpc2.NewError(0, "computing fix edits")),
 		encoded: []byte(`{

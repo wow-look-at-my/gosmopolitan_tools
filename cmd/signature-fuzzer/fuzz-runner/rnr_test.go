@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -67,9 +66,8 @@ func testBasic(t *testing.T, binaryPath string) {
 
 func testRace(t *testing.T, binaryPath string) {
 	t.Parallel()
-	// For this test to work, the current test platform has to support the
-	// race detector. Check to see if that is the case by running a very
-	// simple Go program through it.
+	// For this test to work, the current test platform has to support the race
+	// detector.
 	if !canRace() {
 		t.Skip("current platform does not appear to support the race detector")
 	}
@@ -89,9 +87,7 @@ func testMinimization1(t *testing.T, binaryPath string) {
 	}
 	t.Parallel()
 	// Fire off the runner passing it -emitbad=1, so that the generated code
-	// contains illegal Go code (which will force the build to fail). Verify that
-	// it does fail, that the error reflects the nature of the failure, and that
-	// we can minimize the error down to a single package.
+	// contains illegal Go code (which will force the build to fail).
 	args := []string{"-emitbad=1", "-badfcnidx=2", "-badpkgidx=2",
 		"-forcetmpclean", "-cleancache=0",
 		"-numit=1", "-numfcns=3", "-numpkgs=3", "-seed=909"}

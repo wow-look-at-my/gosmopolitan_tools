@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main_test
 
@@ -54,12 +53,7 @@ func Test(t *testing.T) {
 				}
 			}
 
-			// Parse archive comment as directives of these forms:
-			//
-			//  [!]deadcode args...	command-line arguments
-			//  [!]want arg		expected/unwanted string in output (or stderr)
-			//
-			// Args may be Go-quoted strings.
+			// Parse archive comment as directives of these forms:.
 			type testcase struct {
 				linenum int
 				args    []string

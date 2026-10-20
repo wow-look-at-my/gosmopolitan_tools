@@ -1,10 +1,8 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package driverutil defines implementation helper functions for
-// analysis drivers such as unitchecker, {single,multi}checker, and
-// analysistest.
+// Package driverutil defines implementation helper functions for analysis
+// drivers such as unitchecker, {single,multi}checker, and analysistest.
 package driverutil
 
 // This file defines the -fix logic common to unitchecker and
@@ -30,8 +28,8 @@ import (
 	"golang.org/x/tools/internal/diff"
 )
 
-// FixAction abstracts a checker action (running one analyzer on one
-// package) for the purposes of applying its diagnostics' fixes.
+// FixAction abstracts a checker action (running one analyzer on one package)
+// applying its diagnostics' fixes.
 type FixAction struct {
 	Name         string         // e.g. "analyzer@package"
 	Pkg          *types.Package // (for import removal)
@@ -41,71 +39,21 @@ type FixAction struct {
 	Diagnostics  []analysis.Diagnostic
 }
 
-// ApplyFixes attempts to apply the first suggested fix associated
-// with each diagnostic reported by the specified actions.
-// All fixes must have been validated by [ValidateFixes].
+// ApplyFixes attempts to apply the first suggested fix associated with each
+// diagnostic reported by the specified actions. All fixes must have been
+// validated by [ValidateFixes].
 //
-// Each fix is treated as an independent change; fixes are merged in
-// an arbitrary deterministic order as if by a three-way diff tool
-// such as the UNIX diff3 command or 'git merge'. Any fix that cannot be
-// cleanly merged is discarded, in which case the final summary tells
-// the user to re-run the tool.
-// TODO(adonovan): make the checker tool re-run the analysis itself.
-//
-// When the same file is analyzed as a member of both a primary
-// package "p" and a test-augmented package "p [p.test]", there may be
-// duplicate diagnostics and fixes. One set of fixes will be applied
-// and the other will be discarded; but re-running the tool may then
-// show zero fixes, which may cause the confused user to wonder what
-// happened to the other ones.
-// TODO(adonovan): consider pre-filtering completely identical fixes.
-//
-// A common reason for overlapping fixes is duplicate additions of the
-// same import. The merge algorithm may often cleanly resolve such
-// fixes, coalescing identical edits, but the merge may sometimes be
-// confused by nearby changes.
-//
-// Even when merging succeeds, there is no guarantee that the
-// composition of the two fixes is semantically correct. Coalescing
-// identical edits is appropriate for imports, but not for, say,
-// increments to a counter variable; the correct resolution in that
-// case might be to increment it twice.
-//
-// Or consider two fixes that each delete the penultimate reference to
-// a local variable: each fix is sound individually, and they may be
-// textually distant from each other, but when both are applied, the
-// program is no longer valid because it has an unreferenced local
-// variable. (ApplyFixes solves the analogous problem for imports by
-// eliminating imports whose name is unreferenced in the remainder of
-// the fixed file.)
-//
-// Merging depends on both the order of fixes and they order of edits
-// within them. For example, if three fixes add import "a" twice and
-// import "b" once, the two imports of "a" may be combined if they
-// appear in order [a, a, b], or not if they appear as [a, b, a].
-// TODO(adonovan): investigate an algebraic approach to imports;
-// that is, for fixes to Go source files, convert changes within the
-// import(...) portion of the file into semantic edits, compose those
-// edits algebraically, then convert the result back to edits.
-//
-// applyFixes returns success if all fixes are valid, could be cleanly
-// merged, and the corresponding files were successfully updated.
-//
-// If printDiff (from the -diff flag) is set, instead of updating the
-// files it display the final patch composed of all the cleanly merged
-// fixes. (It is tempting to factor printDiff as just a variant of
-// writeFile that is provided the old and new content, but it's hard
-// to generate a good summary that way.)
-//
-// TODO(adonovan): handle file-system level aliases such as symbolic
-// links using robustio.FileID.
+// Each fix is treated as an independent change. Fixes are merged in an
+// arbitrary deterministic order as if by a three-way diff tool such as the
+// UNIX diff3 command or 'git merge'. Any fix that cannot be cleanly merged is
+// discarded, in which case the final summary tells the user to re-run the
+// tool. TODO(adonovan): make the checker tool re-run the analysis itself.
 func ApplyFixes(actions []FixAction, writeFile func(filename string, content []byte) error, printDiff, verbose bool) error {
 	generated := make(map[*token.File]bool)
 
 	// Select fixes to apply.
 	//
-	// If there are several for a given Diagnostic, choose the first.
-	// Preserve the order of iteration, for determinism.
+	// If there are several for a given Diagnostic, choose the first. Preserve the order of iteration, for determinism.
 	type fixact struct {
 		fix *analysis.SuggestedFix
 		act FixAction
@@ -134,15 +82,6 @@ func ApplyFixes(actions []FixAction, writeFile func(filename string, content []b
 		}
 	}
 
-	// Read file content on demand, from the virtual
-	// file system that fed the analyzer (see #62292).
-	//
-	// This cache assumes that all successful reads for the same
-	// file name return the same content.
-	// (It is tempting to group fixes by package and do the
-	// merge/apply/format steps one package at a time, but
-	// packages are not disjoint, due to test variants, so this
-	// would not really address the issue.)
 	baselineContent := make(map[string][]byte)
 	getBaseline := func(readFile ReadFileFunc, filename string) ([]byte, error) {
 		content, ok := baselineContent[filename]
@@ -177,8 +116,7 @@ fixloop:
 			}
 		}
 
-		// Convert analysis.TextEdits to diff.Edits, grouped by file.
-		// Precondition: a prior call to validateFix succeeded.
+		// Convert analysis.TextEdits to diff.Edits, grouped by file. Precondition: a prior call to validateFix succeeded.
 		fileEdits := make(map[string][]diff.Edit)
 		for _, edit := range fixact.fix.TextEdits {
 			file := fixact.act.FileSet.File(edit.Pos)
@@ -206,8 +144,7 @@ fixloop:
 			})
 		}
 
-		// Apply each set of edits by merging atop
-		// the previous accumulated state.
+		// Apply each set of edits by merging atop the accumulated state.
 		after := make(map[string][]diff.Edit)
 		for file, edits := range fileEdits {
 			if prev := accumulatedEdits[file]; len(prev) > 0 {
@@ -276,37 +213,17 @@ fixloop:
 		}
 	}
 
-	// TODO(adonovan): consider returning a structured result that
-	// maps each SuggestedFix to its status:
-	// - invalid
-	// - secondary, not selected
-	// - applied
-	// - had conflicts.
-	// and a mapping from each affected file to:
-	// - its final/original content pair, and
-	// - whether formatting was successful.
-	// Then file writes and the UI can be applied by the caller
-	// in whatever form they like.
+	// TODO(adonovan): consider returning a structured result that maps each
+	// SuggestedFix to its status: - invalid - secondary, not selected - applied
+	// - had conflicts. and a mapping from each affected file to: - its
+	// final/original content pair, and - whether formatting was successful.
 
 	// If victory was incomplete, report an error that indicates partial progress.
 	//
 	// badFixes > 0 indicates that we decided not to attempt some
-	// fixes due to conflicts or failure to read the source; still
+	// fixes due to conflicts or failure to read the source. Still
 	// it's a relatively benign situation since the user can
-	// re-run the tool, and we may still make progress.
-	//
-	// filesUpdated < totalFiles indicates that some file updates
-	// failed. This should be rare, but is a serious error as it
-	// may apply half a fix, or leave the files in a bad state.
-	//
-	// These numbers are potentially misleading:
-	// The denominator includes duplicate conflicting fixes due to
-	// common files in packages "p" and "p [p.test]", which may
-	// have been fixed and won't appear in the re-run.
-	// TODO(adonovan): eliminate identical fixes as an initial
-	// filtering step.
-	//
-	// TODO(adonovan): should we log that n files were updated in case of total victory?
+	// re-run the tool. We may still make progress.
 	if badFixes > 0 || filesUpdated < totalFiles {
 		if printDiff {
 			return fmt.Errorf("%d of %s skipped (e.g. due to conflicts)",
@@ -336,16 +253,10 @@ fixloop:
 // FormatSourceRemoveImports is a variant of [format.Source] that
 // removes imports that became redundant when fixes were applied.
 //
-// Import removal is necessarily heuristic since we do not have type
-// information for the fixed file and thus cannot accurately tell
-// whether k is among the free names of T{k: 0}, which requires
-// knowledge of whether T is a struct type.
-//
 // Like [imports.Process] (the core of x/tools/cmd/goimports), it also
 // merges import decls.
 func FormatSourceRemoveImports(pkg *types.Package, src []byte) ([]byte, error) {
-	// This function was reduced from the "strict entire file"
-	// path through [format.Source].
+	// This function was reduced from the "strict entire file" path through [format.Source].
 
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "fixed.go", src, parser.ParseComments|parser.SkipObjectResolution)
@@ -357,14 +268,9 @@ func FormatSourceRemoveImports(pkg *types.Package, src []byte) ([]byte, error) {
 
 	removeUnneededImports(fset, pkg, file)
 
-	// TODO(adonovan): to generate cleaner edits when adding an import,
-	// consider adding a call to imports.mergeImports; however, it does
-	// cause comments to migrate.
+	// TODO(adonovan): to generate cleaner edits when adding an import, consider adding a call to imports.mergeImports; however.
 
-	// printerNormalizeNumbers means to canonicalize number literal prefixes
-	// and exponents while printing. See https://golang.org/doc/go1.13#gofmt.
-	//
-	// This value is defined in go/printer specifically for go/format and cmd/gofmt.
+	// printerNormalizeNumbers means to canonicalize number literal prefixes and exponents while printing.
 	const printerNormalizeNumbers = 1 << 30
 	cfg := &printer.Config{
 		Mode:     printer.UseSpaces | printer.TabIndent | printerNormalizeNumbers,
@@ -377,17 +283,15 @@ func FormatSourceRemoveImports(pkg *types.Package, src []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// removeUnneededImports removes import specs that are not referenced
-// within the fixed file. It uses [free.Names] to heuristically
-// approximate the set of imported names needed by the body of the
-// file based only on syntax.
+// removeUnneededImports removes import specs that are not referenced within
+// the fixed file. It uses [free.Names] to heuristically approximate the set
+// of imported names needed by the body of the file based only on syntax.
 //
-// pkg provides type information about the unmodified package, in
-// particular the name that would implicitly be declared by a
+// pkg provides type information about the unmodified package. That pkg is
+// in particular the name that would implicitly be declared by a
 // non-renaming import of a given existing dependency.
 func removeUnneededImports(fset *token.FileSet, pkg *types.Package, file *ast.File) {
 	// Map each existing dependency and its transitive dependencies to its default import name.
-	// (We'll need this to interpret non-renaming imports.)
 	packageNames := make(map[string]string)
 	var visit func(pkg *types.Package)
 	visit = func(pkg *types.Package) {
@@ -402,17 +306,14 @@ func removeUnneededImports(fset *token.FileSet, pkg *types.Package, file *ast.Fi
 		visit(imp)
 	}
 
-	// Compute the set of free names of the file,
-	// ignoring its import decls.
+	// Compute the set of free names of the file, ignoring its import decls.
 	freenames := make(map[string]bool)
 	for _, decl := range file.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.IMPORT {
 			continue // skip import
 		}
 
-		// TODO(adonovan): we could do better than includeComplitIdents=false
-		// since we have type information about the unmodified package,
-		// which is a good source of heuristics.
+		// TODO(adonovan): we could do better than includeComplitIdents=false since we have type information about the unmodified package.
 		const includeComplitIdents = false
 		maps.Copy(freenames, free.Names(decl, includeComplitIdents))
 	}

@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package loader
 
@@ -17,11 +16,10 @@ import (
 	"golang.org/x/tools/go/buildutil"
 )
 
-// We use a counting semaphore to limit
-// the number of parallel I/O calls per process.
+// We use a counting semaphore to limit the number of parallel I/O calls per process.
 var ioLimit = make(chan bool, 10)
 
-// parseFiles parses the Go source files within directory dir and
+// parseFiles parses the Go source files within directory dir. It
 // returns the ASTs of the ones that could be at least partially parsed,
 // along with a list of I/O and parse errors encountered.
 //

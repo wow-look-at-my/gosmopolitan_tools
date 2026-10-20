@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa_test
 
@@ -578,7 +577,7 @@ func callsTo(fns map[*ssa.Function]bool, fname string) map[*ssa.CallCommon]*ssa.
 // matchNotes returns a mapping from call sites (found by callsTo)
 // to the first "//@ note" comment on the same line.
 func matchNotes(fset *token.FileSet, notes []*expect.Note, calls map[*ssa.CallCommon]*ssa.Function) map[*ssa.CallCommon]*expect.Note {
-	// Matches each probe with a note that has the same line.
+	// Matches each probe with a has the same line.
 	sameLine := func(x, y token.Pos) bool {
 		xp := fset.Position(x)
 		yp := fset.Position(y)
@@ -603,10 +602,10 @@ func TestInstructionString(t *testing.T) {
 	//
 	//	//@ instrs(f, kind, strs...)
 	//
-	// where f is the name of the function, kind is the type of the instructions matched
-	// within the function, and tests that the String() value for all of the instructions
-	// matched of String() is strs (in some order).
-	// See x/tools/go/expect for details on the syntax.
+	// Kind is the type of the instructions matched within the function. Tests that the
+	// String() value for all of the instructions matched of String() is strs (in some
+	// order). This holds where f is the name of the function. See x/tools/go/expect for
+	// details on the syntax.
 
 	const contents = `
 	package p
@@ -766,9 +765,8 @@ func TestInstructionString(t *testing.T) {
 		t.Errorf("expect.ExtractGo: %v", err)
 	}
 
-	// Expectation is a {function, type string} -> {want, matches}
-	// where matches is all Instructions.String() that match the key.
-	// Each expectation is that some permutation of matches is wants.
+	// Expectation is a {function, type string} -> {want, matches} where matches
+	// is all Instructions.String() that match the key.
 	type expKey struct {
 		function string
 		kind     string

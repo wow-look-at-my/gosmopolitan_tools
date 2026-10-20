@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package analysis
 
@@ -11,14 +10,11 @@ import (
 	"unicode"
 )
 
-// Validate reports an error if any of the analyzers are misconfigured.
-// Checks include:
-// that the name is a valid identifier;
-// that the Doc is not empty;
-// that the Run is non-nil;
-// that the Requires graph is acyclic;
-// that analyzer fact types are unique;
-// that each fact type is a pointer.
+// Validate reports an error if any of the analyzers are misconfigured. Checks
+// include: that the name is a valid identifier. This also covers that the Doc
+// is not empty. This also covers that the Run is non-nil. This also covers
+// that the Requires graph is acyclic. This also covers that analyzer fact
+// types are unique. This also covers that each fact type is a pointer.
 //
 // Analyzer names need not be unique, though this may be confusing.
 func Validate(analyzers []*Analyzer) error {
@@ -100,8 +96,7 @@ func Validate(analyzers []*Analyzer) error {
 		}
 	}
 
-	// Reject duplicates among analyzers.
-	// Precondition:  color[a] == black.
+	// Reject duplicates among analyzers. Precondition: color[a] == black.
 	// Postcondition: color[a] == finished.
 	for _, a := range analyzers {
 		if color[a] == finished {

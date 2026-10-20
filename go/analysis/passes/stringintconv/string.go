@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stringintconv
 
@@ -101,11 +100,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// In the conversion T(v) of a value v of type V to a target type T, we
-		// look for types T0 in the type set of T and V0 in the type set of V, such
-		// that V0->T0 is a problematic conversion. If T and V are not type
-		// parameters, this amounts to just checking if V->T is a problematic
-		// conversion.
+		// In the conversion T(v) of a value v of type V to a target type T, we look for types T0.
 
 		// First, find a type T0 in T that has an underlying type of string.
 		T := tname.Type()
@@ -129,8 +124,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// Next, find a type V0 in V that has an underlying integral type that is
-		// not byte or rune.
+		// Next, find a type V0 in V that has an underlying integral type that is not byte or rune.
 		V := pass.TypesInfo.TypeOf(arg)
 		vtypes, err := structuralTypes(V)
 		if err != nil {
@@ -182,21 +176,16 @@ func run(pass *analysis.Pass) (any, error) {
 			})
 		}
 
-		// Fix 1: use fmt.Sprint(x)
-		//
-		// Prefer fmt.Sprint over strconv.Itoa, FormatInt,
-		// or FormatUint, as it works for any type.
-		// Add an import of "fmt" as needed.
+		// Prefer fmt.Sprint over strconv.Itoa, FormatInt, or FormatUint, as it
+		// works for any type. Add an import of "fmt" as needed.
 		//
 		// Unless the type is exactly string, we must retain the conversion.
 		//
-		// Do not offer this fix if type parameters are involved,
-		// as there are too many combinations and subtleties.
-		// Consider x = rune | int16 | []byte: in all cases,
-		// string(x) is legal, but the appropriate diagnostic
-		// and fix differs. Similarly, don't offer the fix if
-		// the type has methods, as some {String,GoString,Format}
-		// may change the behavior of fmt.Sprint.
+		// Do not offer this fix if type parameters are involved, as there are too
+		// many combinations and subtleties. Consider x = rune | int16 | []byte: in
+		// all cases, string(x) is legal, but the appropriate diagnostic and fix
+		// differs. Similarly, don't offer the fix if the type has methods, as some
+		// {String,GoString,Format} may change the behavior of fmt.Sprint.
 		if len(ttypes) == 1 && len(vtypes) == 1 && types.NewMethodSet(V0).Len() == 0 {
 			prefix, importEdits := refactor.AddImport(pass.TypesInfo, file, "fmt", "fmt", "Sprint", arg.Pos())
 			if types.Identical(T0, types.Typ[types.String]) {
@@ -225,7 +214,6 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 		}
 
-		// Fix 2: use string(rune(x))
 		if convertibleToRune {
 			addFix("Convert a single rune to a string", []analysis.TextEdit{
 				{

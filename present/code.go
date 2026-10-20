@@ -1,6 +1,5 @@
-// Copyright 2012 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package present
 
@@ -15,17 +14,12 @@ import (
 	"strings"
 )
 
-// PlayEnabled specifies whether runnable playground snippets should be
-// displayed in the present user interface.
+// PlayEnabled specifies whether runnable playground snippets should be displayed in the present user interface.
 var PlayEnabled = false
 
 // TODO(adg): replace the PlayEnabled flag with something less spaghetti-like.
-// Instead this will probably be determined by a template execution Context
-// value that contains various global metadata required when rendering
-// templates.
 
-// NotesEnabled specifies whether presenter notes should be displayed in the
-// present user interface.
+// NotesEnabled specifies whether presenter notes should be displayed in the present user interface.
 var NotesEnabled = false
 
 func init() {
@@ -75,12 +69,6 @@ func parseCode(ctx *Context, sourceFile string, sourceLine int, cmd string) (Ele
 	}
 
 	// Parse the remaining command line.
-	// Arguments:
-	// args[0]: whole match
-	// args[1]:  .code/.play
-	// args[2]: flags ("-edit -numbers")
-	// args[3]: file name
-	// args[4]: optional address
 	args := codeRE.FindStringSubmatch(cmd)
 	if len(args) != 5 {
 		return nil, fmt.Errorf("%s:%d: syntax error for .code/.play invocation", sourceFile, sourceLine)
@@ -99,8 +87,7 @@ func parseCode(ctx *Context, sourceFile string, sourceLine int, cmd string) (Ele
 		return nil, fmt.Errorf("%s:%d: %v", sourceFile, sourceLine, err)
 	}
 	if lo > hi {
-		// The search in addrToByteRange can wrap around so we might
-		// end up with the range ending before its starting point
+		// The search in addrToByteRange can wrap around so we might end up with the range ending before its starting point
 		hi, lo = lo, hi
 	}
 
@@ -207,9 +194,8 @@ type codeLine struct {
 	HL bool   // Whether the line should be highlighted.
 }
 
-// codeLines takes a source file and returns the lines that
-// span the byte range specified by start and end.
-// It discards lines that end in "OMIT".
+// codeLines takes a source file and returns the lines that span the byte
+// range specified by start and end. It discards lines that end in "OMIT".
 func codeLines(src []byte, start, end int) (lines []codeLine) {
 	startLine := 1
 	for i, b := range src {

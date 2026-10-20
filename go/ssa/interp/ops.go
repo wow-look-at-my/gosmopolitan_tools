@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package interp
 
@@ -178,10 +177,7 @@ func zero(t types.Type) value {
 			panic("untyped nil has no zero value")
 		}
 		if t.Info()&types.IsUntyped != 0 {
-			// TODO(adonovan): make it an invariant that
-			// this is unreachable.  Currently some
-			// constants have 'untyped' types when they
-			// should be defaulted by the typechecker.
+			// TODO(adonovan).
 			t = types.Default(t).(*types.Basic)
 		}
 		switch t.Kind() {
@@ -268,7 +264,7 @@ func zero(t types.Type) value {
 	panic(fmt.Sprint("zero: unexpected ", t))
 }
 
-// slice returns x[lo:hi:max].  Any of lo, hi and max may be nil.
+// slice returns x[lo:hi:max]. Any of lo, hi and max may be nil.
 func slice(x, lo, hi, max value) value {
 	var Len, Cap int
 	switch x := x.(type) {
@@ -334,9 +330,8 @@ func lookup(instr *ssa.Lookup, x, idx value) value {
 	panic(fmt.Sprintf("unexpected x type in Lookup: %T", x))
 }
 
-// binop implements all arithmetic and logical binary operators for
-// numeric datatypes and strings.  Both operands must have identical
-// dynamic type.
+// binop implements all arithmetic and logical binary operators for numeric
+// datatypes and strings. Both operands must have identical dynamic type.
 func binop(op token.Token, t types.Type, x, y value) value {
 	switch op {
 	case token.ADD:
@@ -807,9 +802,8 @@ func binop(op token.Token, t types.Type, x, y value) value {
 }
 
 // eqnil returns the comparison x == y using the equivalence relation
-// appropriate for type t.
-// If t is a reference type, at most one of x or y may be a nil value
-// of that type.
+// appropriate for type t. If t is a reference type, at most one of x or y may
+// be a nil value of that type.
 func eqnil(t types.Type, x, y value) bool {
 	switch t.Underlying().(type) {
 	case *types.Map, *types.Signature, *types.Slice:
@@ -1079,8 +1073,7 @@ func callBuiltin(caller *frame, fn *ssa.Builtin, args []value) value {
 		}
 
 	case "panic":
-		// ssa.Panic handles most cases; this is only for "go
-		// panic" or "defer panic".
+		// ssa.Panic handles most cases; this is only for "go panic" or "defer panic".
 		panic(targetPanic{args[0]})
 
 	case "recover":
@@ -1116,7 +1109,7 @@ func rangeIter(x value) iter {
 }
 
 // widen widens a basic typed value x to the widest type of its
-// category, one of:
+// category, one of.
 //
 //	bool, int64, uint64, float64, complex128, string.
 //
@@ -1152,9 +1145,8 @@ func widen(x value) value {
 	panic(fmt.Sprintf("cannot widen %T", x))
 }
 
-// conv converts the value x of type t_src to type t_dst and returns
-// the result.
-// Possible cases are described with the ssa.Convert operator.
+// conv converts the value x of type t_src to type t_dst and returns the
+// result. Possible cases are described with the ssa.Convert operator.
 func conv(t_dst, t_src types.Type, x value) value {
 	ut_src := t_src.Underlying()
 	ut_dst := t_dst.Underlying()
@@ -1252,22 +1244,7 @@ func conv(t_dst, t_src types.Type, x value) value {
 
 		// unsafe.Pointer -> *value
 		if ut_src.Kind() == types.UnsafePointer {
-			// TODO(adonovan): this is wrong and cannot
-			// really be fixed with the current design.
-			//
-			// return (*value)(x.(unsafe.Pointer))
-			// creates a new pointer of a different
-			// type but the underlying interface value
-			// knows its "true" type and so cannot be
-			// meaningfully used through the new pointer.
-			//
-			// To make this work, the interpreter needs to
-			// simulate the memory layout of a real
-			// compiled implementation.
-			//
-			// To at least preserve type-safety, we'll
-			// just return the zero value of the
-			// destination type.
+			// TODO(adonovan): this is wrong and cannot be fixed with the current design.
 			return zero(t_dst)
 		}
 
@@ -1404,9 +1381,8 @@ func sliceToArrayPointer(t_dst, t_src types.Type, x value) value {
 	panic(fmt.Sprintf("unsupported conversion: %s  -> %s, dynamic type %T", t_src, t_dst, x))
 }
 
-// checkInterface checks that the method set of x implements the
-// interface itype.
-// On success it returns "", on failure, an error message.
+// checkInterface checks that the method set of x implements the interface
+// itype. On success it returns "", on failure, an error message.
 func checkInterface(itype *types.Interface, x iface) string {
 	if meth, _ := types.MissingMethod(x.t, itype, true); meth != nil {
 		return fmt.Sprintf("interface conversion: %v is not %v: missing method %s",
@@ -1431,7 +1407,7 @@ func min(x, y value) value {
 		return fmin(x, y.(float64))
 	}
 
-	// return (y < x) ? y : x
+	// return (y < x)? y: x
 	if binop(token.LSS, nil, y, x).(bool) {
 		return y
 	}
@@ -1446,7 +1422,7 @@ func max(x, y value) value {
 		return fmax(x, y.(float64))
 	}
 
-	// return (y > x) ? y : x
+	// return (y > x)? y: x
 	if binop(token.GTR, nil, y, x).(bool) {
 		return y
 	}
@@ -1464,8 +1440,6 @@ func fmin[F floaty](x, y F) F {
 	if x != x || x < y || x != 0 {
 		return x
 	}
-	// x and y are both ±0
-	// if either is -0, return -0; else return +0
 	return forbits(x, y)
 }
 
@@ -1476,8 +1450,6 @@ func fmax[F floaty](x, y F) F {
 	if x != x || x > y || x != 0 {
 		return x
 	}
-	// x and y are both ±0
-	// if both are -0, return -0; else return +0
 	return fandbits(x, y)
 }
 

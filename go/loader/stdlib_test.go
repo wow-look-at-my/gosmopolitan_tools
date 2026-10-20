@@ -1,10 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package loader_test
 
-// This file enumerates all packages beneath $GOROOT, loads them, plus
+// This file enumerates all packages beneath $GOROOT, loads them. Plus
 // their external tests if any, runs the type checker on them, and
 // prints some summary information.
 
@@ -79,14 +78,10 @@ func TestStdlib(t *testing.T) {
 		}
 	}
 
-	// Check that Test functions for regexp and compress/bzip2 are
-	// simultaneously present. The apparent cycle formed when augmenting
-	// these packages by their tests (together with io/ioutil's test, which is now
-	// an xtest) was the original motivation or reporting golang.org/issue/7114.
-	//
-	// compress/bzip2.TestBitReader in bzip2_test.go    imports io/ioutil
-	// io/ioutil.TestTempFile       in tempfile_test.go imports regexp (no longer exists)
-	// regexp.TestRE2Search         in exec_test.go     imports compress/bzip2
+	// Check that Test functions for regexp and compress/bzip2 are simultaneously
+	// present. The apparent cycle formed when augmenting these packages by their
+	// tests (together with io/ioutil's test, which is now an xtest) was the
+	// original motivation or reporting golang.org/issue/7114.
 	for _, test := range []struct{ pkg, fn string }{
 		{"regexp", "TestRE2Search"},
 		{"compress/bzip2", "TestBitReader"},
@@ -131,23 +126,20 @@ func TestCgoOption(t *testing.T) {
 		t.Skipf("golang/go#58493: file locations in this test are stale on darwin")
 	}
 	testenv.NeedsTool(t, "go")
-	// In nocgo builds (e.g. linux-amd64-nocgo),
-	// there is no "runtime/cgo" package,
-	// so cgo-generated Go files will have a failing import.
+	// In nocgo builds (e.g. linux-amd64-nocgo), there is no "runtime/cgo" package.
 	testenv.NeedsTool(t, "cgo")
 
-	// Test that we can load cgo-using packages with
-	// CGO_ENABLED=[01], which causes go/build to select pure
-	// Go/native implementations, respectively, based on build
-	// tags.
+	// Test that we can load cgo-using packages with CGO_ENABLED=[01]. Which
+	// causes go/build to select pure Go/native implementations, respectively,
+	// based on build tags.
 	//
-	// Each entry specifies a package-level object and the generic
-	// file expected to define it when cgo is disabled.
-	// When cgo is enabled, the exact file is not specified (since
-	// it varies by platform), but must differ from the generic one.
+	// Each entry specifies a package-level object and the generic file expected
+	// to define it when cgo is disabled. When cgo is enabled, the exact file is
+	// not specified (since it varies by platform), but must differ from the
+	// generic one.
 	//
-	// The test also loads the actual file to verify that the
-	// object is indeed defined at that location.
+	// The test also loads the actual file to verify that the object is defined
+	// at that location.
 	for _, test := range []struct {
 		pkg, name, genericFile string
 	}{

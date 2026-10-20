@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -489,10 +488,8 @@ func TestVendorCwd(t *testing.T) {
 
 func TestVendorCwdIssue16580(t *testing.T) {
 	// Regression test for Go issue 16580.
-	// Import decls in "created" packages were vendor-resolved
-	// w.r.t. cwd, not the parent directory of the package's files.
 	ctxt := fakeContext(map[string]string{
-		"a":          ``, // mkdir a
+		"a":          ``,
 		"a/vendor":   ``, // mkdir a/vendor
 		"a/vendor/b": `package b; const X = true`,
 		"b":          `package b; const X = false`,
@@ -538,7 +535,6 @@ func TestVendorCwdIssue16580(t *testing.T) {
 		}
 	}
 
-	// TODO(adonovan): also test imports within XTestGoFiles.
 }
 
 // TODO(adonovan): more Load tests:
@@ -553,18 +549,11 @@ func TestVendorCwdIssue16580(t *testing.T) {
 
 // features:
 // - InitialPackages
-// - PackageCreated hook
+
 // - TypeCheckFuncBodies hook
 
 func TestTransitivelyErrorFreeFlag(t *testing.T) {
-	// Create a minimal custom build.Context
-	// that fakes the following packages:
-	//
-	// a --> b --> c!   c has an error
-	//   \              d and e are transitively error-free.
-	//    e --> d
-	//
-	// Each package [a-e] consists of one file, x.go.
+	// Create a minimal custom build.Context that fakes the following packages:.
 	pkgs := map[string]string{
 		"a": `package a; import (_ "b"; _ "e")`,
 		"b": `package b; import _ "c"`,
@@ -710,30 +699,6 @@ func TestCycles(t *testing.T) {
 			}),
 			`import cycle: a -> a`,
 		},
-		// TODO(adonovan): fix: these fail
-		// {
-		// 	"two-package cycle in dependency of test file",
-		// 	buildutil.FakeContext(map[string]map[string]string{
-		// 		"main": {
-		// 			"main.go":      `package main`,
-		// 			"main_test.go": `package main; import _ "a"`,
-		// 		},
-		// 		"a": {
-		// 			"a.go": `package a; import _ "main"`,
-		// 		},
-		// 	}),
-		// 	`import cycle: main -> a -> main`,
-		// },
-		// {
-		// 	"self-cycle in augmented package",
-		// 	buildutil.FakeContext(map[string]map[string]string{
-		// 		"main": {
-		// 			"main.go":      `package main`,
-		// 			"main_test.go": `package main; import _ "main"`,
-		// 		},
-		// 	}),
-		// 	`import cycle: main -> main`,
-		// },
 	} {
 		conf := loader.Config{
 			AllowErrors: true,
@@ -762,9 +727,6 @@ func TestCycles(t *testing.T) {
 		}
 	}
 
-	// TODO(adonovan):
-	// - Test that in a legal test cycle, none of the symbols
-	//   defined by augmentation are visible via import.
 }
 
 // ---- utilities ----
@@ -825,8 +787,6 @@ func created(prog *loader.Program) string {
 }
 
 // Load package "io" twice in parallel.
-// When run with -race, this is a regression test for Go issue 20718, in
-// which the global "unsafe" package was modified concurrently.
 func TestLoad1(t *testing.T) { loadIO(t) }
 func TestLoad2(t *testing.T) { loadIO(t) }
 

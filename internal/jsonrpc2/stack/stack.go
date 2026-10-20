@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package stack provides support for parsing standard goroutine stack traces.
 package stack
@@ -61,7 +60,7 @@ type Group struct {
 	Goroutines []Goroutine // the set of goroutines in this group
 }
 
-// Delta represents the difference between two stack dumps.
+// Delta represents the difference between stack dumps.
 type Delta struct {
 	Before Dump // The goroutines that were only in the before set.
 	Shared Dump // The goroutines that were in both sets.

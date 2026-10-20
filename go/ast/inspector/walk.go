@@ -1,13 +1,10 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector
 
 // This file is a fork of ast.Inspect to reduce unnecessary dynamic
 // calls and to gather edge information.
-//
-// Consistency with the original is ensured by TestInspectAllNodes.
 
 import (
 	"fmt"
@@ -25,9 +22,8 @@ func walkList[N ast.Node](v *visitor, ek edge.Kind, list []N) {
 func walk(v *visitor, ek edge.Kind, index int, node ast.Node) {
 	v.push(ek, index, node)
 
-	// walk children
-	// (the order of the cases matches the order
-	// of the corresponding node types in ast.go)
+	// walk children (the order of the cases matches the order of the
+	// corresponding node types in ast.go)
 	switch n := node.(type) {
 	// Comments and fields
 	case *ast.Comment:
@@ -328,9 +324,8 @@ func walk(v *visitor, ek edge.Kind, index int, node ast.Node) {
 		}
 		walk(v, edge.File_Name, -1, n.Name)
 		walkList(v, edge.File_Decls, n.Decls)
-		// don't walk n.Comments - they have been
-		// visited already through the individual
-		// nodes
+		// don't walk n.Comments - they have been visited already through the
+		// individual nodes
 
 	default:
 		// (includes *ast.Package)

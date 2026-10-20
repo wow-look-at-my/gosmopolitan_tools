@@ -1,42 +1,14 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
-// This file defines the lifting pass which tries to "lift" Alloc
-// cells (new/local variables) into SSA registers, replacing loads
-// with the dominating stored value, eliminating loads and stores, and
-// inserting φ-nodes as needed.
+// This file defines the lifting pass which tries to "lift" Alloc cells
+// (new/local variables) into SSA registers, replacing loads.
 
-// Cited papers and resources:
-//
-// Ron Cytron et al. 1991. Efficiently computing SSA form...
-// http://doi.acm.org/10.1145/115372.115320
-//
-// Cooper, Harvey, Kennedy.  2001.  A Simple, Fast Dominance Algorithm.
-// Software Practice and Experience 2001, 4:1-10.
-// http://www.hipersoft.rice.edu/grads/publications/dom14.pdf
-//
-// Daniel Berlin, llvmdev mailing list, 2012.
-// http://lists.cs.uiuc.edu/pipermail/llvmdev/2012-January/046638.html
-// (Be sure to expand the whole thread.)
+// Cited papers and resources:.
 
-// TODO(adonovan): opt: there are many optimizations worth evaluating, and
-// the conventional wisdom for SSA construction is that a simple
-// algorithm well engineered often beats those of better asymptotic
-// complexity on all but the most egregious inputs.
-//
-// Danny Berlin suggests that the Cooper et al. algorithm for
-// computing the dominance frontier is superior to Cytron et al.
-// Furthermore he recommends that rather than computing the DF for the
-// whole function then renaming all alloc cells, it may be cheaper to
-// compute the DF for each alloc cell separately and throw it away.
-//
-// Consider exploiting liveness information to avoid creating dead
-// φ-nodes which we then immediately remove.
-//
-// Also see many other "TODO: opt" suggestions in the code.
+// TODO(adonovan): opt: there are many optimizations worth evaluating.
 
 import (
 	"fmt"
@@ -48,21 +20,10 @@ import (
 	"golang.org/x/tools/internal/typeparams"
 )
 
-// If true, show diagnostic information at each step of lifting.
-// Very verbose.
+// If true, show diagnostic information at each step of lifting. verbose.
 const debugLifting = false
 
-// domFrontier maps each block to the set of blocks in its dominance
-// frontier.  The outer slice is conceptually a map keyed by
-// Block.Index.  The inner slice is conceptually a set, possibly
-// containing duplicates.
-//
-// TODO(adonovan): opt: measure impact of dups; consider a packed bit
-// representation, e.g. big.Int, and bitwise parallel operations for
-// the union step in the Children loop.
-//
-// domFrontier's methods mutate the slice's elements but not its
-// length, so their receivers needn't be pointers.
+// domFrontier maps each block to the set of blocks in its dominance frontier.
 type domFrontier [][]*BasicBlock
 
 func (df domFrontier) add(u, v *BasicBlock) {
@@ -70,12 +31,9 @@ func (df domFrontier) add(u, v *BasicBlock) {
 	*p = append(*p, v)
 }
 
-// build builds the dominance frontier df for the dominator (sub)tree
-// rooted at u, using the Cytron et al. algorithm.
+// build builds the dominance frontier df for the dominator (sub)tree rooted at u, using the Cytron et al. algorithm.
 //
-// TODO(adonovan): opt: consider Berlin approach, computing pruned SSA
-// by pruning the entire IDF computation, rather than merely pruning
-// the DF -> IDF step.
+// TODO(adonovan): opt: consider Berlin approach, computing pruned SSA by pruning the entire IDF computation, rather than merely pruning the DF -> IDF step.
 func (df domFrontier) build(u *BasicBlock) {
 	// Encounter each node u in postorder of dom tree.
 	for _, child := range u.dom.children {
@@ -118,24 +76,7 @@ func removeInstr(refs []Instruction, instr Instruction) []Instruction {
 // - Def/use info (Operands and Referrers) is up-to-date.
 // - The dominator tree is up-to-date.
 func lift(fn *Function) {
-	// TODO(adonovan): opt: lots of little optimizations may be
-	// worthwhile here, especially if they cause us to avoid
-	// buildDomFrontier.  For example:
-	//
-	// - Alloc never loaded?  Eliminate.
-	// - Alloc never stored?  Replace all loads with a zero constant.
-	// - Alloc stored once?  Replace loads with dominating store;
-	//   don't forget that an Alloc is itself an effective store
-	//   of zero.
-	// - Alloc used only within a single block?
-	//   Use degenerate algorithm avoiding φ-nodes.
-	// - Consider synergy with scalar replacement of aggregates (SRA).
-	//   e.g. *(&x.f) where x is an Alloc.
-	//   Perhaps we'd get better results if we generated this as x.f
-	//   i.e. Field(x, .f) instead of Load(FieldIndex(x, .f)).
-	//   Unclear.
-	//
-	// But we will start with the simplest correct code.
+	// TODO(adonovan): opt: lots of little optimizations may be worthwhile here.
 	df := buildDomFrontier(fn)
 
 	if debugLifting {
@@ -153,31 +94,20 @@ func lift(fn *Function) {
 
 	newPhis := make(newPhiMap)
 
-	// During this pass we will replace some BasicBlock.Instrs
-	// (allocs, loads and stores) with nil, keeping a count in
-	// BasicBlock.gaps.  At the end we will reset Instrs to the
-	// concatenation of all non-dead newPhis and non-nil Instrs
-	// for the block, reusing the original array if space permits.
+	// During this pass we will replace some BasicBlock.Instrs (allocs, loads and stores) with nil.
 
-	// While we're here, we also eliminate 'rundefers'
-	// instructions and ssa:deferstack() in functions that contain no
-	// 'defer' instructions. For now, we also eliminate
-	// 's = ssa:deferstack()' calls if s doesn't escape, replacing s
-	// with nil in Defer{DeferStack: s}. This has the same meaning,
-	// but allows eliminating the intrinsic function `ssa:deferstack()`
-	// (unless it is needed due to range-over-func instances). This gives
-	// ssa users more time to support range-over-func.
+	// While we're here, we also eliminate 'rundefers' instructions and
+	// ssa:deferstack() in functions that contain no 'defer' instructions. we
+	// also eliminate 's = ssa:deferstack()' calls if s doesn't escape, replacing
+	// s with nil in Defer{DeferStack: s}.
 	usesDefer := false
 	deferstackAlloc, deferstackCall := deferstackPreamble(fn)
 	eliminateDeferStack := deferstackAlloc != nil && !deferstackAlloc.Heap
 
-	// A counter used to generate ~unique ids for Phi nodes, as an
-	// aid to debugging.  We use large numbers to make them highly
-	// visible.  All nodes are renumbered later.
+	// A counter used to generate ~unique ids for Phi nodes, as an aid to debugging.
 	fresh := 1000
 
-	// Determine which allocs we can lift and number them densely.
-	// The renaming phase uses this numbering for compact maps.
+	// Determine which allocs we can lift and number them densely. The renaming phase uses this numbering for compact maps.
 	numAllocs := 0
 	for _, b := range fn.Blocks {
 		b.gaps = 0
@@ -208,11 +138,7 @@ func lift(fn *Function) {
 		}
 	}
 
-	// renaming maps an alloc (keyed by index) to its replacement
-	// value.  Initially the renaming contains nil, signifying the
-	// zero constant of the appropriate type; we construct the
-	// Const lazily at most once on each path through the domtree.
-	// TODO(adonovan): opt: cache per-function not per subtree.
+	// renaming maps an alloc (keyed by index) to its replacement value.
 	renaming := make([]Value, numAllocs)
 
 	// Renaming.
@@ -248,8 +174,6 @@ func lift(fn *Function) {
 		}
 
 		// Compact nps + non-nil Instrs into a new slice.
-		// TODO(adonovan): opt: compact in situ (rightwards)
-		// if Instrs has sufficient space or slack.
 		dst := make([]Instruction, len(b.Instrs)+j-b.gaps-rundefersToKill)
 		for i, np := range nps {
 			dst[i] = np.phi
@@ -287,13 +211,7 @@ func lift(fn *Function) {
 // removeDeadPhis removes φ-nodes not transitively needed by a
 // non-Phi, non-DebugRef instruction.
 func removeDeadPhis(blocks []*BasicBlock, newPhis newPhiMap) {
-	// First pass: find the set of "live" φ-nodes: those reachable
-	// from some non-Phi instruction.
-	//
-	// We compute reachability in reverse, starting from each φ,
-	// rather than forwards, starting from each live non-Phi
-	// instruction, because this way visits much less of the
-	// Value graph.
+	// First pass: find the set of "live" φ-nodes: those reachable from some non-Phi instruction.
 	livePhis := make(map[*Phi]bool)
 	for _, npList := range newPhis {
 		for _, np := range npList {
@@ -304,8 +222,6 @@ func removeDeadPhis(blocks []*BasicBlock, newPhis newPhiMap) {
 		}
 	}
 
-	// Existing φ-nodes due to && and || operators
-	// are all considered live (see Go issue 19622).
 	for _, b := range blocks {
 		for _, phi := range b.phis() {
 			markLivePhi(livePhis, phi.(*Phi))
@@ -346,9 +262,8 @@ func markLivePhi(livePhis map[*Phi]bool, phi *Phi) {
 	}
 }
 
-// phiHasDirectReferrer reports whether phi is directly referred to by
-// a non-Phi instruction.  Such instructions are the
-// roots of the liveness traversal.
+// phiHasDirectReferrer reports whether phi is directly referred to by a
+// non-Phi instruction.
 func phiHasDirectReferrer(phi *Phi) bool {
 	for _, instr := range *phi.Referrers() {
 		if _, ok := instr.(*Phi); !ok {
@@ -370,8 +285,6 @@ func (s *blockSet) add(b *BasicBlock) bool {
 	return true
 }
 
-// take removes an arbitrary element from a set s and
-// returns its index, or returns -1 if empty.
 func (s *blockSet) take() int {
 	l := s.BitLen()
 	for i := range l {
@@ -390,13 +303,11 @@ type newPhi struct {
 	alloc *Alloc
 }
 
-// newPhiMap records for each basic block, the set of newPhis that
-// must be prepended to the block.
+// newPhiMap records for each basic block, the set of newPhis that must be prepended to the block.
 type newPhiMap map[*BasicBlock][]newPhi
 
-// liftAlloc determines whether alloc can be lifted into registers,
-// and if so, it populates newPhis with all the φ-nodes it may require
-// and returns true.
+// liftAlloc determines whether alloc can be lifted into registers, and if so,
+// it populates newPhis with all the φ-nodes it may require and returns true.
 //
 // fresh is a source of fresh ids for phi nodes.
 func liftAlloc(df domFrontier, alloc *Alloc, newPhis newPhiMap, fresh *int) bool {
@@ -408,13 +319,11 @@ func liftAlloc(df domFrontier, alloc *Alloc, newPhis newPhiMap, fresh *int) bool
 		}
 	}
 
-	// Compute defblocks, the set of blocks containing a
-	// definition of the alloc cell.
+	// Compute defblocks, the set of blocks containing a definition of the alloc cell.
 	var defblocks blockSet
 	for _, instr := range *alloc.Referrers() {
-		// Bail out if we discover the alloc is not liftable;
-		// the only operations permitted to use the alloc are
-		// loads/stores into the cell, and DebugRef.
+		// Bail out if we discover the alloc is not liftable. The only operations
+		// permitted to use the alloc are loads/stores into the cell, and DebugRef.
 		switch instr := instr.(type) {
 		case *Store:
 			if instr.Val == alloc {
@@ -447,14 +356,6 @@ func liftAlloc(df domFrontier, alloc *Alloc, newPhis newPhiMap, fresh *int) bool
 	fn := alloc.Parent()
 
 	// Φ-insertion.
-	//
-	// What follows is the body of the main loop of the insert-φ
-	// function described by Cytron et al, but instead of using
-	// counter tricks, we just reset the 'hasAlready' and 'work'
-	// sets each iteration.  These are bitmaps so it's pretty cheap.
-	//
-	// TODO(adonovan): opt: recycle slice storage for W,
-	// hasAlready, defBlocks across liftAlloc calls.
 	var hasAlready blockSet
 
 	// Initialize W and work to defblocks.
@@ -467,8 +368,7 @@ func liftAlloc(df domFrontier, alloc *Alloc, newPhis newPhiMap, fresh *int) bool
 		u := fn.Blocks[i]
 		for _, v := range df[u.Index] {
 			if hasAlready.add(v) {
-				// Create φ-node.
-				// It will be prepended to v.Instrs later, if needed.
+				// Create φ-node. It will be prepended to v.Instrs later, if needed.
 				phi := &Phi{
 					Edges:   make([]Value, len(v.Preds)),
 					Comment: alloc.Comment,
@@ -529,15 +429,14 @@ func renamed(renaming []Value, alloc *Alloc) Value {
 	return v
 }
 
-// rename implements the (Cytron et al) SSA renaming algorithm, a
-// preorder traversal of the dominator tree replacing all loads of
-// Alloc cells with the value stored to that cell by the dominating
-// store instruction.  For lifting, we need only consider loads,
-// stores and φ-nodes.
+// rename implements the (Cytron et al) SSA renaming algorithm. A preorder
+// traversal of the dominator tree replacing all loads of Alloc cells with the
+// value stored to that cell by the dominating store instruction. For lifting,
+// we need only consider loads, stores and φ-nodes.
 //
-// renaming is a map from *Alloc (keyed by index number) to its
-// dominating stored value; newPhis[x] is the set of new φ-nodes to be
-// prepended to block x.
+// renaming is a map from *Alloc (keyed by index number) to its dominating
+// stored value. newPhis[x] is the set of new φ-nodes to be prepended to
+// block x.
 func rename(u *BasicBlock, renaming []Value, newPhis newPhiMap) {
 	// Each φ-node becomes the new name for its associated Alloc.
 	for _, np := range newPhis[u] {
@@ -586,9 +485,7 @@ func rename(u *BasicBlock, renaming []Value, newPhis newPhiMap) {
 						fmt.Fprintf(os.Stderr, "\tupdate load %s = %s with %s\n",
 							instr.Name(), instr, newval.Name())
 					}
-					// Replace all references to
-					// the loaded value by the
-					// dominating stored value.
+					// Replace all references to the loaded value by the dominating stored value.
 					replaceAll(instr, newval)
 					// Delete the Load.
 					u.Instrs[i] = nil
@@ -607,8 +504,7 @@ func rename(u *BasicBlock, renaming []Value, newPhis newPhiMap) {
 						*refs = append(*refs, instr)
 					}
 				} else {
-					// A source expression denotes the address
-					// of an Alloc that was optimized away.
+					// A source expression denotes the address of an Alloc that was optimized away.
 					instr.X = nil
 
 					// Delete the DebugRef.
@@ -646,8 +542,7 @@ func rename(u *BasicBlock, renaming []Value, newPhis newPhiMap) {
 	for i, v := range u.dom.children {
 		r := renaming
 		if i < len(u.dom.children)-1 {
-			// On all but the final iteration, we must make
-			// a copy to avoid destructive update.
+			// On all but the final iteration, we must make a copy to avoid destructive update.
 			r = make([]Value, len(renaming))
 			copy(r, renaming)
 		}

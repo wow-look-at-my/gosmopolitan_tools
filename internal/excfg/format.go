@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package excfg
 
@@ -48,8 +47,7 @@ func formatBlockNode(cfg *CFG, b *Block) string {
 	// We can't necessarily modify the AST in place, so we defensively clone it.
 	n := internalastutil.CloneNode(b.Node)
 	// The tricky part is that subMap is indexed by pre, but we need to modify
-	// post. To solve this, we number the nodes in a first pass over the
-	// pre-clone, and then use the same numbering to modify the post-clone.
+	// post.
 	apply := func(n ast.Node, f func(i int, c *astutil.Cursor) bool) {
 		i := 0
 		astutil.Apply(n, func(c *astutil.Cursor) bool {

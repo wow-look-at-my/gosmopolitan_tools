@@ -1,35 +1,18 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// This package generates source code for a stand-alone Go program
-// useful for function signature fuzzing. The generated program is a
-// series of function pairs, a "Caller" function and a "Checker"
-// function. The signature of the Checker function is generated
-// randomly (random number of parameters and returns, each with
-// randomly chosen types). The "Caller" func contains invocations of
-// the "Checker" function, each passing randomly chosen values to the
-// params of the "Checker", then the caller verifies that expected
-// values are returned correctly.  The "Checker" function in turn has
-// code to verify that the expected values arrive correctly, and so
-// on.
-//
-// The main exported items of interest for this package are:
-//
-// - the Generate function, which takes a GenConfig object and emits
-//   code according to the config's specification
-//
-// - the GenConfig struct, which is basically a large collection of
-//   knobs/switches to control the mechanics of how/where code is
-//   generated
-//
-// - the TunableParams struct, which controls the nature of the
-//   generated code (for example, the maximum number of function
-//   parameters, etc), and the SetTunables func which tells the
-//   package what tunable parameters to use.
+// This package generates source code for a stand-alone Go program useful for
+// function signature fuzzing. The generated program is a series of function
+// pairs, a "Caller" function and a "Checker" function. The signature of the
+// Checker function is generated randomly (random number of parameters and
+// returns, each with randomly chosen types). The "Caller" func contains
+// invocations of the "Checker" function, each passing randomly chosen values
+// to the params of the "Checker". Then the caller verifies that expected
+// values are returned correctly. The "Checker" function in turn has code to
+// verify that the expected values arrive correctly, and so on.
 
 // Notes for posterity:
-// - many parts of this package would have been better off being written
+// - many parts of this package
 //   using text/template instead of generating code directly; perhaps
 //   at some point it could be converted over (big job).
 // - for the various 'fractions' fields in the TunableParams struct,
@@ -53,53 +36,38 @@ import (
 	"strings"
 )
 
-// GenConfig contains configuration parameters relating to the
-// mechanics of the code generation, e.g. how many packages/functions
-// to emit, path to a directory into which we place the generated
-// code, prefixes/packagenames for the generate code, and so on.
+// GenConfig contains configuration parameters relating to the mechanics of the code generation and e.g. how many packages/functions to emit. GenConfig also contains path to a directory into which we place the generated code,
+// prefixes/packagenames for the generate code, and so on.
 type GenConfig struct {
-	// Tag is a string prefix prepended to functions within
-	// the generated code.
+	// Tag is a string prefix prepended to functions within the generated code.
 	Tag string
 
-	// Output directory in to which we'll emit generated code.
-	// This will be created if it does not exist.
+	// Output directory in to which we'll emit generated code. This will be created if it does not exist.
 	OutDir string
 
 	// Packagepath prefix given to the generated code.
 	PkgPath string
 
 	// Number of test packages created within the generated corpus.
-	// Each test package is essentially an independent collection
-	// generated code; the point of having multiple packages is to
-	// be able to get faster builds (more parallelism), and to avoid
-	// the compile time issues that crop up with 'giant' packages.
 	NumTestPackages int
 
 	// Number of test function pairs within each generated test package.
-	// Each pair consists of a "caller" function and  "callee" function.
 	NumTestFunctions int
 
 	// Seed for random number generator.
 	Seed int64
 
-	// Pragma is a "// go:..." compiler directive to apply to the
-	// callee function as part of a generated function pair.
+	// Pragma is a "// go:..." compiler directive to apply to the callee function as part of a generated function pair.
 	Pragma string
 
 	// Function and package mask used for minimization purposes.
-	// If a given mask is non-nil, then the generator will only
-	// emit code for a given func or package if its index is
-	// present in the mask map.
 	FcnMask map[int]int
 	PkgMask map[int]int
 
 	// Maximum number of failures to encounter before bailing out.
 	MaxFail int
 
-	// forcestackgrowth if set tells the generator to insert
-	// calls to runtime.gcTestMoveStackOnNextCall at various points
-	// in the generated code.
+	// forcestackgrowth if set tells the generator to insert calls to runtime.gcTestMoveStackOnNextCall at various points in the generated code.
 	ForceStackGrowth bool
 
 	// Random number generator control flag (debugging)
@@ -108,12 +76,10 @@ type GenConfig struct {
 	// Tells the generator to run "goimports" on the emitted code.
 	RunGoImports bool
 
-	// Debugging/testing hook. If set to 1, emit code that will cause the
-	// build to fail; if set to 2, emit code that will cause a test to fail.
+	// Debugging/testing hook.
 	EmitBad int
 
-	// If EmitBad above is set, then these can be used to select the ID of
-	// a specific bad func/package.
+	// If EmitBad above is set, then these can be used to select the ID of a specific bad func/package.
 	BadPackageIdx int
 	BadFuncIdx    int
 }
@@ -126,53 +92,35 @@ const CheckerName = "Checker"
 // things like the number of params/returns, the percentages of types
 // (int, struct, etc) of the params/returns, and so on.
 type TunableParams struct {
-	// between 0 and N params
 	nParmRange uint8
 
-	// between 0 and N returns
 	nReturnRange uint8
 
-	// structs have between 0 and N members
 	nStructFields uint8
 
-	// arrays/slices have between 0 and N elements
 	nArrayElements uint8
 
-	// fraction of slices vs arrays. This is a value between 0 and 100 (0 meaning
-	// no slices [only arrays] and 100 meaning all slices, no arrays).
+	// fraction of slices vs arrays.
 	sliceFraction uint8
 
-	// Controls how often "int" vars wind up as 8/16/32/64, should
-	// add up to 100. Ex: 100 0 0 0 means all ints are 8 bit, 25
-	// 25 25 25 means equal likelihood of all types.
 	intBitRanges [4]uint8
 
-	// Similar to the above but for 32/64 float types
 	floatBitRanges [2]uint8
 
 	// Similar to the above but for unsigned, signed ints.
 	unsignedRanges [2]uint8
 
-	// Percentage of params, struct fields that should be "_". Ranges
-	// from 0 to 100.
+	// Percentage of params, struct fields that should be "_".
 	blankPerc uint8
 
-	// How deeply structs are allowed to be nested (ranges from 0 to N).
 	structDepth uint8
 
-	// Fraction of param and return types assigned to each of:
-	// struct/array/map/pointer/int/float/complex/byte/string at the
-	// top level. If nesting precludes using a struct, other types
-	// are chosen from instead according to same proportions. The sum
-	// of typeFractions values should add up to 100.
+	// Fraction of param and return types assigned to each of: struct/array/map/pointer/int/float/complex/byte/string at the top level.
 	typeFractions [9]uint8
 
-	// Percentage of the time we'll emit recursive calls, from 0 to 100.
 	recurPerc uint8
 
-	// Percentage of time that we turn the test function into a method,
-	// and if it is a method, fraction of time that we use a pointer
-	// method call vs value method call. Each range from 0 to 100.
+	// Percentage of time that we turn the test function into a method, and if it is a method.
 	methodPerc            uint8
 	pointerMethodCallPerc uint8
 
@@ -183,50 +131,31 @@ type TunableParams struct {
 	takeAddress bool
 
 	// Fraction of the time that any params/returns are address taken.
-	// Ranges from 0 to 100.
 	takenFraction uint8
 
-	// For a given address-taken param or return, controls the
-	// manner in which the indirect read or write takes
-	// place. This is a set of percentages for
-	// not/simple/passed/heap, where "not" means not address
-	// taken, "simple" means a simple read or write, "passed"
-	// means that the address is passed to a well-behaved
-	// function, and "heap" means that the address is assigned to
-	// a global. Values in addrFractions should add up to 100.
+	// For a given address-taken param or return, controls the manner in which the indirect read or write takes place.
 	addrFractions [4]uint8
 
 	// If true, then perform testing of go/defer statements.
 	doDefer bool
 
-	// fraction of test functions for which we emit a defer. Ranges from 0 to 100.
+	// fraction of test functions for which we emit a defer.
 	deferFraction uint8
 
-	// If true, randomly pick between emitting a value by literal
-	// (e.g. "int(1)" vs emitting a call to a function that
-	// will produce the same value (e.g. "myHelperEmitsInt1()").
 	doFuncCallValues bool
 
-	// Fraction of the time that we emit a function call to create
-	// a param value vs emitting a literal. Ranges from 0 to 100.
+	// Fraction of the time that we emit a function call to create a param value vs emitting a literal.
 	funcCallValFraction uint8
 
-	// If true, randomly decide to not check selected components of
-	// a composite value (e.g. for a struct, check field F1 but not F2).
-	// The intent is to generate partially live values.
+	// If true, randomly decide to not check selected components of a composite value.
 	doSkipCompare bool
 
-	// Fraction of the time that we decided to skip sub-components of
-	// composite values. Ranges from 0 to 100.
+	// Fraction of the time that we decided to skip sub-components of composite values.
 	skipCompareFraction uint8
 }
 
-// SetTunables accepts a TunableParams object, checks to make sure
-// that the settings in it are sane/logical, and applies the
-// parameters for any subsequent calls to the Generate function. This
-// function will issue a fatal error if any of the tunable params are
-// incorrect/insane (for example, a 'percentage' value outside the
-// range of 0-100).
+// SetTunables accepts a TunableParams object, checks to make sure that the
+// settings in it are sane/logical.
 func SetTunables(t TunableParams) {
 	checkTunables(t)
 	tunables = t
@@ -398,11 +327,11 @@ func (t *TunableParams) LimitOutputs(n int) error {
 	return nil
 }
 
-// ParseMaskString parses a string of the form K,J,...,M-N,Q-R,...,Z
-// e.g. comma-separated integers or ranges of integers, returning the
-// result in a form suitable for FcnMask or PkgMask fields in a
-// Config. Here "tag" holds the mask flavor (fcn or pkg) and "arg" is
-// the string argument to be parsed.
+// ParseMaskString parses a string of the form K,J,...,M-N,Q-R,...,Z e.g.
+// comma-separated integers or ranges of integers. That string is returning
+// the result in a form suitable for FcnMask. Otherwise, PkgMask fields in a
+// Config. Here "tag" holds the mask flavor (fcn or pkg) and "arg" is the
+// string argument to be parsed.
 func ParseMaskString(arg string, tag string) (map[int]int, error) {
 	if arg == "" {
 		return nil, nil
@@ -475,13 +404,10 @@ type funcdef struct {
 type genstate struct {
 	GenConfig
 	ipref string
-	//tag            string
-	//numtpk         int
+	// tag string numtpk int
 	pkidx int
 	errs  int
-	//pragma         string
-	//sforce         bool
-	//randctl        int
+	// pragma string sforce bool randctl int
 	tunables       TunableParams
 	tstack         []TunableParams
 	derefFuncs     map[string]string
@@ -554,11 +480,8 @@ func (s *genstate) popTunables() {
 }
 
 // redistributeFraction accepts a value 'toIncorporate' and updates
-// 'typeFraction' to add in the values from 'toIncorporate' equally to
-// all slots not in 'avoid'. This is done by successively walking
-// through 'typeFraction' adding 1 to each non-avoid slot, then
-// repeating until we've added a total of 'toIncorporate' elements.
-// See precludeSelectedTypes below for more info.
+// 'typeFraction' to add in the values from 'toIncorporate' equally to all
+// slots not in 'avoid'.
 func (s *genstate) redistributeFraction(toIncorporate uint8, avoid []int) {
 	inavoid := func(j int) bool {
 		return slices.Contains(avoid, j)
@@ -582,16 +505,10 @@ func (s *genstate) redistributeFraction(toIncorporate uint8, avoid []int) {
 	checkTunables(s.tunables)
 }
 
-// precludeSelectedTypes accepts a set of values (t, t2, ...)
-// corresponding to slots in 'typeFractions', sums up the values from
-// the slots, zeroes out the slots, and finally takes the values and
-// redistributes them equally to the other slots.  For example,
-// suppose 'typeFractions' starts as [10, 10, 10, 15, 20, 15, 5, 5, 10],
-// then we decide we want to eliminate or 'knock out' map types and
-// pointer types (slots 2 and 3 in the array above) going forward.  To
-// restore the invariant that values in 'typeFractions' sum to 100, we
-// take the values from slots 2 and 3 (a total of 25) and evenly
-// distribute those values to the other slots in the array.
+// precludeSelectedTypes accepts a set of values (t, t2, ...) corresponding to
+// slots in 'typeFractions', sums up the values from the slots, zeroes out the
+// slots, and finally takes the values. It redistributes them equally to the
+// other slots.
 func (s *genstate) precludeSelectedTypes(t int, t2 ...int) {
 	avoid := []int{t}
 	avoid = append(avoid, t2...)
@@ -606,8 +523,7 @@ func (s *genstate) precludeSelectedTypes(t int, t2 ...int) {
 func (s *genstate) GenMapKeyType(f *funcdef, depth int, pidx int) parm {
 	s.pushTunables()
 	defer s.popTunables()
-	// maps we can't allow at all; pointers might be possible but
-	//  would be too much work to arrange. Avoid slices as well.
+	// maps we can't allow at all; pointers might be possible but would be too much work to arrange. Avoid slices as well.
 	s.tunables.sliceFraction = 0
 	s.precludeSelectedTypes(MapTfIdx, PointerTfIdx)
 	return s.GenParm(f, depth+1, false, pidx)
@@ -721,7 +637,7 @@ func (s *genstate) GenParm(f *funcdef, depth int, mkctl bool, pidx int) parm {
 			mp.valtype = s.GenParm(f, depth+1, false, pidx)
 			mp.valtype.SetBlank(false)
 			mp.keytype.SetBlank(false)
-			// now update the previously appended placeholders
+			// now update the appended placeholders
 			f.mapdefs[ns] = mp
 			f.mapkeytypes[ns] = mk
 			f.mapkeytmps[ns] = mkt
@@ -798,9 +714,8 @@ func (s *genstate) GenReturn(f *funcdef, depth int, pidx int) parm {
 	return s.GenParm(f, depth, false, pidx)
 }
 
-// GenFunc cooks up the random signature (and other attributes) of a
-// given checker function, returning a funcdef object that describes
-// the new fcn.
+// GenFunc cooks up the random signature (and other attributes) of a given
+// checker function, returning a funcdef object that describes the new fcn.
 func (s *genstate) GenFunc(fidx int, pidx int) *funcdef {
 	f := new(funcdef)
 	f.idx = fidx
@@ -809,8 +724,7 @@ func (s *genstate) GenFunc(fidx int, pidx int) *funcdef {
 	f.recur = uint8(s.wr.Intn(100)) < s.tunables.recurPerc
 	f.isMethod = uint8(s.wr.Intn(100)) < s.tunables.methodPerc
 	genReceiverType := func() {
-		// Receiver type can't be pointer type. Temporarily update
-		// tunables to eliminate that possibility.
+		// Receiver type can't be pointer type. Temporarily update tunables to eliminate that possibility.
 		s.pushTunables()
 		defer s.popTunables()
 		s.precludeSelectedTypes(PointerTfIdx)
@@ -879,9 +793,9 @@ func (s *genstate) eqFuncRef(f *funcdef, t parm, caller bool) string {
 	return cp + "Equal" + t.TypeName()
 }
 
-// emitCompareFunc creates an 'equals' function for a specific
-// generated type (this is basically a way to compare objects that
-// contain pointer fields / pointery things).
+// emitCompareFunc creates an 'equals' function for a specific generated type
+// (this is a way to compare objects that contain pointer fields / pointery
+// things).
 func (s *genstate) emitCompareFunc(f *funcdef, b *bytes.Buffer, p parm) {
 	if !p.HasPointer() {
 		return
@@ -926,9 +840,8 @@ func (s *genstate) emitCompareFunc(f *funcdef, b *bytes.Buffer, p parm) {
 	b.WriteString("\n}\n\n")
 }
 
-// emitStructAndArrayDefs writes out definitions of the random types
-// we happened to cook up while generating code for a specific
-// function pair.
+// emitStructAndArrayDefs writes out definitions of the random types we
+// happened to cook up while generating code for a specific function pair.
 func (s *genstate) emitStructAndArrayDefs(f *funcdef, b *bytes.Buffer) {
 	for _, str := range f.structdefs {
 		b.WriteString(fmt.Sprintf("type %s struct {\n", str.sname))
@@ -967,8 +880,8 @@ func (s *genstate) emitStructAndArrayDefs(f *funcdef, b *bytes.Buffer) {
 }
 
 // GenValue method of genstate wraps the parm method of the same
-// name, but optionally returns a call to a function to produce
-// the value as opposed to a literal value.
+// name. However, it optionally returns a call to a function to
+// produce the value as opposed to a literal value.
 func (s *genstate) GenValue(f *funcdef, p parm, value int, caller bool) (string, int) {
 	var valstr string
 	valstr, value = p.GenValue(s, f, value, caller)
@@ -1201,14 +1114,9 @@ func checkableElements(p parm) int {
 	return 1
 }
 
-// funcdesc describes an auto-generated helper function or global
-// variable, such as an allocation function (returns new(T)) or a
-// pointer assignment function (assigns value of T to type *T). Here
-// 'p' is a param type T, 'pp' is a pointer type *T, 'name' is the
-// name within the generated code of the function or variable and
-// 'tag' is a descriptive tag used to look up the entity in a map (so
-// that we don't have to emit multiple copies of a function that
-// assigns int to *int, for example).
+// funcdesc describes an auto-generated helper function or global variable,
+// such as an allocation function (returns new(T)) or a pointer assignment
+// function (assigns value of T to type *T).
 type funcdesc struct {
 	p       parm
 	pp      parm
@@ -1561,9 +1469,9 @@ func (s *genstate) emitParamChecks(f *funcdef, b *bytes.Buffer, pidx int, value 
 //	  check param
 //	}(...)
 //
-// where we randomly choose to either pass a param through to the
-// function literal, or have the param captured by the closure, then
-// check its value in the defer.
+// Then check its value in the defer. Do this where we randomly
+// choose to either pass a param through to the function literal, or
+// have the param captured by the closure.
 func (s *genstate) emitDeferChecks(f *funcdef, b *bytes.Buffer, value int) int {
 
 	if len(f.params) == 0 {
@@ -1640,7 +1548,7 @@ func (s *genstate) emitVarAssign(f *funcdef, b *bytes.Buffer, r parm, rname stri
 	var valstr string
 	isassign := uint8(s.wr.Intn(100)) < 50
 	if rmp, ismap := r.(*mapparm); ismap && isassign {
-		// emit: var m ... ; m[k] = v
+		// emit: var m ...; m[k] = v
 		r.Declare(b, "  "+rname+" := make(", ")\n", caller)
 		valstr, value = s.GenValue(f, rmp.valtype, value, caller)
 		b.WriteString(fmt.Sprintf("  %s[mkt.%s] = %s\n",
@@ -1769,13 +1677,8 @@ func (s *genstate) emitChecker(f *funcdef, b *bytes.Buffer, pidx int, emit bool)
 	s.emitAddrTakenHelpers(f, b, emit)
 }
 
-// complexityMeasure returns an integer that estimates how complex a
-// given test function is relative to some other function. The more
-// parameters + returns and the more complicated the types of the
-// params/returns, the higher the number returned here. In theory this
-// could be worked into the minimization process (e.g. pick the least
-// complex func that reproduces the failure), but for now that isn't
-// wired up yet.
+// complexityMeasure returns an integer that estimates how complex a given
+// test function is relative to some other function.
 func (f *funcdef) complexityMeasure() int {
 	v := int(0)
 	if f.isMethod {
@@ -1816,19 +1719,7 @@ func (s *genstate) emitRecursiveCall(f *funcdef) string {
 
 // emitReturn generates a return sequence.
 func (s *genstate) emitReturn(f *funcdef, b *bytes.Buffer, doRecursiveCall bool) {
-	// If any of the return values are address-taken, then instead of
-	//
-	//   return x, y, z
-	//
-	// we emit
-	//
-	//   r1 = ...
-	//   r2 = ...
-	//   ...
-	//   return
-	//
-	// Make an initial pass through the returns to see if we need to do this.
-	// Figure out the final return values in the process.
+	// If any of the return values are address-taken, then instead of.
 	indirectReturn := false
 	retvals := []string{}
 	for ri, r := range f.returns {
@@ -2134,12 +2025,9 @@ func runImports(files []string) {
 	verb(1, "... goimports run complete")
 }
 
-// shouldEmitFP returns true if we should actually emit code for the function
-// with the specified package + fcn indices. For "regular" runs, fcnmask and pkmask
-// will be empty, meaning we want to emit every function in every package. The
-// fuzz-runner program also tries to do testcase "minimization", which means that it
-// will try to whittle down the set of packages and functions (by running the generator
-// using the fcnmask and pkmask options) to emit only specific packages or functions.
+// shouldEmitFP returns true if we should emit code for the function with the
+// specified package + fcn indices. For "regular" runs, fcnmask and pkmask
+// will be empty, meaning we want to emit every function in every package.
 func shouldEmitFP(fn int, pk int, fcnmask map[int]int, pkmask map[int]int) bool {
 	emitpk := true
 	emitfn := true
@@ -2230,9 +2118,7 @@ func Generate(c GenConfig) int {
 				&b, s.Seed, doemit)
 		}
 
-		// When minimization is in effect, we sometimes wind
-		// up eliminating all refs to the utils package. Add a
-		// dummy to help with this.
+		// When minimization is in effect, we sometimes wind up eliminating all refs to the utils package.
 		fmt.Fprintf(calleroutfile, "\n// dummy\nvar Dummy UtilsType\n")
 		fmt.Fprintf(checkeroutfile, "\n// dummy\nvar Dummy UtilsType\n")
 		calleroutfile.Close()

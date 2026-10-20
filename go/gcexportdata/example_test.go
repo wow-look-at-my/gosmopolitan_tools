@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build go1.7 && gc && !android && !ios && (unix || aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || plan9 || windows)
 
@@ -62,7 +61,6 @@ func ExampleRead() {
 
 	// We can also look up a name directly using Lookup.
 	println := pkg.Scope().Lookup("Println")
-	// go 1.18+ uses the 'any' alias
 	typ := strings.ReplaceAll(println.Type().String(), "interface{}", "any")
 	fmt.Printf("Println type:       %s\n", typ)
 	posn := fset.Position(println.Pos())

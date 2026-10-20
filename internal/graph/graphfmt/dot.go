@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package graphfmt serializes graphs to external representations.
 package graphfmt
@@ -17,26 +16,19 @@ import (
 // Dot contains options for generating a Graphviz Dot graph from a
 // [graph.Graph].
 type Dot[NodeID comparable] struct {
-	// Name is the name given to the graph. Usually this can be
-	// left blank.
+	// Name is the name given to the graph. Usually this can be left blank.
 	Name string
 
-	// Label returns the string to use as a label for the given
-	// node. If nil, nodes are labeled with their node numbers.
+	// Label returns the string to use as a label for the given node. If nil, nodes are labeled with their node numbers.
 	Label func(node NodeID) string
 
-	// NodeAttrs, if non-nil, returns a set of attributes for a
-	// node. If this includes a "label" attribute, it overrides
-	// the label returned by Label.
+	// NodeAttrs, if non-nil, returns a set of attributes for a node.
 	NodeAttrs func(node NodeID) []DotAttr
 
-	// EdgeAttrs, if non-nil, returns a set of attributes for an
-	// edge.
+	// EdgeAttrs, if non-nil, returns a set of attributes for an edge.
 	EdgeAttrs func(from, to NodeID) []DotAttr
 
-	// ClusterOf, if non-nil, returns the cluster of a node, or nil if the node
-	// should not be in a cluster. Multiple nodes with the same cluster will be
-	// arranged together and enclosed in a box.
+	// ClusterOf, if non-nil, returns the cluster of a node, or nil if the node should not be in a cluster.
 	ClusterOf func(node NodeID) *DotCluster
 }
 
@@ -44,14 +36,11 @@ type Dot[NodeID comparable] struct {
 type DotAttr struct {
 	Name string
 
-	// Val is the value of this attribute. It may be a string
-	// (which will be escaped), bool, int, uint, float64 or
-	// DotLiteral.
+	// Val is the value of this attribute.
 	Val any
 }
 
-// DotLiteral is a string literal that should be passed to dot
-// unescaped.
+// DotLiteral is a string literal that should be passed to dot unescaped.
 type DotLiteral string
 
 // DotCluster represents a cluster of nodes arranged together.
@@ -153,8 +142,6 @@ func (d Dot[NodeID]) SVG(w io.Writer, g graph.Graph[NodeID]) error {
 	}
 
 	// Convert to SVG.
-	//
-	// TODO: Consider lifting nice graph viewer from go.dev/cl/192706
 	dot = exec.Command("dot", "-Tsvg", "-")
 	in, err := dot.StdinPipe()
 	if err != nil {

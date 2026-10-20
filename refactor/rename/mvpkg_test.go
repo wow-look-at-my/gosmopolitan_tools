@@ -1,6 +1,5 @@
-// Copyright 2015 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package rename
 
@@ -441,8 +440,7 @@ var _ foo.T
 			gotContent, ok := got[k]
 			delete(got, k)
 			if !ok {
-				// TODO(matloob): some testcases might have files that won't be
-				// rewritten
+				// TODO(matloob): some testcases might have files that won't be rewritten
 				t.Errorf("%s: file %s not rewritten", prefix, file)
 				continue
 			}

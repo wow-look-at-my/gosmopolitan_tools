@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package buildutil provides utilities related to the go/build
 // package in the standard library.
@@ -19,15 +18,8 @@ import (
 )
 
 // AllPackages returns the package path of each Go package in any source
-// directory of the specified build context (e.g. $GOROOT or an element
-// of $GOPATH).  Errors are ignored.  The results are sorted.
-// All package paths are canonical, and thus may contain "/vendor/".
-//
-// The result may include import paths for directories that contain no
-// *.go files, such as "archive" (in $GOROOT/src).
-//
-// All I/O is done via the build.Context file system interface,
-// which must be concurrency-safe.
+// directory of the specified build context (e.g. $GOROOT or an element of
+// $GOPATH). Errors are ignored.
 func AllPackages(ctxt *build.Context) []string {
 	var list []string
 	ForEachPackage(ctxt, func(pkg string, _ error) {
@@ -41,12 +33,6 @@ func AllPackages(ctxt *build.Context) []string {
 // each Go package it finds in any source directory of the specified
 // build context (e.g. $GOROOT or an element of $GOPATH).
 // All package paths are canonical, and thus may contain "/vendor/".
-//
-// If the package directory exists but could not be read, the second
-// argument to the found function provides the error.
-//
-// All I/O is done via the build.Context file system interface,
-// which must be concurrency-safe.
 func ForEachPackage(ctxt *build.Context, found func(importPath string, err error)) {
 	ch := make(chan item)
 
@@ -72,8 +58,7 @@ type item struct {
 	err        error // (optional)
 }
 
-// We use a process-wide counting semaphore to limit
-// the number of parallel calls to ReadDir.
+// We use a process-wide counting semaphore to limit the number of parallel calls to ReadDir.
 var ioLimit = make(chan bool, 20)
 
 func allPackages(ctxt *build.Context, root string, ch chan<- item) {
@@ -116,26 +101,22 @@ func allPackages(ctxt *build.Context, root string, ch chan<- item) {
 	wg.Wait()
 }
 
-// ExpandPatterns returns the set of packages matched by patterns,
-// which may have the following forms:
+// ExpandPatterns returns the set of packages matched by patterns, which may
+// have the following forms:
 //
 //	golang.org/x/tools/cmd/guru     # a single package
 //	golang.org/x/tools/...          # all packages beneath dir
 //	...                             # the entire workspace.
 //
-// Order is significant: a pattern preceded by '-' removes matching
-// packages from the set.  For example, these patterns match all encoding
-// packages except encoding/xml:
+// Order is significant: a pattern preceded by '-' removes matching packages
+// from the set. For example, these patterns match all encoding packages
+// except encoding/xml:
 //
 //	encoding/... -encoding/xml
 //
-// A trailing slash in a pattern is ignored.  (Path components of Go
-// package names are separated by slash, not the platform's path separator.)
+// A trailing slash in a pattern is ignored.
 func ExpandPatterns(ctxt *build.Context, patterns []string) map[string]bool {
-	// TODO(adonovan): support other features of 'go list':
-	// - "std"/"cmd"/"all" meta-packages
-	// - "..." not at the end of a pattern
-	// - relative patterns using "./" or "../" prefix
+	// TODO(adonovan).
 
 	pkgs := make(map[string]bool)
 	doPkg := func(pkg string, neg bool) {
@@ -147,7 +128,6 @@ func ExpandPatterns(ctxt *build.Context, patterns []string) map[string]bool {
 	}
 
 	// Scan entire workspace if wildcards are present.
-	// TODO(adonovan): opt: scan only the necessary subtrees of the workspace.
 	var all []string
 	for _, arg := range patterns {
 		if strings.HasSuffix(arg, "...") {

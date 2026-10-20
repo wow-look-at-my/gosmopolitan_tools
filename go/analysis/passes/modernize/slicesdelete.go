@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -128,8 +127,8 @@ func slicesdelete(pass *analysis.Pass) (any, error) {
 		for curCall := range curFile.Preorder((*ast.CallExpr)(nil)) {
 			call := curCall.Node().(*ast.CallExpr)
 			if id, ok := call.Fun.(*ast.Ident); ok && len(call.Args) == 2 {
-				// Verify we have append with two slices and ... operator,
-				// the first slice has no low index and second slice has no
+				// Verify we have append with slices and ... operator, the
+				// first slice has no low index and second slice has no
 				// high index, and not a three-index slice.
 				if call.Ellipsis.IsValid() && info.Uses[id] == builtinAppend {
 					slice1, ok1 := call.Args[0].(*ast.SliceExpr)
@@ -149,11 +148,11 @@ func slicesdelete(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// Given two slice indices a and b, returns true if we can verify that a < b.
-// It recognizes certain forms such as i+k1 < i+k2 where k1 < k2.
+// Given slice indices a and b, returns true if we can verify that a < b. It
+// recognizes certain forms such as i+k1 < i+k2 where k1 < k2.
 func increasingSliceIndices(info *types.Info, a, b ast.Expr) bool {
-	// Given an expression of the form i±k, returns (i, k)
-	// where k is a signed constant. Otherwise it returns (e, 0).
+	// Given an expression of the form i±k, returns (i, k) where
+	// k is a signed constant.
 	split := func(e ast.Expr) (ast.Expr, constant.Value) {
 		if binary, ok := e.(*ast.BinaryExpr); ok && (binary.Op == token.SUB || binary.Op == token.ADD) {
 			// Negate constants if operation is subtract instead of add

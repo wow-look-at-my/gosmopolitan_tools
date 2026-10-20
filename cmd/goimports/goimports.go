@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -82,12 +81,10 @@ const (
 	// fromStdin means the user is piping their source into goimports.
 	fromStdin argumentType = iota
 
-	// singleArg is the common case from editors, when goimports is run on
-	// a single file.
+	// singleArg is the common case from editors, when goimports is run on a single file.
 	singleArg
 
-	// multipleArg is when the user ran "goimports file1.go file2.go"
-	// or ran goimports on a directory tree.
+	// multipleArg is when the user ran "goimports file1.go file2.go" or ran goimports on a directory tree.
 	multipleArg
 )
 
@@ -126,17 +123,9 @@ func processFile(filename string, in io.Reader, out io.Writer, argType argumentT
 			target = *srcdir
 		} else if argType == singleArg && strings.HasSuffix(*srcdir, ".go") && !isDir(*srcdir) {
 			// For a file which doesn't exist on disk yet, but might shortly.
-			// e.g. user in editor opens $DIR/newfile.go and newfile.go doesn't yet exist on disk.
-			// The goimports on-save hook writes the buffer to a temp file
-			// first and runs goimports before the actual save to newfile.go.
-			// The editor's buffer is named "newfile.go" so that is passed to goimports as:
-			//      goimports -srcdir=/gopath/src/pkg/newfile.go /tmp/gofmtXXXXXXXX.go
-			// and then the editor reloads the result from the tmp file and writes
-			// it to newfile.go.
 			target = *srcdir
 		} else {
-			// Pretend that file is from *srcdir in order to decide
-			// visible imports correctly.
+			// Pretend that file is from *srcdir to decide visible imports correctly.
 			target = filepath.Join(*srcdir, filepath.Base(filename))
 		}
 	}
@@ -156,7 +145,7 @@ func processFile(filename string, in io.Reader, out io.Writer, argType argumentT
 				// filename is "<standard input>"
 				return errors.New("can't use -w on stdin")
 			}
-			// On Windows, we need to re-set the permissions from the file. See golang/go#38225.
+			// On Windows, we need to re-set the permissions from the file.
 			var perms os.FileMode
 			if fi, err := os.Stat(filename); err == nil {
 				perms = fi.Mode() & os.ModePerm
@@ -201,15 +190,12 @@ func walkDir(path string) {
 }
 
 func main() {
-	// Measure how many people still use goimports.
-	// (See https://go.dev/issue/78671 for one.)
+	// Measure how many people still use goimports. (See https://go.dev/issue/78671 for one.)
 	counter.Open()
 	counter.Inc("tools/cmd:goimports")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// call gofmtMain in a separate function
-	// so that it can use defer and have them
-	// run before the exit.
+	// call gofmtMain in a separate function so that it can use defer and have them run before the exit.
 	gofmtMain()
 	if !testing.Testing() {
 		os.Exit(exitCode)
@@ -217,7 +203,6 @@ func main() {
 }
 
 // parseFlags parses command line flags and returns the paths to process.
-// It's a var so that custom implementations can replace it in other files.
 var parseFlags = func() []string {
 	flag.BoolVar(&verbose, "v", false, "verbose logging")
 
@@ -251,9 +236,7 @@ func gofmtMain() {
 		defer flush()
 		defer pprof.StopCPUProfile()
 	}
-	// doTrace is a conditionally compiled wrapper around runtime/trace. It is
-	// used to allow goimports to compile under gccgo, which does not support
-	// runtime/trace. See https://golang.org/issue/15544.
+	// doTrace is a conditionally compiled wrapper around runtime/trace.
 	defer doTrace()()
 	if *memProfileRate > 0 {
 		runtime.MemProfileRate = *memProfileRate
@@ -339,22 +322,13 @@ func diff(b1, b2 []byte, filename string) (data []byte, err error) {
 
 	data, err = exec.Command(cmd, "-u", f1, f2).CombinedOutput()
 	if len(data) > 0 {
-		// diff exits with a non-zero status when the files don't match.
-		// Ignore that failure as long as we get output.
+		// diff exits with a non-zero status when the files don't match. Ignore that failure as long as we get output.
 		return replaceTempFilename(data, filename)
 	}
 	return
 }
 
 // replaceTempFilename replaces temporary filenames in diff with actual one.
-//
-// --- /tmp/gofmt316145376	2017-02-03 19:13:00.280468375 -0500
-// +++ /tmp/gofmt617882815	2017-02-03 19:13:00.280468375 -0500
-// ...
-// ->
-// --- path/to/file.go.orig	2017-02-03 19:13:00.280468375 -0500
-// +++ path/to/file.go	2017-02-03 19:13:00.280468375 -0500
-// ...
 func replaceTempFilename(diff []byte, filename string) ([]byte, error) {
 	bs := bytes.SplitN(diff, []byte{'\n'}, 3)
 	if len(bs) < 3 {

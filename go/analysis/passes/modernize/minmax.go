@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -35,26 +34,19 @@ var MinMaxAnalyzer = &analysis.Analyzer{
 	URL: "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_minmax",
 }
 
-// The minmax pass replaces if/else statements with calls to min or max,
-// and removes user-defined min/max functions that are equivalent to built-ins.
+// The minmax pass replaces if/else statements with calls to min or max. The
+// minmax pass removes user-defined min/max functions that are equivalent to
+// built-ins. If/else replacement patterns:
 //
-// If/else replacement patterns:
+//  If a < b { x = a } else { x = b } => x = min(a, b)
+//  X = a; if a < b { x = b } => x = max(a, b)
 //
-//  1. if a < b { x = a } else { x = b }        =>      x = min(a, b)
-//  2. x = a; if a < b { x = b }                =>      x = max(a, b)
-//
-// Pattern 1 requires that a is not NaN, and pattern 2 requires that b
-// is not Nan. Since this is hard to prove, we reject floating-point
-// numbers.
-//
-// Function removal:
-// User-defined min/max functions are suggested for removal if they may
-// be safely replaced by their built-in namesake.
-//
-// Variants:
-// - all four ordered comparisons
-// - "x := a" or "x = a" or "var x = a" in pattern 2
-// - "x < b" or "a < b" in pattern 2
+// One pattern requires that a is not NaN, and a later pattern requires that b
+// is not Nan. Since this is hard to prove, we reject floating-point numbers.
+// Function removal: User-defined min/max functions are suggested for removal
+// if they may be safely replaced by their built-in namesake. Variants: - all
+// of them ordered comparisons - "x := a" or "x = a" or "var x = a" in a later
+// pattern - "x < b" or "a < b" in a later pattern
 func minmax(pass *analysis.Pass) (any, error) {
 	var (
 		inspect = pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -63,8 +55,7 @@ func minmax(pass *analysis.Pass) (any, error) {
 	// Check for user-defined min/max functions that can be removed
 	checkUserDefinedMinMax(pass)
 
-	// check is called for all statements of this form:
-	//   if a < b { lhs = rhs }
+	// check is called for all statements of this form: if a < b { lhs = rhs }
 	check := func(file *ast.File, curIfStmt inspector.Cursor, compare *ast.BinaryExpr) {
 		var (
 			ifStmt  = curIfStmt.Node().(*ast.IfStmt)
@@ -92,9 +83,7 @@ func minmax(pass *analysis.Pass) (any, error) {
 			lhs2 := fassign.Lhs[0]
 			rhs2 := fassign.Rhs[0]
 
-			// For pattern 1, check that:
-			// - lhs = lhs2
-			// - {rhs,rhs2} = {a,b}
+			// For one pattern, check that: - lhs = lhs2 - {rhs,rhs2} = {a,b}
 			if astutil.EqualSyntax(lhs, lhs2) {
 				if astutil.EqualSyntax(rhs, a) && astutil.EqualSyntax(rhs2, b) {
 					sign = +sign
@@ -113,7 +102,7 @@ func minmax(pass *analysis.Pass) (any, error) {
 					return // min/max is too new
 				}
 
-				// pattern 1
+				// One pattern
 				//
 				// TODO(adonovan): if lhs is declared "var lhs T" on preceding line,
 				// simplify the whole thing to "lhs := min(a, b)".
@@ -142,22 +131,12 @@ func minmax(pass *analysis.Pass) (any, error) {
 		} else if prev, ok := curIfStmt.PrevSibling(); ok && isSimpleAssign(prev.Node()) && ifStmt.Else == nil {
 			fassign := prev.Node().(*ast.AssignStmt)
 
-			// Have: lhs0 = rhs0; if a < b { lhs = rhs }
-			//
-			// For pattern 2, check that
-			// - lhs = lhs0
-			// - {a,b} = {rhs,rhs0} or {rhs,lhs0}
-			//   The replacement must use rhs0 not lhs0 though.
-			//   For example, we accept this variant:
-			//     lhs = x; if lhs < y { lhs = y }   =>   lhs = min(x, y), not min(lhs, y)
-			//
-			// TODO(adonovan): accept "var lhs0 = rhs0" form too.
+			// Have: lhs0 = rhs0.
 			lhs0 := fassign.Lhs[0]
 			rhs0 := fassign.Rhs[0]
 
-			// If the assignment occurs within a select
-			// comms clause (like "case lhs0 := <-rhs0:"),
-			// there's no way of rewriting it into a min/max call.
+			// If the assignment occurs within a select comms clause (like "case lhs0
+			// := <-rhs0:"), there's no way of rewriting it into a min/max call.
 			if prev.ParentEdgeKind() == edge.CommClause_Comm {
 				return
 			}
@@ -176,9 +155,8 @@ func minmax(pass *analysis.Pass) (any, error) {
 					return // min/max function is shadowed
 				}
 
-				// Permit lhs0 to stand for rhs0 in the matching,
-				// but don't actually reduce to lhs0 = min(lhs0, rhs)
-				// since the "=" could be a ":=". Use min(rhs0, rhs).
+				// Permit lhs0 to stand for rhs0 in the matching, but don't reduce to lhs0
+				// = min(lhs0, rhs) since the "=" could be a ":=". Use min(rhs0, rhs).
 				if astutil.EqualSyntax(lhs0, a) {
 					a = rhs0
 				} else if astutil.EqualSyntax(lhs0, b) {
@@ -189,7 +167,7 @@ func minmax(pass *analysis.Pass) (any, error) {
 					return // min/max is too new
 				}
 
-				// pattern 2
+				// A later pattern
 				pass.Report(analysis.Diagnostic{
 					// Highlight the condition a < b.
 					Pos:     compare.Pos(),
@@ -218,12 +196,7 @@ func minmax(pass *analysis.Pass) (any, error) {
 	// Find all "if a < b { lhs = rhs }" statements.
 	for curIfStmt := range inspect.Root().Preorder((*ast.IfStmt)(nil)) {
 		ifStmt := curIfStmt.Node().(*ast.IfStmt)
-		// Don't bother handling "if a < b { lhs = rhs }" when it appears
-		// as the "else" branch of another if-statement.
-		//    if cond { ... } else if a < b { lhs = rhs }
-		// (This case would require introducing another block
-		//    if cond { ... } else { if a < b { lhs = rhs } }
-		// and checking that there is no following "else".)
+		// Don't bother handling "if a < b { lhs = rhs }" when it appears as the "else" branch of another if-statement. if cond { ... } else if a < b { lhs = rhs }.
 		if curIfStmt.ParentEdgeKind() == edge.IfStmt_Else {
 			continue
 		}
@@ -252,8 +225,6 @@ func allComments(file *ast.File, start, end token.Pos) string {
 	return buf.String()
 }
 
-// isInequality reports non-zero if tok is one of < <= => >:
-// +1 for > and -1 for <.
 func isInequality(tok token.Token) int {
 	switch tok {
 	case token.LEQ, token.LSS:
@@ -284,9 +255,7 @@ func isSimpleAssign(n ast.Node) bool {
 
 // maybeNaN reports whether t is (or may be) a floating-point type.
 func maybeNaN(t types.Type) bool {
-	// For now, we rely on core types.
-	// TODO(adonovan): In the post-core-types future,
-	// follow the approach of types.Checker.applyTypeFunc.
+	// We rely on core types.
 	t = typeparams.CoreType(t)
 	if t == nil {
 		return true // fail safe
@@ -341,7 +310,7 @@ func checkUserDefinedMinMax(pass *analysis.Pass) {
 func canUseBuiltinMinMax(fn *types.Func, body *ast.BlockStmt) bool {
 	sig := fn.Type().(*types.Signature)
 
-	// Only consider the most common case: exactly 2 parameters
+	// Only consider the most common case: parameters
 	if sig.Params().Len() != 2 {
 		return false
 	}
@@ -368,7 +337,6 @@ func canUseBuiltinMinMax(fn *types.Func, body *ast.BlockStmt) bool {
 
 // hasMinMaxLogic checks if the function body implements simple min/max logic.
 func hasMinMaxLogic(body *ast.BlockStmt, funcName, param0, param1 string) bool {
-	// Pattern 1: Single if/else statement
 	if len(body.List) == 1 {
 		if ifStmt, ok := body.List[0].(*ast.IfStmt); ok {
 			// Get the "false" result from the else block
@@ -380,7 +348,6 @@ func hasMinMaxLogic(body *ast.BlockStmt, funcName, param0, param1 string) bool {
 		}
 	}
 
-	// Pattern 2: if statement followed by return
 	if len(body.List) == 2 {
 		if ifStmt, ok := body.List[0].(*ast.IfStmt); ok && ifStmt.Else == nil {
 			if retStmt, ok := body.List[1].(*ast.ReturnStmt); ok && len(retStmt.Results) == 1 {
@@ -393,10 +360,9 @@ func hasMinMaxLogic(body *ast.BlockStmt, funcName, param0, param1 string) bool {
 }
 
 // checkMinMaxPattern checks if an if statement implements min/max logic.
-// ifStmt: the if statement to check
-// falseResult: the expression returned when the condition is false
-// funcName: "min" or "max"
-// param0, param1: the two parameter names for the function.
+// ifStmt: the if statement to check falseResult: the expression returned when
+// the condition is false funcName. "min" or "max" param0, param1: both
+// parameter names for the function.
 func checkMinMaxPattern(ifStmt *ast.IfStmt, falseResult ast.Expr, funcName, param0, param1 string) bool {
 	// Must have condition with comparison
 	cmp, ok := ifStmt.Cond.(*ast.BinaryExpr)
@@ -431,9 +397,7 @@ func checkMinMaxPattern(ifStmt *ast.IfStmt, falseResult ast.Expr, funcName, para
 		return false // Not a basic min/max comparison
 	}
 
-	// Check that the min max algorithm uses the function's params
-	// Which param corresponds to which part of the operation doesn't matter,
-	// so we have to try both.
+	// Check that the min max algorithm uses the function's params.
 	if !(param0 == x.Name && param1 == y.Name ||
 		param0 == y.Name && param1 == x.Name) {
 		return false

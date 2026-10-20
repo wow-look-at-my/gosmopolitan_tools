@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package deepequalerrors defines an Analyzer that checks for the use
 // of reflect.DeepEqual with error values.
@@ -73,8 +72,6 @@ func hasError(pass *analysis.Pass, e ast.Expr) bool {
 // methods of a named or interface type (not stored).
 func containsError(typ types.Type) bool {
 	// Track types being processed, to avoid infinite recursion.
-	// Using types as keys here is OK because we are checking for the identical pointer, not
-	// type identity. See analysis/passes/printf/types.go.
 	inProgress := make(map[types.Type]bool)
 
 	var check func(t types.Type) bool

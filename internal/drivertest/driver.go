@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The drivertest package provides a fake implementation of the go/packages
 // driver protocol that delegates to the go list driver. It may be used to test
@@ -8,8 +7,8 @@
 // in use.
 //
 // The driver is run as a child of the current process, by calling [RunIfChild]
-// at process start, and running go/packages with the environment variables set
-// by [Env].
+// at process start. Running go/packages with the environment variables set by
+// [Env].
 package drivertest
 
 import (
@@ -25,8 +24,6 @@ const runAsDriverEnv = "DRIVERTEST_RUN_AS_DRIVER"
 
 // RunIfChild runs the current process as a go/packages driver, if configured
 // to do so by the current environment (see [Env]).
-//
-// Otherwise, RunIfChild is a no op.
 func RunIfChild() {
 	if os.Getenv(runAsDriverEnv) != "" {
 		main()

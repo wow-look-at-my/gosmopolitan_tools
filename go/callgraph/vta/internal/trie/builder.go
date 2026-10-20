@@ -1,19 +1,9 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package trie
 
-// Collision functions combine a left and right hand side (lhs and rhs) values
-// the two values are associated with the same key and produces the value that
-// will be stored for the key.
-//
-// Collision functions must be idempotent:
-//
-//	collision(x, x) == x for all x.
-//
-// Collisions functions may be applied whenever a value is inserted
-// or two maps are merged, or intersected.
+// Collision functions combine a left and right hand side.
 type Collision func(lhs any, rhs any) any
 
 // TakeLhs always returns the left value in a collision.
@@ -23,11 +13,6 @@ func TakeLhs(lhs, rhs any) any { return lhs }
 func TakeRhs(lhs, rhs any) any { return rhs }
 
 // Builder creates new Map. Each Builder has a unique Scope.
-//
-// IMPORTANT:  Nodes are hash-consed internally to reduce memory consumption. To
-// support hash-consing Builders keep an internal Map of all of the Maps that they
-// have created. To GC any of the Maps created by the Builder, all references to
-// the Builder must be dropped. This includes MutMaps.
 type Builder struct {
 	scope Scope
 
@@ -35,9 +20,6 @@ type Builder struct {
 	empty    *empty
 	leaves   map[leaf]*leaf
 	branches map[branch]*branch
-	// It may be possible to support more types of patricia tries
-	// (e.g. non-hash-consed) by making Builder an interface and abstracting
-	// the mkLeaf and mkBranch functions.
 }
 
 // NewBuilder creates a new Builder with a unique Scope.
@@ -55,10 +37,7 @@ func (b *Builder) Scope() Scope { return b.scope }
 
 // Rescope changes the builder's scope to a new unique Scope.
 //
-// Any Maps created using the previous scope need to be Cloned
-// before any operation.
-//
-// This makes the old internals of the Builder eligible to be GC'ed.
+// Any Maps created using the scope need to be Cloned before any operation.
 func (b *Builder) Rescope() {
 	s := newScope()
 	b.scope = s
@@ -70,60 +49,40 @@ func (b *Builder) Rescope() {
 // Empty is the empty map.
 func (b *Builder) Empty() Map { return Map{b.Scope(), b.empty} }
 
-// InsertWith inserts a new association from k to v into the Map m to create a new map
-// in the current scope and handle collisions using the collision function c.
-//
-// This is roughly corresponds to updating a map[uint64]interface{} by:
-//
-//	if _, ok := m[k]; ok { m[k] = c(m[k], v} else { m[k] = v}
-//
-// An insertion or update happened whenever Insert(m, ...) != m .
+// InsertWith inserts a new association from k to v into the Map m to create a
+// new map.
 func (b *Builder) InsertWith(c Collision, m Map, k uint64, v any) Map {
 	m = b.Clone(m)
 	return Map{b.Scope(), b.insert(c, m.n, b.mkLeaf(key(k), v), false)}
 }
 
-// Inserts a new association from key to value into the Map m to create
-// a new map in the current scope.
-//
-// If there was a previous value mapped by key, keep the previously mapped value.
-// This is roughly corresponds to updating a map[uint64]interface{} by:
-//
-//	if _, ok := m[k]; ok { m[k] = val }
-//
-// This is equivalent to b.Merge(m, b.Create({k: v})).
+// Inserts a new association from key to value into the Map m to create a new
+// map in the current scope.
 func (b *Builder) Insert(m Map, k uint64, v any) Map {
 	return b.InsertWith(TakeLhs, m, k, v)
 }
 
-// Updates a (key, value) in the map. This is roughly corresponds to
-// updating a map[uint64]interface{} by:
+// Updates a (key, value) in the map. This is roughly corresponds to updating a map[uint64]interface{} by.
 //
 //	m[key] = val
 func (b *Builder) Update(m Map, key uint64, val any) Map {
 	return b.InsertWith(TakeRhs, m, key, val)
 }
 
-// Merge two maps lhs and rhs to create a new map in the current scope.
-//
-// Whenever there is a key in both maps (a collision), the resulting value mapped by
-// the key will be `c(lhs[key], rhs[key])`.
+// Merge maps lhs and rhs to create a new map in the current scope.
 func (b *Builder) MergeWith(c Collision, lhs, rhs Map) Map {
 	lhs, rhs = b.Clone(lhs), b.Clone(rhs)
 	return Map{b.Scope(), b.merge(c, lhs.n, rhs.n)}
 }
 
-// Merge two maps lhs and rhs to create a new map in the current scope.
-//
-// Whenever there is a key in both maps (a collision), the resulting value mapped by
-// the key will be the value in lhs `b.Collision(lhs[key], rhs[key])`.
+// Merge maps lhs and rhs to create a new map in the current scope.
 func (b *Builder) Merge(lhs, rhs Map) Map {
 	return b.MergeWith(TakeLhs, lhs, rhs)
 }
 
 // Clone returns a Map that contains the same (key, value) elements
-// within b.Scope(), i.e. return m if m.Scope() == b.Scope() or return
-// a deep copy of m within b.Scope() otherwise.
+// within b.Scope(), i.e. return m if m.Scope() == b.Scope().
+// Otherwise, return a deep copy of m within b.Scope() otherwise.
 func (b *Builder) Clone(m Map) Map {
 	if m.Scope() == b.Scope() {
 		return m
@@ -151,21 +110,14 @@ func (b *Builder) Remove(m Map, k uint64) Map {
 	return Map{b.Scope(), b.remove(m.n, key(k))}
 }
 
-// Intersect Maps lhs and rhs and returns a map with all of the keys in
-// both lhs and rhs and the value comes from lhs, i.e.
-//
-//	{(k, lhs[k]) | k in lhs, k in rhs}.
+// Intersect Maps lhs and rhs and returns a map with all of the keys in both
+// lhs and rhs.
 func (b *Builder) Intersect(lhs, rhs Map) Map {
 	return b.IntersectWith(TakeLhs, lhs, rhs)
 }
 
-// IntersectWith take lhs and rhs and returns the intersection
-// with the value coming from the collision function, i.e.
-//
-//	{(k, c(lhs[k], rhs[k]) ) | k in lhs, k in rhs}.
-//
-// The elements of the resulting map are always { <k, c(lhs[k], rhs[k]) > }
-// for each key k that a key in both lhs and rhs.
+// IntersectWith take lhs and rhs and returns the intersection with the value
+// coming from the collision function.
 func (b *Builder) IntersectWith(c Collision, lhs, rhs Map) Map {
 	l, r := b.Clone(lhs), b.Clone(rhs)
 	return Map{b.Scope(), b.intersect(c, l.n, r.n)}
@@ -245,13 +197,7 @@ func (b *Builder) create(leaves []*leaf) node {
 	} else if n == 1 {
 		return leaves[0]
 	}
-	// Note: we can do a more sophisticated algorithm by:
-	// - sorting the leaves ahead of time,
-	// - taking the prefix and branching bit of the min and max key,
-	// - binary searching for the branching bit,
-	// - splitting exactly where the branch will be, and
-	// - making the branch node for this prefix + branching bit.
-	// Skipping until this is a performance bottleneck.
+	// Note: we can do a more sophisticated algorithm by: - sorting the leaves ahead of time, - taking the prefix.
 
 	m := n / 2 // (n >= 2) ==> 1 <= m < n
 	l, r := leaves[:m], leaves[m:]
@@ -290,7 +236,7 @@ func (b *Builder) mkBranch(p prefix, bp bitpos, left node, right node) *branch {
 	return rep
 }
 
-// join two maps with prefixes p0 and p1 that are *known* to disagree.
+// join maps with prefixes p0 and p1 that are *known* to disagree.
 func (b *Builder) join(p0 prefix, t0 node, p1 prefix, t1 node) *branch {
 	m := branchingBit(p0, p1)
 	var left, right node
@@ -303,8 +249,7 @@ func (b *Builder) join(p0 prefix, t0 node, p1 prefix, t1 node) *branch {
 	return b.mkBranch(prefix, m, left, right)
 }
 
-// collide two leaves with the same key to create a leaf
-// with the collided value.
+// collide leaves with the same key to create a leaf with the collided value.
 func (b *Builder) collide(c Collision, left, right *leaf) *leaf {
 	if left == right {
 		return left // c is idempotent: c(x, x) == x
@@ -340,7 +285,6 @@ func (b *Builder) insert(c Collision, m node, l *leaf, lhs bool) node {
 		}
 		return b.join(prefix(l.k), l, prefix(m.k), m)
 	case *branch:
-		// fallthrough
 	}
 	// m is a branch
 	br := m.(*branch)
@@ -359,7 +303,7 @@ func (b *Builder) insert(c Collision, m node, l *leaf, lhs bool) node {
 	return b.mkBranch(br.prefix, br.branching, left, right)
 }
 
-// merge two maps in the current scope.
+// merge maps in the current scope.
 func (b *Builder) merge(c Collision, lhs, rhs node) node {
 	if lhs == rhs {
 		return lhs
@@ -376,13 +320,10 @@ func (b *Builder) merge(c Collision, lhs, rhs node) node {
 		case *leaf:
 			return b.insert(c, lhs, rhs, false)
 		case *branch:
-			// fallthrough
 		}
 	}
 
 	// Last remaining case is branch merging.
-	// For brevity, we adopt the Okasaki and Gill naming conventions
-	// for branching and prefixes.
 	s, t := lhs.(*branch), rhs.(*branch)
 	p, m := s.prefix, s.branching
 	q, n := t.prefix, t.branching
@@ -394,11 +335,10 @@ func (b *Builder) merge(c Collision, lhs, rhs node) node {
 	if !prefixesOverlap(p, m, q, n) {
 		return b.join(p, s, q, t) // prefixes are disjoint.
 	}
-	// prefixesOverlap(p, m, q, n) && !(m ==n && p == q)
-	// By prefixesOverlap(...), either:
-	//   higher(m, n) && matchPrefix(q, p, m), or
-	//   higher(n, m) && matchPrefix(p, q, n)
-	// So either s or t may can be merged with one branch or the other.
+	// prefixesOverlap(p, m, q, n) && !(m ==n && p == q) By prefixesOverlap(...),
+	// either: higher(m, n) && matchPrefix(q, p, m), or higher(n, m) &&
+	// matchPrefix(p, q, n). So either s or t may can be merged with one branch
+	// or the other.
 	switch {
 	case ord(m, n) && zeroBit(q, m):
 		return b.mkBranch(p, m, b.merge(c, s.left, t), s.right)
@@ -421,7 +361,6 @@ func (b *Builder) remove(m node, k key) node {
 		}
 		return m
 	case *branch:
-		// fallthrough
 	}
 	br := m.(*branch)
 	kp := prefix(k)
@@ -444,8 +383,6 @@ func (b *Builder) remove(m node, k key) node {
 		return left // right updated and is empty.
 	}
 	// Either left or right updated. Both left and right are not empty.
-	// The left and right branches still share the same prefix and disagree
-	// on the same branching bit. It is safe to directly create the branch.
 	return b.mkBranch(br.prefix, br.branching, left, right)
 }
 
@@ -471,7 +408,6 @@ func (b *Builder) intersect(c Collision, l, r node) node {
 			}
 			return b.empty
 		case *branch:
-			// fallthrough
 		}
 	}
 	// Last remaining case is branch intersection.
@@ -488,19 +424,13 @@ func (b *Builder) intersect(c Collision, l, r node) node {
 			return left
 		}
 		// The left and right branches are both non-empty.
-		// They still share the same prefix and disagree on the same branching bit.
-		// It is safe to directly create the branch.
 		return b.mkBranch(p, m, left, right)
 	}
 
 	if !prefixesOverlap(p, m, q, n) {
 		return b.empty // The prefixes share no keys.
 	}
-	// prefixesOverlap(p, m, q, n) && !(m ==n && p == q)
-	// By prefixesOverlap(...), either:
-	//   ord(m, n) && matchPrefix(q, p, m), or
-	//   ord(n, m) && matchPrefix(p, q, n)
-	// So either s or t may be a strict subtree of the other.
+	// prefixesOverlap(p, m, q, n) && !(m ==n && p == q) By prefixesOverlap(...), either.
 	var lhs, rhs node
 	switch {
 	case ord(m, n) && zeroBit(q, m):

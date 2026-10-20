@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typesinternal_test
 
@@ -106,12 +105,12 @@ func TestClassifyCallAndUsed(t *testing.T) {
 		kind    ti.CallKind
 		usedObj types.Object // the object obtained from the result of UsedIdent
 	}{
-		{ti.CallStatic, lookup("g")},         // g
-		{ti.CallDynamic, lookup("f")},        // f
-		{ti.CallBuiltin, printlnObj},         // println
-		{ti.CallStatic, member("S", "g")},    // z.g
-		{ti.CallStatic, member("S", "g")},    // a.b.c.g
-		{ti.CallStatic, member("S", "g")},    // S.g(z, 1)
+		{ti.CallStatic, lookup("g")},      // g
+		{ti.CallDynamic, lookup("f")},     // f
+		{ti.CallBuiltin, printlnObj},      // println
+		{ti.CallStatic, member("S", "g")}, // z.g
+		{ti.CallStatic, member("S", "g")}, // a.b.c.g
+		{ti.CallStatic, member("S", "g")},
 		{ti.CallDynamic, member("z", "f")},   // z.f
 		{ti.CallInterface, member("I", "m")}, // I(nil).m
 		{ti.CallConversion, lookup("I")},     // I(nil)

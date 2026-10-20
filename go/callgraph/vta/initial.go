@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -10,8 +9,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-// calleesFunc abstracts call graph in one direction,
-// from call sites to callees.
+// calleesFunc abstracts call graph in one direction, from call sites to callees.
 type calleesFunc func(ssa.CallInstruction) []*ssa.Function
 
 // makeCalleesFunc returns an initial call graph for vta as a

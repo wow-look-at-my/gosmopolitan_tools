@@ -1,6 +1,5 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package cfg_test
 
@@ -141,8 +140,7 @@ func TestDeadCode(t *testing.T) {
 		if decl, ok := decl.(*ast.FuncDecl); ok {
 			g := cfg.New(decl.Body, mayReturn)
 
-			// Print statements in unreachable blocks
-			// (in order determined by builder).
+			// Print statements in unreachable blocks (in order determined by builder).
 			var buf bytes.Buffer
 			for _, b := range g.Blocks {
 				if !b.Live {
@@ -164,17 +162,15 @@ func TestDeadCode(t *testing.T) {
 	}
 }
 
-// TestSmoke runs the CFG builder on every FuncDecl in the standard
-// library and x/tools. (This is all well-typed code, but it gives
-// some coverage.)
+// TestSmoke runs the CFG builder on every FuncDecl in the standard library
+// and x/tools. (This is all well-typed code, but it gives some coverage.)
 func TestSmoke(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in short mode")
 	}
 	testenv.NeedsTool(t, "go")
 
-	// The Mode API is just hateful.
-	// https://github.com/golang/go/issues/48226#issuecomment-1948792315
+	// The Mode API is hateful. https://github.com/golang/go/issues/48226#issuecomment-1948792315
 	mode := packages.NeedDeps | packages.NeedImports | packages.NeedSyntax | packages.NeedTypes
 	pkgs, err := packages.Load(&packages.Config{Mode: mode}, "std", "golang.org/x/tools/...")
 	if err != nil {

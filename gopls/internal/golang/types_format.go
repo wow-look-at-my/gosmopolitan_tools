@@ -204,8 +204,8 @@ func NewSignature(ctx context.Context, s *cache.Snapshot, pkg *cache.Package, si
 		// A parameter carrying a default is one a call may omit, so the
 		// signature has to show it. Depth: docs/OPTIONAL-PARAMS.md in the
 		// gosmopolitan toolchain.
-		if deflt := el.Default(); deflt != nil {
-			p += " = " + deflt.ExactString()
+		if deflt := el.Default(); deflt != nil && deflt.Const != nil {
+			p += " = " + deflt.Const.ExactString()
 		}
 		params = append(params, p)
 	}

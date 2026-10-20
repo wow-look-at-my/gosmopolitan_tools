@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package vta
 
@@ -32,14 +31,6 @@ func isReferenceNode(n node) bool {
 }
 
 // hasInFlow checks if a concrete type can flow to node `n`.
-// Returns yes iff the type of `n` satisfies one the following:
-//  1. is an interface
-//  2. is a (nested) pointer to interface (needed for, say,
-//     slice elements of nested pointers to interface type)
-//  3. is a function type (needed for higher-order type flow)
-//  4. is a (nested) pointer to function (needed for, say,
-//     slice elements of nested pointers to function type)
-//  5. is a global Recover or Panic node
 func hasInFlow(n node) bool {
 	if _, ok := n.(panicArg); ok {
 		return true
@@ -65,9 +56,8 @@ func isFunction(t types.Type) bool {
 	return ok
 }
 
-// interfaceUnderPtr checks if type `t` is a potentially nested
-// pointer to interface and if yes, returns the interface type.
-// Otherwise, returns nil.
+// interfaceUnderPtr checks if type `t` is a potentially nested pointer to
+// interface and if yes, returns the interface type. Otherwise, returns nil.
 func interfaceUnderPtr(t types.Type) types.Type {
 	seen := make(map[types.Type]bool)
 	var visit func(types.Type) types.Type
@@ -117,9 +107,9 @@ func functionUnderPtr(t types.Type) types.Type {
 	return visit(t)
 }
 
-// sliceArrayElem returns the element type of type `t` that is
-// expected to be a (pointer to) array, slice or string, consistent with
-// the ssa.Index and ssa.IndexAddr instructions. Panics otherwise.
+// sliceArrayElem returns the element type of type. `t` that is expected
+// to be a (pointer to) array, slice or string, consistent with the
+// ssa.Index and ssa.IndexAddr instructions. Panics otherwise.
 func sliceArrayElem(t types.Type) types.Type {
 	switch u := t.Underlying().(type) {
 	case *types.Pointer:

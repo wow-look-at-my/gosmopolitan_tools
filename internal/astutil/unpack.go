@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -17,9 +16,8 @@ import (
 // Copied (with modifications) from go/types.
 func UnpackRecv(rtyp ast.Expr) (ptr bool, rname *ast.Ident, tparams []*ast.Ident) {
 L: // unpack receiver type
-	// This accepts invalid receivers such as ***T and does not
-	// work for other invalid receivers, but we don't care. The
-	// validity of receiver expressions is checked elsewhere.
+	// This accepts invalid receivers such as ***T and does not work for other
+	// invalid receivers, but we don't care.
 	for {
 		switch t := rtyp.(type) {
 		case *ast.ParenExpr:
@@ -43,7 +41,6 @@ L: // unpack receiver type
 			case *ast.Ident:
 				par = arg
 			default:
-				// ignore errors
 			}
 			if par == nil {
 				par = &ast.Ident{NamePos: arg.Pos(), Name: "_"}

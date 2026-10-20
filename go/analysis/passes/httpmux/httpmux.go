@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package httpmux
 
@@ -40,7 +39,6 @@ var inTest bool // So Go version checks can be skipped during testing.
 
 func run(pass *analysis.Pass) (any, error) {
 	if !inTest {
-		// Check that Go version is 1.21 or earlier.
 		if goVersionAfter121(goVersion(pass.Pkg)) {
 			return nil, nil
 		}
@@ -108,8 +106,7 @@ func isMethodNamed(f *types.Func, pkgPath string, names ...string) bool {
 
 // stringConstantExpr returns expression's string constant value.
 //
-// ("", false) is returned if expression isn't a string
-// constant.
+// ("", false) is returned if expression isn't a string constant.
 func stringConstantExpr(pass *analysis.Pass, expr ast.Expr) (string, bool) {
 	lit := pass.TypesInfo.Types[expr].Value
 	if lit != nil && lit.Kind() == constant.String {
@@ -118,12 +115,9 @@ func stringConstantExpr(pass *analysis.Pass, expr ast.Expr) (string, bool) {
 	return "", false
 }
 
-// A valid wildcard must start a segment, and its name must be valid Go
-// identifier.
+// A valid wildcard must start a segment, and its name must be valid Go identifier.
 var wildcardRegexp = regexp.MustCompile(`/\{[_\pL][_\pL\p{Nd}]*(\.\.\.)?\}`)
 
-// likelyEnhancedPattern reports whether the ServeMux pattern pat probably
-// contains either an HTTP method name or a wildcard, extensions added in Go 1.22.
 func likelyEnhancedPattern(pat string) bool {
 	if strings.Contains(pat, " ") {
 		// A space in the pattern suggests that it begins with an HTTP method.
@@ -141,7 +135,6 @@ func goVersionAfter121(goVersion string) bool {
 }
 
 func goVersion(pkg *types.Package) string {
-	// types.Package.GoVersion did not exist before Go 1.21.
 	if p, ok := any(pkg).(interface{ GoVersion() string }); ok {
 		return p.GoVersion()
 	}
@@ -149,16 +142,10 @@ func goVersion(pkg *types.Package) string {
 }
 
 var (
-	// Regexp for matching go tags. The groups are:
-	// 1  the major.minor version
-	// 2  the patch version, or empty if none
-	// 3  the entire prerelease, if present
-	// 4  the prerelease type ("beta" or "rc")
-	// 5  the prerelease number
+	// Regexp for matching go tags.
 	tagRegexp = regexp.MustCompile(`^go(\d+\.\d+)(\.\d+|)((beta|rc)(\d+))?$`)
 )
 
-// Copied from pkgsite/internal/stdlib.VersionForTag.
 func versionFromGoVersion(goVersion string) string {
 	// Special cases for go1.
 	if goVersion == "go1" {

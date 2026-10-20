@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -42,8 +41,6 @@ func TestEndToEndIntegration(t *testing.T) {
 	td := t.TempDir()
 
 	// Build the fuzz-driver binary.
-	// Note: if more tests are added to this package, move this to single setup fcn, so
-	// that we don't have to redo the build each time.
 	binary := buildDriver(t)
 
 	// Kick off a run.

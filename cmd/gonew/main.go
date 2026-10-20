@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Gonew starts a new Go module by copying a template module.
 //
@@ -14,22 +13,6 @@
 // If dir is omitted, gonew uses ./elem where elem is the final path element of dstmod.
 //
 // This command is highly experimental and subject to change.
-//
-// # Example
-//
-// To install gonew:
-//
-//	go install golang.org/x/tools/cmd/gonew@latest
-//
-// To clone the basic command-line program template golang.org/x/example/hello
-// as your.domain/myprog, in the directory ./myprog:
-//
-//	gonew golang.org/x/example/hello your.domain/myprog
-//
-// To clone the latest copy of the rsc.io/quote module, keeping that module path,
-// into ./quote:
-//
-//	gonew rsc.io/quote
 package main
 
 import (
@@ -197,13 +180,6 @@ func fixGo(data []byte, file string, srcMod, dstMod string, isRoot bool) []byte 
 		if path == srcMod {
 			if srcName != dstName && spec.Name == nil {
 				// Add package rename because source code uses original name.
-				// The renaming looks strange, but template authors are unlikely to
-				// create a template where the root package is imported by packages
-				// in subdirectories, and the renaming at least keeps the code working.
-				// A more sophisticated approach would be to rename the uses of
-				// the package identifier in the file too, but then you have to worry about
-				// name collisions, and given how unlikely this is, it doesn't seem worth
-				// trying to clean up the file that way.
 				buf.Insert(at(spec.Path.Pos()), srcName+" ")
 			}
 			// Change import path to dstMod

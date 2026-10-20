@@ -1,9 +1,8 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Except for this comment and the import path, this file is a verbatim copy of the file
-// with the same name in $GOROOT/src/go/internal/gccgoimporter.
+// Except for this comment and the import path, this file is a verbatim copy of the
+// file. This holds with the same name in $GOROOT/src/go/internal/gccgoimporter.
 
 // Package gccgoimporter implements Import for gccgo-generated object files.
 package gccgoimporter // import "golang.org/x/tools/go/internal/gccgoimporter"
@@ -28,13 +27,9 @@ type PackageInit struct {
 // The gccgo-specific init data for a package.
 type InitData struct {
 	// Initialization priority of this package relative to other packages.
-	// This is based on the maximum depth of the package's dependency graph;
-	// it is guaranteed to be greater than that of its dependencies.
 	Priority int
 
-	// The list of packages which this package depends on to be initialized,
-	// including itself if needed. This is the subset of the transitive closure of
-	// the package's dependencies that need initialization.
+	// The list of packages which this package depends on to be initialized, including itself if needed.
 	Inits []PackageInit
 }
 
@@ -122,21 +117,12 @@ func openExportFile(fpath string) (reader io.ReadSeeker, closer io.Closer, err e
 	return
 }
 
-// An Importer resolves import paths to Packages. The imports map records
-// packages already known, indexed by package path.
-// An importer must determine the canonical package path and check imports
-// to see if it is already present in the map. If so, the Importer can return
-// the map entry. Otherwise, the importer must load the package data for the
-// given path into a new *Package, record it in imports map, and return the
-// package.
+// An Importer resolves import paths to Packages. The imports map records packages already known, indexed by package path.
 type Importer func(imports map[string]*types.Package, path, srcDir string, lookup func(string) (io.ReadCloser, error)) (*types.Package, error)
 
 func GetImporter(searchpaths []string, initmap map[*types.Package]InitData) Importer {
 	return func(imports map[string]*types.Package, pkgpath, srcDir string, lookup func(string) (io.ReadCloser, error)) (pkg *types.Package, err error) {
-		// TODO(gri): Use srcDir.
-		// Or not. It's possible that srcDir will fade in importance as
-		// the go command and other tools provide a translation table
-		// for relative imports (like ./foo or vendored imports).
+		// TODO(gri): Use srcDir. Or not.
 		if pkgpath == "unsafe" {
 			return types.Unsafe, nil
 		}
@@ -207,24 +193,14 @@ func GetImporter(searchpaths []string, initmap map[*types.Package]InitData) Impo
 				initmap[pkg] = p.initdata
 			}
 
-		// Excluded for now: Standard gccgo doesn't support this import format currently.
-		// case goimporterMagic:
-		// 	var data []byte
-		// 	data, err = io.ReadAll(reader)
-		// 	if err != nil {
-		// 		return
-		// 	}
-		// 	var n int
-		// 	n, pkg, err = importer.ImportData(imports, data)
-		// 	if err != nil {
-		// 		return
-		// 	}
+		// Excluded: Standard gccgo does not support this import format. case
+		// goimporterMagic.
 
 		// 	if initmap != nil {
 		// 		suffixreader := bytes.NewReader(data[n:])
 		// 		var p parser
 		// 		p.init(fpath, suffixreader, nil)
-		// 		p.parseInitData()
+
 		// 		initmap[pkg] = p.initdata
 		// 	}
 
@@ -236,7 +212,7 @@ func GetImporter(searchpaths []string, initmap map[*types.Package]InitData) Impo
 	}
 }
 
-// readMagic reads the four bytes at the start of a ReadSeeker and
+// readMagic reads those bytes at the start of a ReadSeeker and
 // returns them as a string.
 func readMagic(reader io.ReadSeeker) (string, error) {
 	var magic [4]byte

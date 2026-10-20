@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package atomicalign defines an Analyzer that checks for non-64-bit-aligned
 // arguments to sync/atomic functions. On non-32-bit platforms, those functions
@@ -64,16 +63,13 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 func check64BitAlignment(pass *analysis.Pass, funcName string, arg ast.Expr) {
-	// Checks the argument is made of the address operator (&) applied to
-	// a struct field (as opposed to a variable as the first word of
-	// uint64 and int64 variables can be relied upon to be 64-bit aligned).
+	// Checks the argument is made of the address operator (&) applied to a struct field.
 	unary, ok := arg.(*ast.UnaryExpr)
 	if !ok || unary.Op != token.AND {
 		return
 	}
 
-	// Retrieve the types.Struct in order to get the offset of the
-	// atomically accessed field.
+	// Retrieve the types.Struct to get the offset of the atomically accessed field.
 	sel, ok := unary.X.(*ast.SelectorExpr)
 	if !ok {
 		return
@@ -94,8 +90,7 @@ func check64BitAlignment(pass *analysis.Pass, funcName string, arg ast.Expr) {
 		f := stype.Field(i)
 		fields = append(fields, f)
 		if f == tvar {
-			// We're done, this is the field we were looking for,
-			// no need to fill the fields slice further.
+			// We're done, this is the field we were looking for, no need to fill the fields slice further.
 			offset = pass.TypesSizes.Offsetsof(fields)[i]
 			break
 		}

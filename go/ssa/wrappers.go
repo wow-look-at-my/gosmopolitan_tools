@@ -1,23 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
-// This file defines synthesis of Functions that delegate to declared
-// methods; they come in three kinds:
-//
-// (1) wrappers: methods that wrap declared methods, performing
-//     implicit pointer indirections and embedded field selections.
-//
-// (2) thunks: funcs that wrap declared methods.  Like wrappers,
-//     thunks perform indirections and field selections. The thunk's
-//     first parameter is used as the receiver for the method call.
-//
-// (3) bounds: funcs that wrap declared methods.  The bound's sole
-//     free variable, supplied by a closure, is used as the receiver
-//     for the method call.  No indirections or field selections are
-//     performed since they can be done before the call.
+// This file defines synthesis of Functions that delegate to declared methods.
 
 import (
 	"fmt"
@@ -31,13 +17,13 @@ import (
 
 // -- wrappers -----------------------------------------------------------
 
-// createWrapper returns a synthetic method that delegates to the
-// declared method denoted by meth.Obj(), first performing any
-// necessary pointer indirections or field selections implied by meth.
+// createWrapper returns a synthetic method that delegates to the declared
+// method denoted by meth.Obj(). First performing any necessary pointer
+// indirections or field selections implied by meth.
 //
 // The resulting method's receiver type is meth.Recv().
 //
-// This function is versatile but quite subtle!  Consider the
+// This function is versatile but subtle! Consider the
 // following axes of variation when making changes:
 //   - optional receiver indirection
 //   - optional implicit field selections
@@ -136,19 +122,13 @@ func (b *builder) buildWrapper(fn *Function) {
 		}
 	}
 
-	// Invariant: v is a pointer, either
-	//   value of *A receiver param, or
-	// address of  A spilled receiver.
+	// Invariant: v is a pointer, either value of *A receiver param, or address of A spilled receiver.
 
-	// We use pointer arithmetic (FieldAddr possibly followed by
-	// Load) in preference to value extraction (Field possibly
-	// preceded by Load).
+	// We use pointer arithmetic (FieldAddr possibly followed by Load) in preference to value extraction.
 
 	v = emitImplicitSelections(fn, v, indices[:len(indices)-1], token.NoPos)
 
-	// Invariant: v is a pointer, either
-	//   value of implicit *C field, or
-	// address of implicit  C field.
+	// Invariant: v is a pointer, either value of implicit *C field, or address of implicit C field.
 
 	var c Call
 	if r := recvType(fn.object); !types.IsInterface(r) { // concrete method
@@ -170,7 +150,6 @@ func (b *builder) buildWrapper(fn *Function) {
 
 // createParams creates parameters for wrapper method fn based on its
 // Signature.Params, which do not include the receiver.
-// start is the index of the first regular parameter to use.
 func createParams(fn *Function, start int) {
 	tparams := fn.Signature.Params()
 	for i, n := start, tparams.Len(); i < n; i++ {
@@ -181,27 +160,9 @@ func createParams(fn *Function, start int) {
 // -- bounds -----------------------------------------------------------
 
 // createBound returns a bound method wrapper (or "bound"), a synthetic
-// function that delegates to a concrete or interface method denoted
-// by obj.  The resulting function has no receiver, but has one free
-// variable which will be used as the method's receiver in the
-// tail-call.
-//
-// Use MakeClosure with such a wrapper to construct a bound method
-// closure.  e.g.:
-//
-//	type T int          or:  type T interface { meth() }
-//	func (t T) meth()
-//	var t T
-//	f := t.meth
-//	f() // calls t.meth()
-//
-// f is a closure of a synthetic wrapper defined as if by:
-//
-//	f := func() { return t.meth() }
-//
-// Unlike createWrapper, createBound need perform no indirection or field
-// selections because that can be done before the closure is
-// constructed.
+// function that delegates to a concrete or interface method denoted by obj.
+// The resulting function has no receiver, but has one free variable which
+// will be used as the method's receiver in the tail-call.
 func createBound(prog *Program, obj *types.Func, targs []types.Type) *Function {
 	description := fmt.Sprintf("bound method wrapper for %s", obj)
 	if prog.mode&LogSource != 0 {
@@ -252,21 +213,8 @@ func (b *builder) buildBound(fn *Function) {
 // -- thunks -----------------------------------------------------------
 
 // createThunk returns a thunk, a synthetic function that delegates to a
-// concrete or interface method denoted by sel.obj.  The resulting
-// function has no receiver, but has an additional (first) regular
-// parameter.
-//
-// Precondition: sel.kind == types.MethodExpr.
-//
-//	type T int          or:  type T interface { meth() }
-//	func (t T) meth()
-//	f := T.meth
-//	var t T
-//	f(t) // calls t.meth()
-//
-// f is a synthetic wrapper defined as if by:
-//
-//	f := func(t T) { return t.meth() }
+// concrete or interface method denoted by sel.obj. The resulting function has
+// no receiver, but has an additional (first) regular parameter.
 func createThunk(prog *Program, sel *selection, targs []types.Type) *Function {
 	if sel.kind != types.MethodExpr {
 		panic(sel)
@@ -321,9 +269,7 @@ func (b *builder) buildInstantiationWrapper(fn *Function) {
 	}
 	createParams(fn, 0)
 
-	// Create body. Add a call to origin generic function
-	// and make type changes between argument and parameters,
-	// as well as return values.
+	// Create body.
 	var c Call
 	c.Call.Value = orig
 	if res := orig.Signature.Results(); res.Len() == 1 {
@@ -332,8 +278,7 @@ func (b *builder) buildInstantiationWrapper(fn *Function) {
 		c.typ = res
 	}
 
-	// parameter of instance becomes an argument to the call
-	// to the original generic function.
+	// parameter of instance becomes an argument to the call to the original generic function.
 	argOffset := 0
 	for i, arg := range fn.Params {
 		var typ types.Type

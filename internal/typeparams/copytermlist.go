@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build ignore
 
@@ -46,12 +45,10 @@ func doCopy() error {
 		selectorType := reflect.TypeOf((*ast.SelectorExpr)(nil))
 		astutil.Apply(file, func(c *astutil.Cursor) bool {
 			if id, _ := c.Node().(*ast.Ident); id != nil {
-				// Check if this ident should be qualified with types. For simplicity,
-				// assume the copied files do not themselves contain any exported
-				// symbols.
+				// Check if this ident should be qualified with types.
 
-				// As a simple heuristic, just verify that the ident may be replaced by
-				// a selector.
+				// As a simple heuristic, verify that the ident may be replaced by a
+				// selector.
 				if !token.IsExported(id.Name) {
 					return false
 				}

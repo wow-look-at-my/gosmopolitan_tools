@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -408,7 +407,7 @@ type T time.Time
 `,
 	},
 
-	// Issue 9961: Match prefixes using path segments rather than bytes
+	// : Match prefixes using path segments rather than bytes
 	{
 		name: "issue 9961",
 		pkg:  "regexp",
@@ -432,7 +431,7 @@ import (
 )
 `,
 	},
-	// Issue 10337: Preserve comment position
+	// : Preserve comment position
 	{
 		name: "issue 10337",
 		pkg:  "fmt",
@@ -490,7 +489,7 @@ import (
 )
 `,
 	},
-	// Issue 14075: Merge import declarations
+	// : Merge import declarations
 	{
 		name: "issue 14075",
 		pkg:  "bufio",
@@ -659,7 +658,8 @@ import (
 `,
 	},
 
-	// Issue 28605: Add specified import, even if that import path is imported under another name
+	// : Add specified import, even if that import path is imported under another
+	// name
 	{
 		name:       "issue 28605 add unnamed path",
 		renamedPkg: "",
@@ -787,8 +787,7 @@ func TestAddImport(t *testing.T) {
 			t.Errorf("first run: %s: added = %v, want %v", test.name, got, want)
 		}
 
-		// AddNamedImport should be idempotent. Verify that by calling it again,
-		// expecting no change to the AST, and the returned added value to always be false.
+		// AddNamedImport should be idempotent.
 		added = AddNamedImport(fset, file, test.renamedPkg, test.pkg)
 		if got := print(t, test.name, file); got != test.out {
 			t.Errorf("second run: %s:\ngot: %s\nwant: %s", test.name, got, test.out)
@@ -831,7 +830,7 @@ import (
 	}
 }
 
-// Part of issue 8729.
+// Part of.
 func TestDoubleAddImportWithDeclComment(t *testing.T) {
 	file := parse(t, "doubleimport", `package main
 
@@ -1174,7 +1173,6 @@ import y "fmt"
 import y "fmt"
 `,
 	},
-	// Issue #15432, #18051
 	{
 		name: "import.19",
 		pkg:  "fmt",
@@ -1511,7 +1509,7 @@ import (
 `,
 	},
 
-	// Issue 20229: MergeLine panic on weird input
+	// : MergeLine panic on weird input
 	{
 		name: "import.37",
 		pkg:  "io",
@@ -1526,7 +1524,8 @@ import (
 `,
 	},
 
-	// Issue 28605: Delete specified import, even if that import path is imported under another name
+	// : Delete specified import, even if that import path is imported under
+	// another name
 	{
 		name:       "import.38",
 		renamedPkg: "",
@@ -1700,8 +1699,7 @@ func TestDeleteImport(t *testing.T) {
 			t.Errorf("first run: %s: deleted = %v, want %v", test.name, got, want)
 		}
 
-		// DeleteNamedImport should be idempotent. Verify that by calling it again,
-		// expecting no change to the AST, and the returned deleted value to always be false.
+		// DeleteNamedImport should be idempotent.
 		deleted = DeleteNamedImport(fset, file, test.renamedPkg, test.pkg)
 		if got := print(t, test.name, file); got != test.out {
 			t.Errorf("second run: %s:\ngot: %s\nwant: %s", test.name, got, test.out)

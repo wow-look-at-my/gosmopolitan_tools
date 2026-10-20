@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -27,15 +26,12 @@ var OmitZeroAnalyzer = &analysis.Analyzer{
 	URL:      "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/modernize#hdr-Analyzer_omitzero",
 }
 
-// The omitzero pass searches for instances of "omitempty" in a json field tag on a
-// struct. Since "omitfilesUsingGoVersions not have any effect when applied to a struct field,
-// it suggests either deleting "omitempty" or replacing it with "omitzero", which
-// correctly excludes structs from a json encoding.
+// The omitzero pass searches for instances of "omitempty" in a json field tag
+// on a struct.
 func omitzero(pass *analysis.Pass) (any, error) {
-	// usesKubebuilder reports whether "+kubebuilder:" appears in
-	// any comment in the package, since it has its own
-	// interpretation of what omitzero means; see go.dev/issue/76649.
-	// It is computed once, on demand.
+	// usesKubebuilder reports whether "+kubebuilder:" appears in any comment in
+	// the package, since it has its own interpretation of what omitzero means;
+	// see go.dev/issue/76649. It is computed once, on demand.
 	usesKubebuilder := sync.OnceValue[bool](func() bool {
 		for _, file := range pass.Files {
 			for _, comment := range file.Comments {
@@ -86,9 +82,8 @@ func omitzero(pass *analysis.Pass) (any, error) {
 			}
 		}
 
-		// Don't offer a fix if the package seems to use kubebuilder,
-		// as it has its own intepretation of "omitzero" tags.
-		// https://book.kubebuilder.io/reference/markers.html
+		// Don't offer a fix if the package seems to use kubebuilder, as it has its
+		// own intepretation of "omitzero" tags.
 		if usesKubebuilder() {
 			return
 		}

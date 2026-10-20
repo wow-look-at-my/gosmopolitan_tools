@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package difftest supplies a set of tests that will operate on any
 // implementation of a diff algorithm as exposed by
@@ -88,7 +87,6 @@ func getDiffOutput(a, b string) (string, error) {
 			// Nonzero exit with no output: terminated by signal?
 			return "", fmt.Errorf("%s failed: %v; stderr:\n%s", cmd, err, exit.Stderr)
 		}
-		// nonzero exit + output => files differ
 	}
 	diff := string(out)
 	if len(diff) <= 0 {

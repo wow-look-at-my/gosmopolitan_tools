@@ -1,25 +1,17 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package cha computes the call graph of a Go program using the Class
-// Hierarchy Analysis (CHA) algorithm.
-//
-// CHA was first described in "Optimization of Object-Oriented Programs
-// Using Static Class Hierarchy Analysis", Jeffrey Dean, David Grove,
-// and Craig Chambers, ECOOP'95.
-//
-// CHA is related to RTA (see go/callgraph/rta); the difference is that
-// CHA conservatively computes the entire "implements" relation between
-// interfaces and concrete types ahead of time, whereas RTA uses dynamic
-// programming to construct it on the fly as it encounters new functions
-// reachable from main.  CHA may thus include spurious call edges for
-// types that haven't been instantiated yet, or types that are never
-// instantiated.
-//
-// Since CHA conservatively assumes that all functions are address-taken
-// and all concrete types are put into interfaces, it is sound to run on
-// partial programs, such as libraries without a main or test function.
+// Hierarchy Analysis (CHA) algorithm. CHA is related to RTA (see
+// go/callgraph/rta). The difference is that CHA conservatively computes the
+// entire "implements" relation. Between interfaces and concrete types. Ahead
+// of time, whereas RTA uses dynamic programming to construct it on the fly as
+// it encounters new functions reachable from main. CHA may thus include
+// spurious call edges for types that haven't been instantiated yet, or types
+// that are never instantiated. It is sound to run on partial programs, such
+// as libraries without a main or test function. This holds since CHA
+// conservatively assumes that all functions are address-taken and all
+// concrete types are put into interfaces.
 package cha // import "golang.org/x/tools/go/callgraph/cha"
 
 // TODO(zpavlinovic): update CHA for how it handles generic function bodies.
@@ -46,11 +38,9 @@ func CallGraph(prog *ssa.Program) *callgraph.Graph {
 	}
 
 	addEdges := func(fnode *callgraph.Node, site ssa.CallInstruction, callees []*ssa.Function) {
-		// Because every call to a highly polymorphic and
-		// frequently used abstract method such as
-		// (io.Writer).Write is assumed to call every concrete
-		// Write method in the program, the call graph can
-		// contain a lot of duplication.
+		// Because every call to a highly polymorphic and frequently used abstract
+		// method such as (io.Writer).Write is assumed to call every concrete Write
+		// method.
 		for _, g := range callees {
 			addEdge(fnode, site, g)
 		}

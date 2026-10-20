@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package facts_test
 
@@ -47,23 +46,18 @@ func TestEncodeDecode(t *testing.T) {
 			// c does not directly depend on a, but it indirectly uses a.T.
 			//
 			// Package a2 is never loaded directly so it is incomplete.
-			//
-			// We use only types in this example because we rely on
-			// types.Eval to resolve the lookup expressions, and it only
-			// works for types. This is a definite gap in the typechecker API.
 			files: map[string]string{
 				"a/a.go":  `package a; type A int; type T int`,
 				"a2/a.go": `package a2; type A2 int; type Unneeded int`,
 				"b/b.go":  `package b; import ("a"; "a2"); type B chan a2.A2; type F func() a.T`,
 				"c/c.go":  `package c; import "b"; type C []b.B`,
 			},
-			// In the following table, we analyze packages (a, b, c) in order,
-			// look up various objects accessible within each package,
-			// and see if they have a fact.  The "analysis" exports a fact
-			// for every object at package level.
+			// In the following table, we analyze packages (a, b, c) in order, look up
+			// various objects accessible within each package, and see if they have a
+			// fact. The "analysis" exports a fact for every object at package level.
 			//
-			// Note: Loop iterations are not independent test cases;
-			// order matters, as we populate factmap.
+			// Note: Loop iterations are not independent test cases; order matters, as
+			// we populate factmap.
 			plookups: []pkgLookups{
 				{"a", []lookup{
 					{"A", "myFact(a.A)"},
@@ -87,10 +81,9 @@ func TestEncodeDecode(t *testing.T) {
 		},
 		{
 			name: "underlying",
-			// c->b->a
-			// c does not import a directly or use any of its types, but it does use
-			// the types within a indirectly. c.q has the type a.a so package a should
-			// be included by importMap.
+			// c->b->a c does not import a directly or use any of its types, but it
+			// does use the types within a indirectly. c.q has the type a.a so package
+			// a should be included by importMap.
 			files: map[string]string{
 				"a/a.go": `package a; type a int; type T *a`,
 				"b/b.go": `package b; import "a"; type B a.T`,
@@ -116,9 +109,8 @@ func TestEncodeDecode(t *testing.T) {
 		},
 		{
 			name: "methods",
-			// c->b->a
-			// c does not import a directly or use any of its types, but it does use
-			// the types within a indirectly via a method.
+			// c->b->a c does not import a directly or use any of its types.
+			// However, it does use the types within a indirectly via a method.
 			files: map[string]string{
 				"a/a.go": `package a; type T int`,
 				"b/b.go": `package b; import "a"; type B struct{}; func (_ B) M() a.T { return 0 }`,
@@ -301,11 +293,6 @@ type pkgLookups struct {
 //     4.b) finds a Fact for the object (or confirms one is not expected want=="no fact"),
 //     4.c) compares the content of the Fact to want.
 //  5. encodes the Facts of the package.
-//
-// Note: tests are not independent test cases; order matters (as does a package being
-// skipped). It changes what Facts can be imported.
-//
-// Failures are reported on t.
 func testEncodeDecode(t *testing.T, files map[string]string, tests []pkgLookups) {
 	dir, cleanup, err := analysistest.WriteFiles(files)
 	if err != nil {
@@ -313,17 +300,16 @@ func testEncodeDecode(t *testing.T, files map[string]string, tests []pkgLookups)
 	}
 	defer cleanup()
 
-	// factmap represents the passing of encoded facts from one
-	// package to another. In practice one would use the file system.
+	// factmap represents the passing of encoded facts from one package to another.
 	factmap := make(map[string][]byte)
 	read := func(pkgPath string) ([]byte, error) { return factmap[pkgPath], nil }
 
-	// Analyze packages in order, look up various objects accessible within
-	// each package, and see if they have a fact.  The "analysis" exports a
-	// fact for every object at package level.
+	// Analyze packages in order, look up various objects accessible within each
+	// package, and see if they have a fact. The "analysis" exports a fact for
+	// every object at package level.
 	//
-	// Note: Loop iterations are not independent test cases;
-	// order matters, as we populate factmap.
+	// Note: Loop iterations are not independent test cases; order matters, as we
+	// populate factmap.
 	for _, test := range tests {
 		// load package
 		pkg, err := load(t, dir, test.path)
@@ -338,8 +324,7 @@ func testEncodeDecode(t *testing.T, files map[string]string, tests []pkgLookups)
 		}
 		t.Logf("decode %s facts = %v", pkg.Path(), facts) // show all facts
 
-		// export
-		// (one fact for each package-level object)
+		// export (one fact for each package-level object)
 		for _, name := range pkg.Scope().Names() {
 			obj := pkg.Scope().Lookup(name)
 			fact := &myFact{obj.Pkg().Name() + "." + obj.Name()}
@@ -347,8 +332,7 @@ func testEncodeDecode(t *testing.T, files map[string]string, tests []pkgLookups)
 		}
 		t.Logf("exported %s facts = %v", pkg.Path(), facts) // show all facts
 
-		// import
-		// (after export, because an analyzer may import its own facts)
+		// import (after export, because an analyzer may import its own facts)
 		for _, lookup := range test.lookups {
 			fact := new(myFact)
 			var got string
@@ -385,16 +369,10 @@ var customFind = map[string]func(p *types.Package) types.Object{
 
 func find(p *types.Package, expr string) types.Object {
 	// types.Eval only allows us to compute a TypeName object for an expression.
-	// TODO(adonovan): support other expressions that denote an object:
-	// - an identifier (or qualified ident) for a func, const, or var
-	// - new(T).f for a field or method
-	// I've added CheckExpr in https://go-review.googlesource.com/c/go/+/144677.
-	// If that becomes available, use it.
 	if f := customFind[expr]; f != nil {
 		return f(p)
 	}
-	// Choose an arbitrary position within the (single-file) package
-	// so that we are within the scope of its import declarations.
+	// Choose an arbitrary position within the (single-file) package so that we are within the scope of its import declarations.
 	somepos := p.Scope().Lookup(p.Scope().Names()[0]).Pos()
 	tv, err := types.Eval(token.NewFileSet(), p, somepos, expr)
 	if err != nil {
@@ -518,7 +496,6 @@ func TestMalformed(t *testing.T) {
 				{
 					content: `package c; import "b"; var C b.B`,
 					wants:   map[string]string{"a": "no fact", "b": "myFact(b.[B])", "c": "myFact(c.[C])"},
-					// package fact myFact(a.[N]) not reexported
 				},
 			},
 		},

@@ -1,10 +1,9 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// TODO(jba) deduce which functions wrap the log/slog functions, and use the
-// fact mechanism to propagate this information, so we can provide diagnostics
-// for user-supplied wrappers.
+// TODO(jba) deduce which functions wrap the log/slog functions. Use the fact
+// mechanism to propagate this information, so we can provide diagnostics for
+// user-supplied wrappers.
 
 package slog
 
@@ -83,8 +82,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// Check this call.
-		// The first position should hold a key or Attr.
+		// Check this call. The first position should hold a key or Attr.
 		pos := key
 		var unknownArg ast.Expr // nil or the last unknown argument
 		for _, arg := range call.Args[skipArgs:] {
@@ -101,8 +99,7 @@ func run(pass *analysis.Pass) (any, error) {
 					// As we do not do dataflow, we do not know what the dynamic type is.
 					// But we might be able to learn enough to make a decision.
 					if types.AssignableTo(stringType, t) {
-						// t must be an empty interface. So it can also be an Attr.
-						// We don't know enough to make an assumption.
+						// t must be an empty interface. So it can also be an Attr. We don't know enough to make an assumption.
 						pos = unknown
 						continue
 					} else if attrType != nil && types.AssignableTo(attrType, t) {
@@ -125,23 +122,16 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 			case value:
-				// Anything can appear in this position.
-				// The next position should be a key.
+				// Anything can appear in this position. The next position should be a key.
 				pos = key
 
 			case unknown:
-				// Once we encounter an unknown position, we can never be
-				// sure if a problem later or at the end of the call is due to a
-				// missing final value, or a non-key in key position.
-				// In both cases, unknownArg != nil.
+				// Once we encounter an unknown position, we can never be sure.
 				unknownArg = arg
 
 				// We don't know what is expected about this position, but all hope is not lost.
 				if t != stringType && !isAttr(t) && !types.IsInterface(t) {
 					// This argument is definitely not a key.
-					//
-					// unknownArg cannot have been a key, in which case this is the
-					// corresponding value, and the next position should hold another key.
 					pos = key
 				}
 			}
@@ -179,10 +169,9 @@ func shortName(fn *types.Func) string {
 	return fmt.Sprintf("%s.%s%s", fn.Pkg().Name(), r, fn.Name())
 }
 
-// If fn is a slog function that has a ...any parameter for key-value pairs,
 // kvFuncSkipArgs returns the number of arguments to skip over to reach the
-// corresponding arguments, and true.
-// Otherwise it returns (0, false).
+// corresponding arguments, and true. Do this if fn is a slog function that
+// has a ...any parameter for key-value pairs.
 func kvFuncSkipArgs(fn *types.Func) (int, bool) {
 	if pkg := fn.Pkg(); pkg == nil || pkg.Path() != "log/slog" {
 		return 0, false
@@ -199,10 +188,10 @@ func kvFuncSkipArgs(fn *types.Func) (int, bool) {
 	return skip, ok
 }
 
-// The names of functions and methods in log/slog that take
-// ...any for key-value pairs, mapped to the number of initial args to skip in
-// order to get to the ones that match the ...any parameter.
-// The first key is the dereferenced receiver type name, or "" for a function.
+// This is the names of functions and methods in log/slog that take ...any for
+// key-value pairs. The names are mapped to the number of initial args to skip
+// to get to the ones that match the ...any parameter. The first key is the
+// dereferenced receiver type name, or "" for a function.
 var kvFuncs = map[string]map[string]int{
 	"": {
 		"Debug":        1,

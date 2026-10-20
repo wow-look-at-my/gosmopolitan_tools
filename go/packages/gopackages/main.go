@@ -1,11 +1,9 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// The gopackages command is a diagnostic tool that demonstrates
-// how to use golang.org/x/tools/go/packages to load, parse,
-// type-check, and print one or more Go packages.
-// Its precise output is unspecified and may change.
+// The gopackages command is a diagnostic tool that demonstrates how to use
+// golang.org/x/tools/go/packages to load, parse, type-check. It print one or
+// more Go packages. Its precise output is unspecified and may change.
 package main
 
 import (
@@ -156,8 +154,7 @@ func run(ctx context.Context, args []string, deps, test bool, mode, tags string,
 
 	// -deps: print dependencies too.
 	if deps {
-		// We can't use packages.All because
-		// we need an ordered traversal.
+		// We can't use packages.All because we need an ordered traversal.
 		var all []*packages.Package // postorder
 		seen := make(map[*packages.Package]bool)
 		var visit func(*packages.Package)
@@ -277,7 +274,6 @@ func printPkg(lpkg *packages.Package, printJSON, private bool) {
 }
 
 // stringListValue is a flag.Value that accumulates strings.
-// e.g. --flag=one --flag=two would produce []string{"one", "two"}.
 type stringListValue []string
 
 func (ss *stringListValue) Get() any { return []string(*ss) }

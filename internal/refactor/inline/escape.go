@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -11,15 +10,13 @@ import (
 	"go/types"
 )
 
-// escape implements a simple "address-taken" escape analysis. It
-// calls f for each local variable that appears on the left side of an
-// assignment (escapes=false) or has its address taken (escapes=true).
-// The initialization of a variable by its declaration does not count
-// as an assignment.
+// escape implements a simple "address-taken" escape analysis. It calls f for
+// each local variable that appears on the left side of an assignment
+// (escapes=false) or has its address taken (escapes=true). The initialization
+// of a variable by its declaration does not count as an assignment.
 func escape(info *types.Info, root ast.Node, f func(v *types.Var, escapes bool)) {
 
 	// lvalue is called for each address-taken expression or LHS of assignment.
-	// Supported forms are: x, (x), x[i], x.f, *x, T{}.
 	var lvalue func(e ast.Expr, escapes bool)
 	lvalue = func(e ast.Expr, escapes bool) {
 		switch e := e.(type) {
@@ -33,16 +30,6 @@ func escape(info *types.Info, root ast.Node, f func(v *types.Var, escapes bool))
 			lvalue(e.X, escapes)
 		case *ast.IndexExpr:
 			// TODO(adonovan): support generics without assuming e.X has a core type.
-			// Consider:
-			//
-			// func Index[T interface{ [3]int | []int }](t T, i int) *int {
-			//     return &t[i]
-			// }
-			//
-			// We must traverse the normal terms and check
-			// whether any of them is an array.
-			//
-			// We assume TypeOf returns non-nil.
 			if _, ok := info.TypeOf(e.X).Underlying().(*types.Array); ok {
 				lvalue(e.X, escapes) // &a[i] on array
 			}
@@ -88,7 +75,6 @@ func escape(info *types.Info, root ast.Node, f func(v *types.Var, escapes bool))
 				if id, ok := lhs.(*ast.Ident); ok &&
 					info.Defs[id] != nil &&
 					n.Tok == token.DEFINE {
-					// declaration: doesn't count
 				} else {
 					lvalue(lhs, false)
 				}

@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inline
 
@@ -14,9 +13,6 @@ import (
 	"testing"
 )
 
-// TestIssue73187 tests that inlining does not panic on variadic calls when
-// the AST param field type is not an *ast.Ellipsis (golang/go#73187).
-//
 // This cannot be tested via standard TestData or TestBasics
 // because normal type checking always pairs a variadic signature with an
 // *ast.Ellipsis. The error only arises during synthetic transformations

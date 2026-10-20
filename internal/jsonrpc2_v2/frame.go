@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -15,22 +14,12 @@ import (
 )
 
 // Reader abstracts the transport mechanics from the JSON RPC protocol.
-// A Conn reads messages from the reader it was provided on construction,
-// and assumes that each call to Read fully transfers a single message,
-// or returns an error.
-// A reader is not safe for concurrent use, it is expected it will be used by
-// a single Conn in a safe manner.
 type Reader interface {
 	// Read gets the next message from the stream.
 	Read(context.Context) (Message, error)
 }
 
 // Writer abstracts the transport mechanics from the JSON RPC protocol.
-// A Conn writes messages using the writer it was provided on construction,
-// and assumes that each call to Write fully transfers a single message,
-// or returns an error.
-// A writer is not safe for concurrent use, it is expected it will be used by
-// a single Conn in a safe manner.
 type Writer interface {
 	// Write sends a message to the stream.
 	Write(context.Context, Message) error
@@ -38,16 +27,6 @@ type Writer interface {
 
 // Framer wraps low level byte readers and writers into jsonrpc2 message
 // readers and writers.
-// It is responsible for the framing and encoding of messages into wire form.
-//
-// TODO(rfindley): rethink the framer interface, as with JSONRPC2 batching
-// there is a need for Reader and Writer to be correlated, and while the
-// implementation of framing here allows that, it is not made explicit by the
-// interface.
-//
-// Perhaps a better interface would be
-//
-//	Frame(io.ReadWriteCloser) (Reader, Writer).
 type Framer interface {
 	// Reader wraps a byte reader into a message reader.
 	Reader(io.Reader) Reader
@@ -56,8 +35,6 @@ type Framer interface {
 }
 
 // RawFramer returns a new Framer.
-// The messages are sent with no wrapping, and rely on json decode consistency
-// to determine message boundaries.
 func RawFramer() Framer { return rawFramer{} }
 
 type rawFramer struct{}
@@ -100,9 +77,7 @@ func (w *rawWriter) Write(ctx context.Context, msg Message) error {
 	return err
 }
 
-// HeaderFramer returns a new Framer.
-// The messages are sent with HTTP content length and MIME type headers.
-// This is the format used by LSP and others.
+// HeaderFramer returns a new Framer. The messages are sent with HTTP content length and MIME type headers.
 func HeaderFramer() Framer { return headerFramer{} }
 
 type headerFramer struct{}
@@ -159,7 +134,6 @@ func (r *headerReader) Read(ctx context.Context) (Message, error) {
 				return nil, fmt.Errorf("invalid Content-Length: %v", contentLength)
 			}
 		default:
-			// ignoring unknown headers
 		}
 	}
 	if contentLength == 0 {

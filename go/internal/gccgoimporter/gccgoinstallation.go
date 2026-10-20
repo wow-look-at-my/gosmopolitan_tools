@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Except for this comment, this file is a verbatim copy of the file
 // with the same name in $GOROOT/src/go/internal/gccgoimporter.
@@ -18,7 +17,6 @@ import (
 
 // Information about a specific installation of gccgo.
 type GccgoInstallation struct {
-	// Version of gcc (e.g. 4.8.0).
 	GccVersion string
 
 	// Target triple (e.g. x86_64-unknown-linux-gnu).

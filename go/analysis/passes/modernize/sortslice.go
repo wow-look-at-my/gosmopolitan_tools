@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -33,7 +32,7 @@ var SlicesSortAnalyzer = &analysis.Analyzer{
 }
 
 // The slicessort pass replaces sort.Slice(slice, less) with
-// slices.Sort(slice) when slice is a []T and less is a FuncLit
+// slices.Sort(slice). This happens when slice is a []T and less is a FuncLit
 // equivalent to cmp.Ordered[T].
 //
 //		sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
@@ -41,16 +40,8 @@ var SlicesSortAnalyzer = &analysis.Analyzer{
 //
 // There is no slices.SortStable.
 //
-// TODO(adonovan): support
-//
-//   - sort.Slice(s, func(i, j int) bool { return s[i] ... s[j] })
-//     -> slices.SortFunc(s, func(x, y T) int { return x ... y })
-//     iff all uses of i, j can be replaced by s[i], s[j] and "<" can be replaced with cmp.Compare.
-//
-//   - As above for sort.SliceStable -> slices.SortStableFunc.
-//
-//   - sort.Sort(x) where x has a named slice type whose Less method is the natural order.
-//     -> sort.Slice(x)
+// TODO(adonovan): support sort.SliceStable -> slices.SortStableFunc, and
+// sort.Sort(x) for a named slice type whose Less method is the natural order.
 func slicessort(pass *analysis.Pass) (any, error) {
 	// Skip the analyzer in packages where its
 	// fixes would create an import cycle.

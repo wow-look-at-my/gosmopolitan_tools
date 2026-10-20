@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package inspector_test
 
@@ -64,9 +63,8 @@ func firstN[T any](n int, seq iter.Seq[T]) (res []T) {
 	return res
 }
 
-// BenchmarkAllCalls is like BenchmarkInspectCalls,
-// but using the single-type filtering iterator, All.
-// (The iterator adds about 5-15%.)
+// BenchmarkAllCalls is like BenchmarkInspectCalls, but using the single-type
+// filtering iterator, All.
 func BenchmarkAllCalls(b *testing.B) {
 	inspect := inspector.New(netFiles)
 

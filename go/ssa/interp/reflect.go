@@ -1,14 +1,9 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package interp
 
 // Emulated "reflect" package.
-//
-// We completely replace the built-in "reflect" package.
-// The only thing clients can depend upon are that reflect.Type is an
-// interface and reflect.Value is an (opaque) struct.
 
 import (
 	"fmt"
@@ -27,21 +22,13 @@ type opaqueType struct {
 
 func (t *opaqueType) String() string { return t.name }
 
-// A bogus "reflect" type-checker package.  Shared across interpreters.
+// A bogus "reflect" type-checker package. Shared across interpreters.
 var reflectTypesPackage = types.NewPackage("reflect", "reflect")
 
-// rtype is the concrete type the interpreter uses to implement the
-// reflect.Type interface.
-//
-// type rtype <opaque>
+// rtype is the concrete type the interpreter uses to implement the reflect.Type interface.
 var rtypeType = makeNamedType("rtype", &opaqueType{nil, "rtype"})
 
 // error is an (interpreted) named type whose underlying type is string.
-// The interpreter uses it for all implementations of the built-in error
-// interface that it creates.
-// We put it in the "reflect" package for expedience.
-//
-// type error string
 var errorType = makeNamedType("error", &opaqueType{nil, "error"})
 
 func makeNamedType(name string, underlying types.Type) *types.Named {
@@ -390,14 +377,12 @@ func ext۰reflect۰Value۰Bool(fr *frame, args []value) value {
 }
 
 func ext۰reflect۰Value۰CanAddr(fr *frame, args []value) value {
-	// Signature: func (v reflect.Value) bool
-	// Always false for our representation.
+	// Signature: func (v reflect.Value) bool Always false for our representation.
 	return false
 }
 
 func ext۰reflect۰Value۰CanInterface(fr *frame, args []value) value {
-	// Signature: func (v reflect.Value) bool
-	// Always true for our representation.
+	// Signature: func (v reflect.Value) bool Always true for our representation.
 	return true
 }
 
@@ -506,10 +491,7 @@ func ext۰reflect۰error۰Error(fr *frame, args []value) value {
 
 // newMethod creates a new method of the specified name, package and receiver type.
 func newMethod(pkg *ssa.Package, recvType types.Type, name string) *ssa.Function {
-	// TODO(adonovan): fix: hack: currently the only part of Signature
-	// that is needed is the "pointerness" of Recv.Type, and for
-	// now, we'll set it to always be false since we're only
-	// concerned with rtype.  Encapsulate this better.
+	// TODO(adonovan): fix: hack: the only part of Signature that is needed is the "pointerness" of Recv.Type.
 	sig := types.NewSignatureType(types.NewParam(token.NoPos, nil, "recv", recvType), nil, nil, nil, nil, false)
 	fn := pkg.Prog.NewFunction(name, sig, "fake reflect method")
 	fn.Pkg = pkg
@@ -523,24 +505,17 @@ func initReflect(i *interpreter) {
 		Members: make(map[string]ssa.Member),
 	}
 
-	// Clobber the type-checker's notion of reflect.Value's
-	// underlying type so that it more closely matches the fake one
-	// (at least in the number of fields---we lie about the type of
-	// the rtype field).
+	// Clobber the type-checker's notion of reflect.Value's underlying type so
+	// that it more closely matches the fake one (at least in the number of
+	// fields---we lie about the type of the rtype field).
 	//
-	// We must ensure that calls to (ssa.Value).Type() return the
-	// fake type so that correct "shape" is used when allocating
-	// variables, making zero values, loading, and storing.
-	//
-	// TODO(adonovan): obviously this is a hack.  We need a cleaner
-	// way to fake the reflect package (almost---DeepEqual is fine).
-	// One approach would be not to even load its source code, but
-	// provide fake source files.  This would guarantee that no bad
-	// information leaks into other packages.
+	// We must ensure that calls to (ssa.Value).Type() return the fake type so
+	// that correct "shape" is used when allocating variables, making zero.
+	// Values, loading, and storing.
 	if r := i.prog.ImportedPackage("reflect"); r != nil {
 		rV := r.Pkg.Scope().Lookup("Value").Type().(*types.Named)
 
-		// delete bodies of the old methods
+		// delete bodies of the methods
 		mset := i.prog.MethodSets.MethodSet(rV)
 		for method := range mset.Methods() {
 			i.prog.MethodValue(method).Blocks = nil

@@ -1,6 +1,5 @@
-// Copyright 2025 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package modernize
 
@@ -23,21 +22,19 @@ var PlusBuildAnalyzer = &analysis.Analyzer{
 
 func plusbuild(pass *analysis.Pass) (any, error) {
 	check := func(f *ast.File) {
-		// "//go:build" directives were added in go1.17, but
-		// we didn't start eliminating +build directives till go1.18.
+		// "//go:build" directives.17, but we didn't start eliminating +build
+		// directives till go1.18.
 		if !analyzerutil.FileUsesGoVersion(pass, f, versions.Go1_18) {
 			return
 		}
 
-		// When gofmt sees a +build comment, it adds a
-		// preceding equivalent //go:build directive, so in
-		// formatted files we can assume that a +build line is
-		// part of a comment group that starts with a
-		// //go:build line and is followed by a blank line.
+		// Suppose gofmt sees a +build comment. Then it adds a preceding equivalent
+		// //go:build directive. So in formatted files we can assume that a +build
+		// line is part of a comment group that starts with a //go:build line. It is
+		// followed by a blank line.
 		//
-		// While we cannot delete comments from an AST and
-		// expect consistent output in general, this specific
-		// case--deleting only some lines from a comment
+		// While we cannot delete comments from an AST. It expect consistent output
+		// in general, this specific case--deleting only some lines from a comment
 		// block--does format correctly.
 		for _, g := range f.Comments {
 			sawGoBuild := false

@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -92,7 +91,7 @@ func bar() {
 	},
 
 	// Adding an import to an existing parenthesized import,
-	// verifying it goes into the first section. (test 2)
+	// verifying it goes into the first section.
 	{
 		name: "factored_imports_add_first_sec_2",
 		in: `package foo
@@ -142,7 +141,7 @@ func bar() {
 `,
 	},
 
-	// Adding two new imports, which should make a parenthesized import decl.
+	// Adding new imports, which should make a parenthesized import decl.
 	{
 		name: "add_import_paren_section",
 		in: `package foo
@@ -198,7 +197,6 @@ func bar() {
 `,
 	},
 
-	// Remove unused imports, 1 of a factored block
 	{
 		name: "remove_unused_1_of_2",
 		in: `package foo
@@ -223,7 +221,6 @@ func bar() {
 `,
 	},
 
-	// Remove unused imports, 2 of 2
 	{
 		name: "remove_unused_2_of_2",
 		in: `package foo
@@ -242,7 +239,6 @@ func bar() {
 `,
 	},
 
-	// Remove unused imports, 1 of 1
 	{
 		name: "remove_unused_1_of_1",
 		in: `package foo
@@ -693,8 +689,7 @@ var _, _, _, _, _ = context.Background, bar.B, baz.B, buzz.B, snappy.ErrCorrupt
 `,
 	},
 
-	// Non-idempotent comment formatting
-	// golang.org/issue/8035
+	// Non-idempotent comment formatting golang.org/issue/8035
 	{
 		name: "comments_formatted",
 		in: `package main
@@ -720,8 +715,7 @@ func main() { _, _ = fmt.Print, ast.Walk }
 `,
 	},
 
-	// Failure to delete all duplicate imports
-	// golang.org/issue/8459
+	// Failure to delete all duplicate imports golang.org/issue/8459
 	{
 		name: "remove_duplicates",
 		in: `package main
@@ -746,8 +740,7 @@ func main() { fmt.Println("pi:", math.Pi) }
 `,
 	},
 
-	// Too aggressive prefix matching
-	// golang.org/issue/9961
+	// Too aggressive prefix matching golang.org/issue/9961
 	{
 		name: "no_extra_groups",
 		in: `package p
@@ -784,8 +777,7 @@ var (
 `,
 	},
 
-	// Unused named import is mistaken for unnamed import
-	// golang.org/issue/8149
+	// Unused named import is mistaken for unnamed import golang.org/issue/8149
 	{
 		name: "named_import_doesnt_provide_package_name",
 		in: `package main
@@ -802,8 +794,7 @@ func main() { fmt.Println() }
 `,
 	},
 
-	// Unused named import is mistaken for unnamed import
-	// golang.org/issue/8149
+	// Unused named import is mistaken for unnamed import golang.org/issue/8149
 	{
 		name: "unused_named_import_removed",
 		in: `package main
@@ -1211,10 +1202,8 @@ func TestSimpleCases(t *testing.T) {
 						Name:  "golang.org/fake",
 						Files: fm{"x.go": tt.in},
 					},
-					// Skeleton non-stdlib packages for use during testing.
-					// Each includes one arbitrary symbol, e.g. the first declaration in the first file.
-					// Try not to add more without a good reason.
-					// DO NOT USE PACKAGES NOT LISTED HERE -- they will be downloaded!
+					// Skeleton non-stdlib packages for use during testing. Each includes one
+					// arbitrary symbol, e.g. the first declaration in the first file.
 					{
 						Name:  "rsc.io",
 						Files: fm{"p/x.go": "package p\nfunc P(){}\n"},
@@ -1350,8 +1339,8 @@ func bar() {
 
 }
 
-// Test support for packages in GOPATH that are actually symlinks.
-// Also test that a symlink loop does not block the process.
+// Test support for packages in GOPATH that are symlinks. Also test that a
+// symlink loop does not block the process.
 func TestImportSymlinks(t *testing.T) {
 	const input = `package p
 
@@ -1715,8 +1704,6 @@ func (c testConfig) test(t *testing.T, fn func(*goimportTest)) {
 			if *testDebug {
 				it.env.Logf = log.Printf
 			}
-			// packagestest clears out GOROOT to work around golang/go#32849,
-			// which isn't relevant here. Fill it back in so we can find the standard library.
 			it.env.Env["GOROOT"] = build.Default.GOROOT
 			it.goroot = build.Default.GOROOT
 
@@ -1890,8 +1877,7 @@ var _ = []interface{}{bar.X, v1.Y, a.A, v2.V2, other.V3, thing.Thing, gow.Wrong}
 }
 
 // Tests that an existing import with badly mismatched path/name has its name
-// correctly added. See #28645 and #29041.
-// and check that //line directives are ignored (#51916)
+// correctly added.
 func TestAddNameToMismatchedImport(t *testing.T) {
 	const input = `package main
 
@@ -1939,9 +1925,9 @@ var _ = []interface{}{bar.X, v1.Y, a.A, v2.V2, other.V3, thing.Thing, gow.Wrong}
 	}.processTest(t, "foo.com", "test/t.go", nil, nil, want)
 }
 
-// Tests that an existing import with mismatched path/name that happens to match
-// a standard library package name (such as "rpc") is not overshadowed by adding
-// the stdlib import. See #46574.
+// Tests that an existing import. With mismatched path/name that happens to
+// match a standard library package name (such as "rpc") is not overshadowed by
+// adding the stdlib import.
 func TestExistingImportShadowsStdlib(t *testing.T) {
 	const input = `package main
 
@@ -2116,10 +2102,6 @@ const Y = foo.X
 	}.processTest(t, "foo.com", "x/x.go", nil, nil, want)
 }
 
-// Tests importPathToNameGoPathParse and in particular that it stops
-// after finding the first non-documentation package name, not
-// reporting an error on inconsistent package names (since it should
-// never make it that far).
 func TestImportPathToNameGoPathParse(t *testing.T) {
 	testConfig{
 		module: packagestest.Module{
@@ -2204,7 +2186,7 @@ const _ = pkg.X
 }
 
 // Tests that package global variables with the same name and function name as
-// a function in a separate package do not result in an import which masks
+// a function. In a separate package do not result in an import which masks
 // the global variable
 func TestGlobalImports(t *testing.T) {
 	const usesGlobal = `package pkg
@@ -2349,7 +2331,6 @@ func LogSomethingElse() {
 	}.processTest(t, "foo.com", "p/needs_import.go", nil, nil, want)
 }
 
-// Tests #29180: a sibling import of the right package with the wrong name is used.
 func TestSiblingImport_Misnamed(t *testing.T) {
 	const sibling = `package main
 import renamed "fmt"
@@ -2556,7 +2537,6 @@ func TestPkgIsCandidate(t *testing.T) {
 	}
 }
 
-// Issue 20941: this used to panic on Windows.
 func TestProcessStdin(t *testing.T) {
 	testConfig{
 		module: packagestest.Module{
@@ -2574,8 +2554,7 @@ func TestProcessStdin(t *testing.T) {
 }
 
 // Tests LocalPackagePromotion when there is a local package that matches, it
-// should be the closest match.
-// https://golang.org/issues/17557
+// should be the closest match. https://golang.org/issues/17557
 func TestLocalPackagePromotion(t *testing.T) {
 	const input = `package main
 var c = &config.SystemConfig{}
@@ -2608,10 +2587,10 @@ var c = &config.SystemConfig{}
 	}.processTest(t, "mycompany.net/tool", "main.go", nil, nil, want)
 }
 
-// Tests FindImportInLocalGoFiles looks at the import lines for other Go files in the
-// local directory, since the user is likely to import the same packages in the current
-// Go file.  If an import is found that satisfies the need, it should be used over the
-// standard library.
+// Tests FindImportInLocalGoFiles looks at the import lines for other Go files
+// in the local directory, since the user is likely to import the same
+// packages. Those packages are in the current Go file. If an import is found
+// that satisfies the need, it should be used over the standard library.
 // https://golang.org/issues/17557
 func TestFindImportInLocalGoFiles(t *testing.T) {
 	const input = `package main
@@ -2684,7 +2663,7 @@ var _ = &bytes.Buffer{}
 
 }
 
-// Ensures a token as large as 500000 bytes can be handled
+// Ensures a token as large as many bytes can be handled
 // https://golang.org/issues/18201
 func TestProcessLargeToken(t *testing.T) {
 	largeString := strings.Repeat("x", 500000)
@@ -2916,7 +2895,6 @@ func TestGetPackageCompletions(t *testing.T) {
 	})
 }
 
-// Tests #34895: process should not panic on concurrent calls.
 func TestConcurrentProcess(t *testing.T) {
 	testConfig{
 		module: packagestest.Module{
@@ -2992,11 +2970,6 @@ var _, _ = fmt.Sprintf, dot.Dot
 }
 
 func TestSymbolSearchStarvation(t *testing.T) {
-	// This test verifies the fix for golang/go#67923: searching through
-	// candidates should not starve when the context is cancelled.
-	//
-	// To reproduce the conditions that led to starvation, cancel the context
-	// half way through the search, by leveraging the loadExports callback.
 	const candCount = 100
 	var loaded atomic.Int32
 	ctx, cancel := context.WithCancel(context.Background())
@@ -3010,7 +2983,6 @@ func TestSymbolSearchStarvation(t *testing.T) {
 			return "bar", []stdlib.Symbol{
 				{Name: "A", Kind: stdlib.Var},
 				{Name: "B", Kind: stdlib.Var},
-				// Missing: "C", so that none of these packages match.
 			}, nil
 		},
 	}
@@ -3029,7 +3001,7 @@ func TestSymbolSearchStarvation(t *testing.T) {
 		})
 	}
 
-	// We don't actually care what happens, as long as it doesn't deadlock!
+	// We don't care what happens, as long as it doesn't deadlock!
 	_, err := searcher.search(ctx, candidates, "bar", map[string]bool{"A": true, "B": true, "C": true})
 	t.Logf("search completed with err: %v", err)
 }

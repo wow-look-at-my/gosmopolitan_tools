@@ -1,19 +1,12 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package interp_test
 
-// This test runs the SSA interpreter over sample Go programs.
-// Because the interpreter requires intrinsics for assembly
-// functions and many low-level runtime routines, it is inherently
-// not robust to evolutionary change in the standard library.
-// Therefore the test cases are restricted to programs that
-// use a fake standard library in testdata/src containing a tiny
-// subset of simple functions useful for writing assertions.
-//
-// We no longer attempt to interpret any real standard packages such as
-// fmt or testing, as it proved too fragile.
+// This test runs the SSA interpreter over sample Go programs. It is
+// inherently not robust to evolutionary change in the standard library. This
+// holds because the interpreter requires intrinsics for assembly functions
+// and many low-level runtime routines.
 
 import (
 	"bytes"
@@ -150,8 +143,7 @@ var testdataTests = []string{
 }
 
 func init() {
-	// GOROOT/test used to assume that GOOS and GOARCH were explicitly set in the
-	// environment, so do that here for TestGorootTest.
+	// GOROOT/test used to assume that GOOS and GOARCH were explicitly set in the environment.
 	os.Setenv("GOOS", runtime.GOOS)
 	os.Setenv("GOARCH", runtime.GOARCH)
 }
@@ -227,11 +219,7 @@ func run(t *testing.T, input string, goroot string) string {
 	}
 	hint = fmt.Sprintf("To trace execution, run:\n%% go build golang.org/x/tools/cmd/ssadump && ./ssadump -build=C -test -run --interp=T %s\n", input)
 
-	// Capture anything written by the interpreter to os.Std{out,err}
-	// by temporarily redirecting them to a buffer via a pipe.
-	//
-	// While capturing is in effect, we must not write any
-	// test-related stuff to stderr (including log.Print, t.Log, etc).
+	// Capture anything written by the interpreter to os.Std{out,err} by temporarily redirecting them to a buffer via a pipe.
 	var restore func() string // restore files and log+return the mixed out/err.
 	{
 		// Connect std{out,err} to pipe.
@@ -267,8 +255,7 @@ func run(t *testing.T, input string, goroot string) string {
 	}
 
 	var imode interp.Mode // default mode
-	// imode |= interp.DisableRecover // enable for debugging
-	// imode |= interp.EnableTracing // enable for debugging
+	// imode |= interp.DisableRecover // enable for debugging imode |= interp.EnableTracing // enable for debugging
 	exitCode := interp.Interpret(mainPkg, imode, sizes, input, []string{})
 	capturedOutput := restore()
 	if exitCode != 0 {
@@ -285,7 +272,7 @@ func run(t *testing.T, input string, goroot string) string {
 }
 
 // makeGoroot copies testdata/src into the "src" directory of a temporary
-// location to mimic GOROOT/src, and adds a file "runtime/consts.go" containing
+// location to mimic GOROOT/src. It adds a file "runtime/consts.go" containing
 // declarations for GOOS and GOARCH that match the GOOS and GOARCH of this test.
 //
 // It returns the directory that should be used for GOROOT.
@@ -365,8 +352,7 @@ func TestTypeparamTest(t *testing.T) {
 
 	goroot := makeGoroot(t)
 
-	// Skip known failures for the given reason.
-	// TODO(taking): Address these.
+	// Skip known failures for the given reason. TODO(taking): Address these.
 	skip := map[string]string{
 		"chans.go":      "interp tests do not support runtime.SetFinalizer",
 		"issue23536.go": "unknown reason",

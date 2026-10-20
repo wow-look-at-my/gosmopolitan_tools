@@ -1,22 +1,18 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // file2fuzz converts binary files, such as those used by go-fuzz, to the Go
-// fuzzing corpus format.
-//
-// Usage:
+// fuzzing corpus format. Usage:
 //
 //	file2fuzz [-o output] [input...]
 //
 // The default behavior is to read input from stdin and write the converted
 // output to stdout. If any position arguments are provided stdin is ignored
-// and the arguments are assumed to be input files to convert.
-//
-// The -o flag provides a path to write output files to. If only one positional
-// argument is specified it may be a file path or an existing directory, if there are
-// multiple inputs specified it must be a directory. If a directory is provided
-// the name of the file will be the SHA-256 hash of its contents.
+// and the arguments are assumed to be input files to convert. The -o flag
+// provides a path to write output files to. If only one positional argument
+// is specified it may be a file path or an existing directory. This holds if
+// there are multiple inputs specified it must be a directory. If a directory
+// is provided the name of the file will be the SHA-256 hash of its contents.
 package main
 
 import (

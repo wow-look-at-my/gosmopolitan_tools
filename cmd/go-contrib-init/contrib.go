@@ -1,6 +1,5 @@
-// Copyright 2017 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // The go-contrib-init command helps new Go contributors get their development
 // environment set up for the Go contribution process.
@@ -198,7 +197,7 @@ func checkGitOrigin() {
 		}
 		if !strings.Contains(line, wantRemote) {
 			curRemote := strings.Fields(strings.TrimPrefix(line, "origin"))[0]
-			// TODO: if not in dryRun mode, just fix it?
+			// TODO: if not in dryRun mode, fix it?
 			log.Fatalf("Current directory's git was cloned from %q; origin should be %q", curRemote, wantRemote)
 		}
 		matches++

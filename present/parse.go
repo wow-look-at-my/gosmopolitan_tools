@@ -1,6 +1,5 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package present
 
@@ -60,9 +59,7 @@ func (s *Section) Render(w io.Writer, t *template.Template) error {
 
 type ParseFunc func(ctx *Context, fileName string, lineNumber int, inputLine string) (Elem, error)
 
-// Register binds the named action, which does not begin with a period, to the
-// specified parser to be invoked when the name, with a period, appears in the
-// present input text.
+// Register binds the named action, which does not begin with a period.
 func Register(name string, parser ParseFunc) {
 	if len(name) == 0 || name[0] == ';' {
 		panic("bad name in Register: " + name)
@@ -89,8 +86,6 @@ type Author struct {
 }
 
 // TextElem returns the first text elements of the author details.
-// This is used to display the author' name, job title, and company
-// without the contact details.
 func (p *Author) TextElem() (elems []Elem) {
 	for _, el := range p.Elem {
 		if _, ok := el.(Text); !ok {
@@ -140,8 +135,8 @@ func (s Section) Sections() (sections []Section) {
 	return
 }
 
-// Level returns the level of the given section.
-// The document title is level 1, main section 2, etc.
+// Level returns the level of the given section. The
+// document title is one level, main a later section, etc.
 func (s Section) Level() int {
 	return len(s.Number) + 1
 }
@@ -219,7 +214,7 @@ func (l List) TemplateName() string { return "list" }
 
 // Lines is a helper for parsing line-based input.
 type Lines struct {
-	line    int // 0 indexed, so has 1-indexed number of last line returned
+	line    int
 	text    []string
 	comment string
 }
@@ -293,8 +288,6 @@ func (ctx *Context) Parse(r io.Reader, name string, mode ParseMode) (*Doc, error
 	}
 
 	// Detect Markdown-enabled vs legacy present file.
-	// Markdown-enabled files have a title line beginning with "# "
-	// (like preprocessed C files of yore).
 	isMarkdown := false
 	for i := lines.line; i < len(lines.text); i++ {
 		line := lines.text[i]
@@ -384,7 +377,6 @@ func parseSections(ctx *Context, name, prefix string, lines *Lines, number []int
 			break
 		}
 		// Markdown sections can end in {#id} to set the HTML anchor for the section.
-		// This is nicer than the default #TOC_1_2-style anchor.
 		title := strings.TrimSpace(text[len(prefix):])
 		id := ""
 		if isMarkdown && strings.HasSuffix(title, "}") {
@@ -501,14 +493,8 @@ func parseSections(ctx *Context, name, prefix string, lines *Lines, number []int
 					break
 				}
 
-				// Replace all leading tabs with 4 spaces,
-				// which render better in code blocks.
-				// CommonMark defines that for parsing the structure of the file
-				// a tab is equivalent to 4 spaces, so this change won't
-				// affect the later parsing at all.
-				// An alternative would be to apply this to code blocks after parsing,
-				// at the same time that we update <a> targets, but that turns out
-				// to be quite difficult to modify in the AST.
+				// Replace all leading tabs with multiple spaces, which render better
+				// in code blocks.
 				for i, line := range block {
 					if len(line) > 0 && line[0] == '\t' {
 						short := strings.TrimLeft(line, "\t")
@@ -639,11 +625,7 @@ func parseAuthors(name, sectionPrefix string, lines *Lines) (authors []Author, e
 			a = new(Author)
 		}
 
-		// Parse the line. Those that
-		// - begin with @ are twitter names,
-		// - contain slashes are links, or
-		// - contain an @ symbol are an email address.
-		// The rest is just text.
+		// Parse the line.
 		var el Elem
 		switch {
 		case strings.HasPrefix(text, "@"):

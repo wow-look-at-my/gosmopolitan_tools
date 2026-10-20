@@ -1,6 +1,5 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // This file should be kept in sync with $GOROOT/src/internal/exportdata/exportdata.go.
 // This file also additionally implements FindExportData for gcexportdata.NewReader.
@@ -21,15 +20,13 @@ import (
 	"sync"
 )
 
-// FindExportData positions the reader r at the beginning of the
-// export data section of an underlying cmd/compile created archive
-// file by reading from it. The reader must be positioned at the
-// start of the file before calling this function.
-// This returns the length of the export data in bytes.
+// FindExportData positions the reader r at the beginning of the export data
+// section of an underlying cmd/compile created archive file by reading from
+// it. The reader must be positioned at the start of the file before calling
+// this function. This returns the length of the export data in bytes.
 //
-// This function is needed by [gcexportdata.Read], which must
-// accept inputs produced by the last two releases of cmd/compile,
-// plus tip.
+// This function is needed by [gcexportdata.Read], which must accept inputs
+// produced by the last releases of cmd/compile, plus tip.
 func FindExportData(r *bufio.Reader) (size int64, err error) {
 	arsize, err := FindPackageDefinition(r)
 	if err != nil {
@@ -47,7 +44,6 @@ func FindExportData(r *bufio.Reader) (size int64, err error) {
 	}
 
 	// Check for the binary export data section header "$$B\n".
-	// TODO(taking): Unify with ReadExportDataHeader so that it stops at the 'u' instead of reading
 	line, err := r.ReadSlice('\n')
 	if err != nil {
 		return
@@ -59,18 +55,7 @@ func FindExportData(r *bufio.Reader) (size int64, err error) {
 	}
 	size -= int64(len(hdr))
 
-	// For files with a binary export data header "$$B\n",
-	// these are always terminated by an end-of-section marker "\n$$\n".
-	// So the last bytes must always be this constant.
-	//
-	// The end-of-section marker is not a part of the export data itself.
-	// Do not include these in size.
-	//
-	// It would be nice to have sanity check that the final bytes after
-	// the export data are indeed the end-of-section marker. The split
-	// of gcexportdata.NewReader and gcexportdata.Read make checking this
-	// ugly so gcimporter gives up enforcing this. The compiler and go/types
-	// importer do enforce this, which seems good enough.
+	// For files with a binary export data header "$$B\n", these are always terminated by an end-of-section marker "\n$$\n".
 	const endofsection = "\n$$\n"
 	size -= int64(len(endofsection))
 
@@ -85,35 +70,9 @@ func FindExportData(r *bufio.Reader) (size int64, err error) {
 // ReadUnified reads the contents of the unified export data from a reader r
 // that contains the contents of a GC-created archive file.
 //
-// On success, the reader will be positioned after the end-of-section marker "\n$$\n".
-//
-// Supported GC-created archive files have 4 layers of nesting:
-//   - An archive file containing a package definition file.
-//   - The package definition file contains headers followed by a data section.
-//     Headers are lines (≤ 4kb) that do not start with "$$".
-//   - The data section starts with "$$B\n" followed by export data followed
-//     by an end of section marker "\n$$\n". (The section start "$$\n" is no
-//     longer supported.)
-//   - The export data starts with a format byte ('u') followed by the <data> in
-//     the given format. (See ReadExportDataHeader for older formats.)
-//
-// Putting this together, the bytes in a GC-created archive files are expected
-// to look like the following.
-// See cmd/internal/archive for more details on ar file headers.
-//
-// | <!arch>\n             | ar file signature
-// | __.PKGDEF...size...\n | ar header for __.PKGDEF including size.
-// | go object <...>\n     | objabi header
-// | <optional headers>\n  | other headers such as build id
-// | $$B\n                 | binary format marker
-// | u<data>\n             | unified export <data>
-// | $$\n                  | end-of-section marker
-// | [optional padding]    | padding byte (0x0A) if size is odd
-// | [ar file header]      | other ar files
-// | [ar file data]        |
+// On success, the reader will be positioned after the end-of-section marker
+// "\n$$\n".
 func ReadUnified(r *bufio.Reader) (data []byte, err error) {
-	// We historically guaranteed headers at the default buffer size (4096) work.
-	// This ensures we can use ReadSlice throughout.
 	const minBufferSize = 4096
 	r = bufio.NewReaderSize(r, minBufferSize)
 
@@ -169,13 +128,11 @@ func ReadUnified(r *bufio.Reader) (data []byte, err error) {
 }
 
 // FindPackageDefinition positions the reader r at the beginning of a package
-// definition file ("__.PKGDEF") within a GC-created archive by reading
-// from it, and returns the size of the package definition file in the archive.
+// definition file ("__.PKGDEF") within a GC-created archive by reading from
+// it. Returns the size of the package definition file in the archive.
 //
 // The reader must be positioned at the start of the archive file before calling
-// this function, and "__.PKGDEF" is assumed to be the first file in the archive.
-//
-// See cmd/internal/archive for details on the archive format.
+// this function. "__.PKGDEF" is assumed to be the first file in the archive.
 func FindPackageDefinition(r *bufio.Reader) (size int, err error) {
 	// Uses ReadSlice to limit risk of malformed inputs.
 
@@ -209,8 +166,7 @@ func FindPackageDefinition(r *bufio.Reader) (size int, err error) {
 //
 // It returns an error if any header does not fit in r.Size() bytes.
 func ReadObjectHeaders(r *bufio.Reader) (objapi string, headers []string, err error) {
-	// line is a temporary buffer for headers.
-	// Use bounded reads (ReadSlice, Peek) to limit risk of malformed inputs.
+	// line is a temporary buffer for headers. Use bounded reads (ReadSlice, Peek) to limit risk of malformed inputs.
 	var line []byte
 
 	// objapi header should be the first line
@@ -246,12 +202,12 @@ func ReadObjectHeaders(r *bufio.Reader) (objapi string, headers []string, err er
 	}
 }
 
-// ReadExportDataHeader reads the export data header and format from r.
-// It returns the number of bytes read, or an error if the format is no longer
+// ReadExportDataHeader reads the export data header and format from r. It
+// returns the number of bytes read, or an error if the format is no longer
 // supported or it failed to read.
 //
-// The only currently supported format is binary export data in the
-// unified export format.
+// The only supported format is binary export data in the unified export
+// format.
 func ReadExportDataHeader(r *bufio.Reader) (n int, err error) {
 	// Read export data header.
 	line, err := r.ReadSlice('\n')
@@ -275,10 +231,7 @@ func ReadExportDataHeader(r *bufio.Reader) (n int, err error) {
 		switch format {
 		case 'u':
 		default:
-			// Older no longer supported export formats include:
-			// indexed export format which started with an 'i'; and
-			// the older binary export format which started with a 'c',
-			// 'd', or 'v' (from "version").
+			// Older no longer supported export formats include: indexed export format which started with an 'i'.
 			err = fmt.Errorf("binary export format %q is no longer supported (recompile package)", format)
 			return
 		}
@@ -288,7 +241,7 @@ func ReadExportDataHeader(r *bufio.Reader) (n int, err error) {
 		return
 	}
 
-	n = len(hdr) + 1 // + 1 is for 'u'
+	n = len(hdr) + 1
 	return
 }
 
@@ -337,9 +290,7 @@ func FindPkg(path, srcDir string) (filename, id string, err error) {
 		id = noext
 
 	case filepath.IsAbs(path):
-		// for completeness only - go/build.Import
-		// does not support absolute imports
-		// "/x" -> "/x.ext", "/x"
+		// for completeness only - go/build.Import does not support absolute imports "/x" -> "/x.ext", "/x"
 		noext = path
 		id = path
 	}
@@ -373,13 +324,12 @@ var pkgExts = [...]string{".a", ".o"} // a file from the build cache will have n
 
 var exportMap sync.Map // package dir → func() (string, error)
 
-// lookupGorootExport returns the location of the export data
-// (normally found in the build cache, but located in GOROOT/pkg
-// in prior Go releases) for the package located in pkgDir.
+// lookupGorootExport returns the location of the export data (normally found
+// in the build cache, but located in GOROOT/pkg in prior Go releases) for the
+// package located in pkgDir.
 //
-// (We use the package's directory instead of its import path
-// mainly to simplify handling of the packages in src/vendor
-// and cmd/vendor.)
+// (We use the package's directory instead of its import path mainly to
+// simplify handling of the packages in src/vendor and cmd/vendor.)
 //
 // lookupGorootExport is only used in tests within x/tools.
 func lookupGorootExport(pkgDir string) (string, error) {

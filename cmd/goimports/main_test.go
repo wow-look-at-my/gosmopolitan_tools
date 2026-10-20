@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -51,13 +50,11 @@ var _ = zstdchunked.FooterSize
 var _ = zstd.EncoderLevelFromString
 `
 
-// TestCmd runs the command on a module cache with
-// an index but no cached files. The test sets up
-// the environment and calls main(). The alternative
-// approach, to run the binary as a subprocess, does
-// not work, as building the repository may require
-// getting modules from the network, and not all
-// the builders have network access.
+// TestCmd runs the command on a module cache with an index but no cached
+// files. The test sets up the environment and calls main(). The alternative
+// approach, to run the binary as a subprocess, does not work, as building the
+// repository may require getting modules from the network. And not all the
+// builders have network access.
 func TestCmd(t *testing.T) {
 	testenv.NeedsExec(t)
 	log.SetFlags(log.Lshortfile)

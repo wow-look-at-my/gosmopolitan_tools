@@ -1,6 +1,5 @@
-// Copyright 2014 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // No testdata on Android.
 
@@ -48,7 +47,7 @@ func expectation(f *ast.File) (string, token.Pos) {
 }
 
 // TestCHA runs CHA on each file in inputs, prints the dynamic edges of
-// the call graph, and compares it with the golden results embedded in
+// the call graph. It compares it with the golden results embedded in
 // the WANT comment at the end of the file.
 func TestCHA(t *testing.T) {
 	for _, filename := range inputs {
@@ -89,18 +88,9 @@ func TestCHAGenerics(t *testing.T) {
 
 // TestCHAUnexported tests call resolution for unexported methods.
 func TestCHAUnexported(t *testing.T) {
-	// The two packages below each have types with methods called "m".
-	// Each of these methods should only be callable by functions in their
-	// own package, because they are unexported.
-	//
-	// In particular:
-	// - main.main can call    (main.S1).m
-	// - p2.Foo    can call    (p2.S2).m
-	// - main.main cannot call (p2.S2).m
-	// - p2.Foo    cannot call (main.S1).m
-	//
-	// We use CHA to build a callgraph, then check that it has the
-	// appropriate set of edges.
+	// Both packages below each have types with methods called "m". Each of
+	// these methods should only be callable by functions in their own package,
+	// because they are unexported.
 
 	const src = `
 -- go.mod --

@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 //go:build !wasm
 
@@ -58,8 +57,7 @@ func D4()
 `
 
 func Example() {
-	// Extract a tree of Go source files.
-	// (Avoid the standard library as it is always evolving.)
+	// Extract a tree of Go source files. (Avoid the standard library as it is always evolving.)
 	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		log.Fatal(err)
@@ -72,37 +70,29 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	// Load packages: example.com/a + dependencies
-	//
+	// Load packages: example.com/a + dependencies.
 	cfg := &packages.Config{Mode: packages.LoadAllSyntax, Dir: dir}
 	initial, err := packages.Load(cfg, "example.com/a")
 	if err != nil {
 		log.Fatal(err) // failure to enumerate packages
 	}
 
-	// There may be parse or type errors among the
-	// initial packages or their dependencies,
-	// but the analysis driver can handle faulty inputs,
-	// as can some analyzers.
+	// There may be parse or type errors among the initial packages or their dependencies, but the analysis driver can handle faulty inputs.
 	packages.PrintErrors(initial)
 
 	if len(initial) == 0 {
 		log.Fatalf("no initial packages")
 	}
 
-	// Run analyzers (just one) on example.com packages.
+	// Run analyzers ( one) on example.com packages.
 	analyzers := []*analysis.Analyzer{pkgdecls}
 	graph, err := checker.Analyze(analyzers, initial, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Inspect the result of each analysis action,
-	// including those for all dependencies.
-	//
-	// A realistic client would use Result, Err, Diagnostics,
-	// but for test stability, we just print the action string
-	// ("analyzer@package").
+	// Inspect the result of each analysis action, including those for all
+	// dependencies.
 	for act := range graph.All() {
 		fmt.Println("printing", act)
 	}

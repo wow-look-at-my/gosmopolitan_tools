@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package graph
 
@@ -20,11 +19,7 @@ func TestAllPaths(t *testing.T) {
 		"F": {},
 	}
 
-	// Paths in g:
-	//
-	// A->B->D->F
-	// A->C->D->F
-	// A->C->E
+	// Paths in g:.
 
 	// AllPaths(A, F) should include A, B, C, D, F. E is not on path to F.
 	got := slices.Sorted(maps.Keys(AllPaths(g, "A", "F")))
@@ -49,8 +44,7 @@ func TestAllPaths_74842(t *testing.T) {
 		want     []string
 	}{
 		{
-			// C <--> B --> A --> D <--> E
-			//        ⋃
+			// C <--> B --> A --> D <--> E ⋃
 			name: "non-regression test for #74842",
 			g: stringGraph{
 				"A": {"D"},
@@ -63,10 +57,7 @@ func TestAllPaths_74842(t *testing.T) {
 			want: []string{"A", "D", "E"},
 		},
 		{
-			// A --> B --> D
-			//       ^
-			//       v
-			//       C[123]
+			// A --> B --> D ^ v C[123]
 			name: "regression test for #74842",
 			g: stringGraph{
 				"A":  {"B"},
@@ -79,9 +70,7 @@ func TestAllPaths_74842(t *testing.T) {
 			want: []string{"A", "B", "C1", "C2", "C3", "D"},
 		},
 		{
-			// A -------> B --> D
-			//  \--> C ---^     |
-			//       ^----------+
+			// A -------> B --> D \--> C ---^ | ^----------+
 			name: "another regression test for #74842",
 			g: stringGraph{
 				"A": {"B", "C"},

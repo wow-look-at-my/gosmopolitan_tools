@@ -1,6 +1,5 @@
-// Copyright 2022 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gcimporter_test
 
@@ -23,26 +22,23 @@ import (
 func TestStdlib(t *testing.T) {
 	testenv.NeedsGoPackages(t)
 
-	// gcexportdata.Read rapidly consumes FileSet address space,
-	// so disable the test on 32-bit machines.
-	// (We could use a fresh FileSet per type-check, but that
-	// would require us to re-parse the source using it.)
+	// gcexportdata.Read rapidly consumes FileSet address space, so disable the
+	// test on 32-bit machines.
 	if unsafe.Sizeof(token.NoPos) < 8 {
 		t.Skip("skipping test on 32-bit machine")
 	}
 
 	// Load, parse and type-check the standard library.
-	// If we have the full source code for x/tools, also load and type-check that.
 	cfg := &packages.Config{Mode: packages.LoadAllSyntax}
 	patterns := []string{"std"}
-	minPkgs := 225 // 'GOOS=plan9 go1.18 list std | wc -l' reports 228; most other platforms have more.
+	minPkgs := 225
 	switch runtime.GOOS {
 	case "android", "ios":
 		// The go_.*_exec script for mobile builders only copies over the source tree
 		// for the package under test.
 	default:
 		patterns = append(patterns, "golang.org/x/tools/...")
-		minPkgs += 160 // At the time of writing, 'GOOS=plan9 go list ./... | wc -l' reports 188.
+		minPkgs += 160
 	}
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {

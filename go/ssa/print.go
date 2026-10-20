@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -21,10 +20,6 @@ import (
 )
 
 // relName returns the name of v relative to i.
-// In most cases, this is identical to v.Name(), but references to
-// Functions (including methods) and Globals use RelString and
-// all types are displayed with relType, so that only cross-package
-// references are package-qualified.
 func relName(v Value, i Instruction) string {
 	var from *types.Package
 	if i != nil {

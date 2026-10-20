@@ -1,6 +1,5 @@
-// Copyright 2026 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package sqlrowserr defines an analyzer for uses of sql.Rows
 // in which the user has forgotten to check Rows.Err.
@@ -83,7 +82,7 @@ func run(pass *analysis.Pass) (any, error) {
 			curName := curCall.Parent().ChildAt(edge.ValueSpec_Names, 0)
 			lhs = curName.Node().(*ast.Ident)
 		case edge.AssignStmt_Rhs:
-			// sc, err := db.Query(...)   (or '=')
+			// sc, err := db.Query(...) (or '=')
 			curLhs := curCall.Parent().ChildAt(edge.AssignStmt_Lhs, 0)
 			lhs = curLhs.Node().(ast.Expr)
 		}

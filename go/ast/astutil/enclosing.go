@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package astutil
 
@@ -13,50 +12,19 @@ import (
 	"sort"
 )
 
-// PathEnclosingInterval returns the node that encloses the source
-// interval [start, end), and all its ancestors up to the AST root.
+// PathEnclosingInterval returns the node that encloses the source interval
+// [start, end), and all its ancestors up to the AST root.
 //
-// The definition of "enclosing" used by this function considers
-// additional whitespace abutting a node to be enclosed by it.
-// In this example:
+// The definition of "enclosing" used by this function considers additional
+// whitespace abutting a node to be enclosed by it. In this example:
 //
 //	z := x + y // add them
 //	     <-A->
 //	    <----B----->
 //
-// the ast.BinaryExpr(+) node is considered to enclose interval B
-// even though its [Pos()..End()) is actually only interval A.
-// This behaviour makes user interfaces more tolerant of imperfect
-// input.
-//
-// This function treats tokens as nodes, though they are not included
-// in the result. e.g. PathEnclosingInterval("+") returns the
-// enclosing ast.BinaryExpr("x + y").
-//
-// If start==end, the 1-char interval following start is used instead.
-//
-// The 'exact' result is true if the interval contains only path[0]
-// and perhaps some adjacent whitespace.  It is false if the interval
-// overlaps multiple children of path[0], or if it contains only
-// interior whitespace of path[0].
-// In this example:
-//
-//	z := x + y // add them
-//	  <--C-->     <---E-->
-//	    ^
-//	    D
-//
-// intervals C, D and E are inexact.  C is contained by the
-// z-assignment statement, because it spans three of its children (:=,
-// x, +).  So too is the 1-char interval D, because it contains only
-// interior whitespace of the assignment.  E is considered interior
-// whitespace of the BlockStmt containing the assignment.
-//
-// The resulting path is never empty; it always contains at least the
-// 'root' *ast.File.  Ideally PathEnclosingInterval would reject
-// intervals that lie wholly or partially outside the range of the
-// file, but unfortunately ast.File records only the token.Pos of
-// the 'package' keyword, but not of the start of the file itself.
+// the ast.BinaryExpr(+) node is considered to enclose interval B even though
+// its [Pos()..End()) is only interval A. This behaviour makes user interfaces
+// more tolerant of imperfect input.
 func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Node, exact bool) {
 	// fmt.Printf("EnclosingInterval %d %d\n", start, end) // debugging
 
@@ -111,9 +79,6 @@ func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Nod
 				}
 
 				// childrenOf elides the FuncType node beneath FuncDecl.
-				// Add it back here for TypeParams, Params, Results,
-				// all FieldLists). But we don't add it back for the "func" token
-				// even though it is the tree at FuncDecl.Type.Func.
 				if decl, ok := node.(*ast.FuncDecl); ok {
 					if fields, ok := child.(*ast.FieldList); ok && fields != decl.Recv {
 						path = append(path, decl.Type)
@@ -123,21 +88,17 @@ func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Nod
 				return visit(child)
 			}
 
-			// Does [start, end) overlap multiple children?
-			// i.e. left-augmented child contains start
-			// but LR-augmented child does not contain end.
+			// Does [start, end) overlap multiple children? i.e. left-augmented child
+			// contains start but LR-augmented child does not contain end.
 			if start < childEnd && end > augEnd {
 				break
 			}
 		}
 
-		// No single child contained [start, end),
-		// so node is the result.  Is it exact?
+		// No single child contained [start, end), so node is the result. Is it
+		// exact?
 
-		// (It's tempting to put this condition before the
-		// child loop, but it gives the wrong result in the
-		// case where a node (e.g. ExprStmt) and its sole
-		// child have equal intervals.)
+		// (It is tempting to put this condition before the child loop.
 		if start == nodePos && end == nodeEnd {
 			return true // exact match
 		}
@@ -152,7 +113,7 @@ func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Nod
 
 	if start < root.End() && end > root.Pos() {
 		if start == end {
-			end = start + 1 // empty interval => interval of size 1
+			end = start + 1 // empty interval => interval of one size
 		}
 		exact = visit(root)
 
@@ -161,9 +122,7 @@ func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Nod
 			path[i], path[l-1-i] = path[l-1-i], path[i]
 		}
 	} else {
-		// Selection lies within whitespace preceding the
-		// first (or following the last) declaration in the file.
-		// The result nonetheless always includes the ast.File.
+		// Selection lies within whitespace preceding the first (or following the last) declaration in the file.
 		path = append(path, root)
 	}
 
@@ -171,8 +130,6 @@ func PathEnclosingInterval(root *ast.File, start, end token.Pos) (path []ast.Nod
 }
 
 // tokenNode is a dummy implementation of ast.Node for a single token.
-// They are used transiently by PathEnclosingInterval but never escape
-// this package.
 type tokenNode struct {
 	pos token.Pos
 	end token.Pos
@@ -329,15 +286,7 @@ func childrenOf(n ast.Node) []ast.Node {
 	case *ast.FuncDecl:
 		// TODO(adonovan): FuncDecl.Comment?
 
-		// Uniquely, FuncDecl breaks the invariant that
-		// preorder traversal yields tokens in lexical order:
-		// in fact, FuncDecl.Recv precedes FuncDecl.Type.Func.
-		//
-		// As a workaround, we inline the case for FuncType
-		// here and order things correctly.
-		// We also need to insert the elided FuncType just
-		// before the 'visit' recursion.
-		//
+		// Uniquely, FuncDecl breaks the invariant that preorder traversal yields tokens in lexical order.
 		children = nil // discard ast.Walk(FuncDecl) info subtrees
 		children = append(children, tok(n.Type.Func, len("func")))
 		if n.Recv != nil {
@@ -478,13 +427,9 @@ func childrenOf(n ast.Node) []ast.Node {
 		// TODO(adonovan): ValueSpec.{Doc,Comment}?
 
 	case *ast.BadDecl, *ast.BadExpr, *ast.BadStmt:
-		// nop
 	}
 
-	// TODO(adonovan): opt: merge the logic of ast.Inspect() into
-	// the switch above so we can make interleaved callbacks for
-	// both Nodes and Tokens in the right order and avoid the need
-	// to sort.
+	// TODO(adonovan): opt: merge the logic of ast.Inspect() into the switch above.
 	sort.Sort(byPos(children))
 
 	return children
@@ -505,9 +450,9 @@ func (sl byPos) Swap(i, j int) {
 // NodeDescription returns a description of the concrete type of n suitable
 // for a user interface.
 //
-// TODO(adonovan): in some cases (e.g. Field, FieldList, Ident,
-// StarExpr) we could be much more specific given the path to the AST
-// root.  Perhaps we should do that.
+// TODO(adonovan): in some cases (e.g. Field, FieldList, Ident, StarExpr) we
+// could be much more specific given the path to the AST root. Perhaps we
+// should do that.
 func NodeDescription(n ast.Node) string {
 	switch n := n.(type) {
 	case *ast.ArrayType:
@@ -565,12 +510,7 @@ func NodeDescription(n ast.Node) string {
 	case *ast.ExprStmt:
 		return "expression statement"
 	case *ast.Field:
-		// Can be any of these:
-		// struct {x, y int}  -- struct field(s)
-		// struct {T}         -- anon struct field
-		// interface {I}      -- interface embedding
-		// interface {f()}    -- interface method
-		// func (A) func(B) C -- receiver, param(s), result(s)
+		// Can be any of these: struct {x, y int} -- struct field(s) struct {T}.
 		return "field/method/parameter"
 	case *ast.FieldList:
 		return "field/method/parameter list"

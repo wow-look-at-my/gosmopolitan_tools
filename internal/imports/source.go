@@ -1,6 +1,5 @@
-// Copyright 2024 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package imports
 
@@ -14,16 +13,11 @@ type (
 	PackageName = string
 	Symbol      = string
 
-	// References is set of References found in a Go file. The first map key is the
-	// left hand side of a selector expression, the second key is the right hand
-	// side, and the value should always be true.
+	// References is set of References found in a Go file.
 	References = map[PackageName]map[Symbol]bool
 )
 
 // A Result satisfies a missing import.
-//
-// The Import field describes the missing import spec, and the Package field
-// summarizes the package exports.
 type Result struct {
 	Import  *ImportInfo
 	Package *PackageInfo
@@ -44,20 +38,9 @@ type PackageInfo struct {
 // A Source provides imports to satisfy unresolved references in the file being
 // fixed.
 type Source interface {
-	// LoadPackageNames queries PackageName information for the requested import
-	// paths, when operating from the provided srcDir.
-	//
-	// TODO(rfindley): try to refactor to remove this operation.
+	// LoadPackageNames queries PackageName information for the requested import paths.
 	LoadPackageNames(ctx context.Context, srcDir string, paths []ImportPath) (map[ImportPath]PackageName, error)
 
-	// ResolveReferences asks the Source for the best package name to satisfy
-	// each of the missing references, in the context of fixing the given
-	// filename.
-	//
-	// Returns a map from package name to a [Result] for that package name that
-	// provides the required symbols. Keys may be omitted in the map if no
-	// candidates satisfy all missing references for that package name. It is up
-	// to each data source to select the best result for each entry in the
-	// missing map.
+	// ResolveReferences asks the Source for the best package name to satisfy each of the missing references.
 	ResolveReferences(ctx context.Context, filename string, missing References) ([]*Result, error)
 }

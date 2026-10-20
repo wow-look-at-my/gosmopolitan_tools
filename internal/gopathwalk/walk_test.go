@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package gopathwalk
 
@@ -228,8 +227,7 @@ func mapToDir(destDir string, files map[string]string) error {
 		}
 		var err error
 		if strings.HasPrefix(contents, "LINK:") {
-			// To work around https://go.dev/issue/39183, wait to create symlinks
-			// until we have created all non-symlink paths.
+			// To work around https://go.dev/issue/39183, wait to create symlinks until we have created all non-symlink paths.
 			symlinkPaths = append(symlinkPaths, path)
 		} else {
 			err = os.WriteFile(file, []byte(contents), 0644)

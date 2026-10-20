@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package stack
 
@@ -54,7 +53,7 @@ func Process(out io.Writer, in io.Reader) error {
 	}
 }
 
-// Diff calculates the delta between two dumps.
+// Diff calculates the delta between dumps.
 func Diff(before, after Dump) Delta {
 	result := Delta{}
 	processed := make(map[int]bool)

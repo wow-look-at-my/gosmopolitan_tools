@@ -1,6 +1,5 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package copyright checks that files have the correct copyright notices.
 package copyright
@@ -67,10 +66,6 @@ func checkFile(toolsDir, filename string) (bool, error) {
 	}
 
 	// Parse the file header only, with comments.
-	//
-	// Parsing only the header avoids spurious parse errors
-	// due to version skew when the gopls module relies on
-	// a newer version of Go than x/tools.
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, nil, parser.PackageClauseOnly|parser.ParseComments)
 	if err != nil {

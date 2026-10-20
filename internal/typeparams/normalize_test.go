@@ -1,6 +1,5 @@
-// Copyright 2021 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package typeparams_test
 
@@ -64,8 +63,6 @@ type T[P interface{ A|B; C }] int
 			pkg, err := conf.Check("", fset, []*ast.File{f}, nil)
 			if err != nil {
 				t.Logf("types.Config.Check: %v", err)
-				// keep going on type checker errors: we want to assert on behavior of
-				// invalid code as well.
 			}
 			obj := pkg.Scope().Lookup("T")
 			if obj == nil {

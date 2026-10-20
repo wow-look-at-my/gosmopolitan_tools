@@ -1,6 +1,5 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package imports implements a Go pretty-printer (like package "go/format")
 // that also adds or removes import statements as necessary.
@@ -17,11 +16,11 @@ import (
 // Options specifies options for processing files.
 type Options struct {
 	Fragment  bool // Accept fragment of a source file (no package statement)
-	AllErrors bool // Report all errors (not just the first 10 on different lines)
+	AllErrors bool
 
 	Comments  bool // Print comments (true if nil *Options provided)
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
-	TabWidth  int  // Tab width (8 if nil *Options provided)
+	TabWidth  int
 
 	FormatOnly bool // Disable the insertion and deletion of imports
 }
@@ -29,18 +28,16 @@ type Options struct {
 // Debug controls verbose logging.
 var Debug = false
 
-// LocalPrefix is a comma-separated string of import path prefixes, which, if
-// set, instructs Process to sort the import paths with the given prefixes
-// into another group after 3rd-party packages.
+// LocalPrefix is a comma-separated string of import path prefixes, which, if set.
 var LocalPrefix string
 
-// Process formats and adjusts imports for the provided file.
-// If opt is nil the defaults are used, and if src is nil the source
-// is read from the filesystem.
+// Process formats and adjusts imports for the provided file. If opt is nil
+// the defaults are used, and if src is nil the source is read from the
+// filesystem.
 //
-// Note that filename's directory influences which imports can be chosen,
-// so it is important that filename be accurate.
-// To process data “as if” it were in filename, pass the data as a non-nil src.
+// Filename's directory influences which imports can be chosen, so it is
+// important that filename be accurate. To process data “as if” it were in
+// filename, pass the data as a non-nil src.
 func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 	var err error
 	if src == nil {
@@ -71,7 +68,6 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 }
 
 // VendorlessPath returns the devendorized version of the import path ipath.
-// For example, VendorlessPath("foo/barbendor/a/b") return "a/b".
 func VendorlessPath(ipath string) string {
 	return intimp.VendorlessPath(ipath)
 }

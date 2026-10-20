@@ -4,18 +4,23 @@ on:
   push:
     branches: ['**']
 
+concurrency:
+  group: gha_${{ github.repository }}_${{ github.workflow }}_${{ github.ref != 'refs/heads/master' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 permissions:
+  id-token: write
   contents: read
 
 jobs:
-  # The fork-owned behavior in this tree only exists against the gosmopolitan
-  # toolchain: parameter defaults reach go/types, and a call that omits one
-  # keeps the arguments the source wrote. A stock Go cannot compile the tests
-  # that assert it, so the job installs the published toolchain.
+  # The fork-owned behavior in this tree only exists against the gosmopolitan toolchain: parameter defaults reach go/types. A call that omits one keeps the arguments the source wrote. A stock Go cannot compile the tests that assert it, so the job installs the published toolchain.
   gopls:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.repository.visibility == 'public' && 'ubuntu-latest' || vars.CI_RUNNER || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
+
+      # The toolchain refuses to run without a build cache to talk to. The secret server is what hands it GO_BUILDCACHE_CONFIG and GO_PROXY_CONFIG.
+      - uses: wow-look-at-my/actions@secret-server#latest
 
       - name: Install the gosmopolitan toolchain
         uses: wow-look-at-my/actions@typescript#latest
@@ -34,10 +39,9 @@ jobs:
       - name: Report the toolchain version
         run: go version
 
-      # gopls declares "go 1.27.0" in its go.mod, so this step fails outright
-      # on a toolchain whose version string no version parser accepts.
+      # gopls declares "go 1.27.0" in its go.mod, so this step fails outright on a toolchain whose version string no version parser accepts.
       - name: Build gopls
-        run: go build -o "$RUNNER_TEMP/gopls" .
+        run: go build -o "${{ runner.temp }}/gopls" .
         working-directory: gopls
         env:
           GOOS: linux

@@ -1,34 +1,17 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 /*
-Package callgraph defines the call graph and various algorithms
-and utilities to operate on it.
-
-A call graph is a labelled directed graph whose nodes represent
-functions and whose edge labels represent syntactic function call
-sites.  The presence of a labelled edge (caller, site, callee)
-indicates that caller may call callee at the specified call site.
-
-A call graph is a multigraph: it may contain multiple edges (caller,
-*, callee) connecting the same pair of nodes, so long as the edges
-differ by label; this occurs when one function calls another function
-from multiple call sites.  Also, it may contain multiple edges
-(caller, site, *) that differ only by callee; this indicates a
-polymorphic call.
-
-A SOUND call graph is one that overapproximates the dynamic calling
-behaviors of the program in all possible executions.  One call graph
-is more PRECISE than another if it is a smaller overapproximation of
-the dynamic behavior.
-
-All call graphs have a synthetic root node which is responsible for
-calling main() and init().
-
-Calls to built-in functions (e.g. panic, println) are not represented
-in the call graph; they are treated like built-in operators of the
-language.
+Package callgraph defines the call graph and the algorithms and utilities
+that operate on it. A call graph is a labelled directed graph whose nodes are
+functions and whose edge labels are syntactic call sites. An edge (caller,
+site, callee) means caller may call callee there. It is a multigraph: the
+same pair of nodes may hold several edges that differ by label. A sound call
+graph overapproximates the dynamic behavior of the program in every possible
+execution. One call graph is more precise than another when it is a smaller
+overapproximation. All call graphs have a synthetic root node that calls main
+and init. Calls to built-in functions are treated like built-in operators and
+are not represented.
 */
 package callgraph // import "golang.org/x/tools/go/callgraph"
 
@@ -42,10 +25,6 @@ import (
 )
 
 // A Graph represents a call graph.
-//
-// A graph may contain nodes that are not reachable from the root.
-// If the call graph is sound, such nodes indicate unreachable
-// functions.
 type Graph struct {
 	Root  *Node                   // the distinguished root node (Root.Func may be nil)
 	Nodes map[*ssa.Function]*Node // all nodes by function
@@ -82,9 +61,6 @@ func (n *Node) String() string {
 }
 
 // A Edge represents an edge in the call graph.
-//
-// Site is nil for edges originating in synthetic or intrinsic
-// functions, e.g. reflect.Value.Call or the root of the call graph.
 type Edge struct {
 	Caller *Node
 	Site   ssa.CallInstruction

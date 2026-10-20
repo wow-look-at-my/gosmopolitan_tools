@@ -1,10 +1,8 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package playground registers an HTTP handler at "/compile" that
-// proxies requests to the golang.org playground service.
-// This package may be used unaltered on App Engine Standard with Go 1.11+ runtime.
+// Package playground registers an HTTP handler at "/compile" that proxies requests
+// to the golang.org playground service.
 package playground // import "golang.org/x/tools/playground"
 
 import (
@@ -24,14 +22,6 @@ func init() {
 }
 
 // Proxy returns a handler that can be registered on /compile to proxy requests to the Go playground.
-//
-// This package already contains a func init that does:
-//
-//	func init() {
-//		http.Handle("/compile", Proxy())
-//	}
-//
-// Proxy may be useful for servers that use HTTP muxes other than the default mux.
 func Proxy() http.Handler {
 	return http.HandlerFunc(bounce)
 }

@@ -1,6 +1,5 @@
-// Copyright 2018 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package jsonrpc2
 
@@ -16,29 +15,19 @@ import (
 )
 
 // Stream abstracts the transport mechanics from the JSON RPC protocol.
-// A Conn reads and writes messages using the stream it was provided on
-// construction, and assumes that each call to Read or Write fully transfers
-// a single message, or returns an error.
-// A stream is not safe for concurrent use, it is expected it will be used by
-// a single Conn in a safe manner.
 type Stream interface {
 	// Read gets the next message from the stream.
 	Read(context.Context) (Message, int64, error)
 	// Write sends a message to the stream.
 	Write(context.Context, Message) (int64, error)
-	// Close closes the connection.
-	// Any blocked Read or Write operations will be unblocked and return errors.
+	// Close closes the connection. Any blocked Read or Write operations will be unblocked and return errors.
 	Close() error
 }
 
 // Framer wraps a network connection up into a Stream.
-// It is responsible for the framing and encoding of messages into wire form.
-// NewRawStream and NewHeaderStream are implementations of a Framer.
 type Framer func(conn net.Conn) Stream
 
 // NewRawStream returns a Stream built on top of a net.Conn.
-// The messages are sent with no wrapping, and rely on json decode consistency
-// to determine message boundaries.
 func NewRawStream(conn net.Conn) Stream {
 	return &rawStream{
 		conn: conn,
@@ -83,9 +72,8 @@ func (s *rawStream) Close() error {
 	return s.conn.Close()
 }
 
-// NewHeaderStream returns a Stream built on top of a net.Conn.
-// The messages are sent with HTTP content length and MIME type headers.
-// This is the format used by LSP and others.
+// NewHeaderStream returns a Stream built on top of a net.Conn. The messages
+// are sent with HTTP content length and MIME type headers.
 func NewHeaderStream(conn net.Conn) Stream {
 	return &headerStream{
 		conn: conn,
@@ -131,7 +119,6 @@ func (s *headerStream) Read(ctx context.Context) (Message, int64, error) {
 				return nil, total, fmt.Errorf("invalid Content-Length: %v", length)
 			}
 		default:
-			// ignoring unknown headers
 		}
 	}
 	if length == 0 {

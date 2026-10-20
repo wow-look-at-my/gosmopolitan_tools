@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package ssa
 
@@ -41,9 +40,6 @@ func NewConst(val constant.Value, typ types.Type) *Const {
 //	types.IsString for ""
 //	0 otherwise.
 func soleTypeKind(typ types.Type) types.BasicInfo {
-	// State records the set of possible zero values (false, 0, "").
-	// Candidates (perhaps all) are eliminated during the type-set
-	// iteration, which executes at least once.
 	state := types.IsBoolean | types.IsInteger | types.IsString
 	underIs(typ, func(ut types.Type) bool {
 		var c types.BasicInfo
@@ -115,10 +111,8 @@ func (c *Const) Pos() token.Pos {
 	return token.NoPos
 }
 
-// IsNil returns true if this constant is a nil value of
-// a nillable reference type (pointer, slice, channel, map, or function),
-// a basic interface type, or
-// a type parameter all of whose possible instantiations are themselves nillable.
+// IsNil returns true if this constant is a nil value of a nillable reference
+// type (pointer, slice, channel, map, or function), a basic interface type.
 func (c *Const) IsNil() bool {
 	return c.Value == nil && nillable(c.typ)
 }

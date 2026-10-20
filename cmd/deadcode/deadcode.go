@@ -1,6 +1,5 @@
-// Copyright 2023 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 package main
 
@@ -152,8 +151,7 @@ func main() {
 		log.Fatalf("-filter: %v", err)
 	}
 
-	// Create SSA-form program representation
-	// and find main packages.
+	// Create SSA-form program representation and find main packages.
 	prog, pkgs := ssautil.AllPackages(initial, ssa.InstantiateGenerics)
 	prog.Build()
 
@@ -166,14 +164,8 @@ func main() {
 		roots = append(roots, main.Func("init"), main.Func("main"))
 	}
 
-	// Gather all source-level functions,
-	// as the user interface is expressed in terms of them.
-	//
-	// We ignore synthetic wrappers, and nested functions. Literal
-	// functions passed as arguments to other functions are of
-	// course address-taken and there exists a dynamic call of
-	// that signature, so when they are unreachable, it is
-	// invariably because the parent is unreachable.
+	// Gather all source-level functions, as the user interface is expressed in
+	// terms of them.
 	var (
 		sourceFuncs    []*ssa.Function
 		generated      = make(map[string]bool)
@@ -206,21 +198,10 @@ func main() {
 		}
 	})
 
-	// Compute the reachabilty from main.
-	// (Build a call graph only for -whylive.)
+	// Compute the reachabilty from main. (Build a call graph only for -whylive.)
 	res := rta.Analyze(roots, *whyLiveFlag != "")
 
-	// Subtle: the -test flag causes us to analyze test variants
-	// such as "package p as compiled for p.test" or even "for q.test".
-	// This leads to multiple distinct ssa.Function instances that
-	// represent the same source declaration, and it is essentially
-	// impossible to discover this from the SSA representation
-	// (since it has lost the connection to go/packages.Package.ID).
-	//
-	// So, we de-duplicate such variants by position:
-	// if any one of them is live, we consider all of them live.
-	// (We use Position not Pos to avoid assuming that files common
-	// to packages "p" and "p [p.test]" were parsed only once.)
+	// Subtle.
 	reachablePosn := make(map[token.Position]bool)
 	for fn := range res.Reachable {
 		if fn.Pos().IsValid() || fn.Name() == "init" {
@@ -239,18 +220,6 @@ func main() {
 		}
 		if len(targets) == 0 {
 			// Function is not part of the program.
-			//
-			// TODO(adonovan): improve the UX here in case
-			// of spelling or syntax mistakes. Some ideas:
-			// - a cmd/callgraph command to enumerate
-			//   available functions.
-			// - a deadcode -live flag to compute the complement.
-			// - a syntax hint: example.com/pkg.Func or (example.com/pkg.Type).Method
-			// - report the element of AllFunctions with the smallest
-			//   Levenshtein distance from *whyLiveFlag.
-			// - permit -whylive=regexp. But beware of spurious
-			//   matches (e.g. fmt.Print matches fmt.Println)
-			//   and the annoyance of having to quote parens (*T).f.
 			log.Fatalf("function %q not found in program", *whyLiveFlag)
 		}
 
@@ -271,13 +240,11 @@ func main() {
 			log.Fatalf("%s is reachable only through reflection", *whyLiveFlag)
 		}
 		if len(path) == 0 {
-			// No edges => one of the targets is a root.
-			// Rather than (confusingly) print nothing, make this an error.
+			// No edges => one of the targets is a root. Rather than (confusingly) print nothing, make this an error.
 			log.Fatalf("%s is a root", root.Func)
 		}
 
-		// Build a list of jsonEdge records
-		// to print as -json or -f=template.
+		// Build a list of jsonEdge records to print as -json or -f=template.
 		var edges []any
 		for _, edge := range path {
 			edges = append(edges, jsonEdge{
@@ -322,10 +289,7 @@ func main() {
 
 		m := byPkgPath[pkgpath]
 
-		// Print functions that appear within the same file in
-		// declaration order. This tends to keep related
-		// methods such as (T).Marshal and (*T).Unmarshal
-		// together better than sorting.
+		// Print functions that appear within the same file in declaration order.
 		fns := slices.Collect(maps.Keys(m))
 		sort.Slice(fns, func(i, j int) bool {
 			xposn := prog.Fset.Position(fns[i].Pos())
@@ -340,9 +304,7 @@ func main() {
 		for _, fn := range fns {
 			posn := prog.Fset.Position(fn.Pos())
 
-			// Without -generated, skip functions declared in
-			// generated Go files.
-			// (Functions called by them may still be reported.)
+			// Without -generated, skip functions declared in generated Go files.
 			gen := generated[posn.Filename]
 			if gen && !*generatedFlag {
 				continue
@@ -378,13 +340,12 @@ func main() {
 	printObjects(format, packages)
 }
 
-// prettyName is a fork of Function.String designed to reduce
-// go/ssa's fussy punctuation symbols, e.g. "(*pkg.T).F" -> "pkg.T.F".
+// prettyName is a fork of Function.String designed to reduce go/ssa's fussy
+// punctuation symbols, e.g. "(*pkg.T).F" -> "pkg.T.F".
 //
 // It only works for functions that remain after
-// callgraph.Graph.DeleteSyntheticNodes: source-level named functions
-// and methods, their anonymous functions, and synthetic package
-// initializers.
+// callgraph.Graph.DeleteSyntheticNodes: source-level named functions and
+// methods, their anonymous functions, and synthetic package initializers.
 func prettyName(fn *ssa.Function, qualified bool) string {
 	var buf strings.Builder
 
@@ -448,11 +409,6 @@ func printObjects(format string, objects []any) {
 // of the targets (along with the root itself), or zero if no path was found.
 func pathSearch(roots []*ssa.Function, res *rta.Result, targets map[*ssa.Function]bool) (*callgraph.Node, []*callgraph.Edge) {
 	// Search breadth-first (for shortest path) from the root.
-	//
-	// We don't use the virtual CallGraph.Root node as we wish to
-	// choose the order in which we search entrypoints:
-	// non-test packages before test packages,
-	// main functions before init functions.
 
 	// Sort roots into preferred order.
 	importsTesting := func(fn *ssa.Function) bool {
@@ -475,8 +431,7 @@ func pathSearch(roots []*ssa.Function, res *rta.Result, targets map[*ssa.Functio
 	})
 
 	search := func(allowDynamic bool) (*callgraph.Node, []*callgraph.Edge) {
-		// seen maps each encountered node to its predecessor on the
-		// path to a root node, or to nil for root itself.
+		// seen maps each encountered node to its predecessor on the path to a root node, or to nil for root itself.
 		seen := make(map[*callgraph.Node]*callgraph.Edge)
 		bfs := func(root *callgraph.Node) []*callgraph.Edge {
 			queue := []*callgraph.Node{root}
@@ -513,8 +468,7 @@ func pathSearch(roots []*ssa.Function, res *rta.Result, targets map[*ssa.Functio
 		for _, rootFn := range roots {
 			root := res.CallGraph.Nodes[rootFn]
 			if root == nil {
-				// Missing call graph node for root.
-				// TODO(adonovan): seems like a bug in rta.
+				// Missing call graph node for root. TODO(adonovan): seems like a bug in rta.
 				continue
 			}
 			if path := bfs(root); path != nil {
@@ -559,9 +513,9 @@ func cond[T any](cond bool, t, f T) T {
 	}
 }
 
-// isMarkerMethod reports whether fn is a marker method:
-// an unexported, empty-bodied method with no parameters or results
-// that implements some named interface type in the same package.
+// isMarkerMethod reports whether fn is a marker method: an unexported,
+// empty-bodied method with no parameters or results that implements some
+// named interface type. That type is in the same package.
 func isMarkerMethod(fn *ssa.Function, interfaceTypes []*types.Interface) bool {
 	// Is it an unexported method of no params/results?
 	if !(fn.Signature.Recv() != nil &&

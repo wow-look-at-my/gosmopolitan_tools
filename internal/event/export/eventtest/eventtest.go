@@ -1,17 +1,15 @@
-// Copyright 2020 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
-// Package eventtest supports logging events to a test.
-// You can use NewContext to create a context that knows how to deliver
-// telemetry events back to the test.
-// You must use this context or a derived one anywhere you want telemetry to be
-// correctly routed back to the test it was constructed with.
+// Package eventtest supports logging events to a test. You can use NewContext
+// to create a context that knows how to deliver telemetry events back to the
+// test. You must use this context or a derived one anywhere you want
+// telemetry to be correctly routed back to the test it was constructed with.
 // Any events delivered to a background context will be dropped.
 //
 // Importing this package will cause it to register a new global telemetry
-// exporter that understands the special contexts returned by NewContext.
-// This means you should not import this package if you are not going to call
+// exporter that understands the special contexts returned by NewContext. This
+// means you should not import this package if you are not going to call
 // NewContext.
 package eventtest
 

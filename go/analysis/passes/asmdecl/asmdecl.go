@@ -1,6 +1,5 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright The Go Authors. All rights reserved. Use of this source code is
+// governed by a BSD-style license that can be found in the LICENSE file.
 
 // Package asmdecl defines an Analyzer that reports mismatches between
 // assembly files and Go declarations.
@@ -32,7 +31,6 @@ var Analyzer = &analysis.Analyzer{
 }
 
 // 'kind' is a kind of assembly variable.
-// The kinds 1, 2, 4, 8 stand for values of that size.
 type asmKind int
 
 // These special kinds are not valid sizes.
@@ -52,10 +50,7 @@ type asmArch struct {
 	bigEndian bool
 	stack     string
 	lr        bool
-	// retRegs is a list of registers for return value in register ABI (ABIInternal).
-	// For now, as we only check whether we write to any result, here we only need to
-	// include the first integer register and first floating-point register. Accessing
-	// any of them counts as writing to result.
+	// retRegs is a list of registers for return value in register ABI (ABIInternal). as we only check whether we write to any result.
 	retRegs []string
 	// writeResult is a list of instructions that will change result register implicitly.
 	writeResult []string
@@ -122,12 +117,7 @@ func init() {
 	for _, arch := range arches {
 		arch.sizes = types.SizesFor("gc", arch.name)
 		if arch.sizes == nil {
-			// TODO(adonovan): fix: now that asmdecl is not in the standard
-			// library we cannot assume types.SizesFor is consistent with arches.
-			// For now, assume 64-bit norms and print a warning.
-			// But this warning should really be deferred until we attempt to use
-			// arch, which is very unlikely. Better would be
-			// to defer size computation until we have Pass.TypesSizes.
+			// TODO(adonovan): fix.
 			arch.sizes = types.SizesFor("gc", "amd64")
 			log.Printf("unknown architecture %s", arch.name)
 		}
@@ -233,9 +223,7 @@ Files:
 			if arch == "" {
 				// Determine architecture from +build line if possible.
 				if m := asmPlusBuild.FindStringSubmatch(line); m != nil {
-					// There can be multiple architectures in a single +build line,
-					// so accumulate them all and then prefer the one that
-					// matches build.Default.GOARCH.
+					// There can be multiple architectures in a single +build line.
 					var archCandidates []*asmArch
 					for fld := range strings.FieldsSeq(m[1]) {
 						for _, a := range arches {
@@ -281,8 +269,7 @@ Files:
 				}
 				fnName = m[2]
 				if pkgPath := strings.TrimSpace(m[1]); pkgPath != "" {
-					// The assembler uses Unicode division slash within
-					// identifiers to represent the directory separator.
+					// The assembler uses Unicode division slash within identifiers to represent the directory separator.
 					pkgPath = strings.Replace(pkgPath, "∕", "/", -1)
 					if pkgPath != pass.Pkg.Path() {
 						// log.Printf("%s:%d: [%s] cannot check cross-package assembly function: %s is in package %s", fname, lineno, arch, fnName, pkgPath)
@@ -479,7 +466,6 @@ func newComponent(suffix string, kind asmKind, typ string, offset, size int, out
 }
 
 // componentsOfType generates a list of components of type t.
-// For example, given string, the components are the string itself, the base, and the length.
 func componentsOfType(arch *asmArch, t types.Type) []component {
 	return appendComponentsRecursive(arch, t, nil, "", 0)
 }
@@ -563,10 +549,9 @@ func asmParseDecl(pass *analysis.Pass, decl *ast.FuncDecl) map[string]*asmFunc {
 		offset int
 	)
 
-	// addParams adds asmVars for each of the parameters in list.
-	// isret indicates whether the list are the arguments or the return values.
-	// TODO(adonovan): simplify by passing (*types.Signature).{Params,Results}
-	// instead of list.
+	// addParams adds asmVars for each of the parameters in list. isret indicates
+	// whether the list are the arguments or the return values. TODO(adonovan):
+	// simplify by passing (*types.Signature).{Params,Results} instead of list.
 	addParams := func(list []*ast.Field, isret bool) {
 		argnum := 0
 		for _, fld := range list {
@@ -587,8 +572,7 @@ func asmParseDecl(pass *analysis.Pass, decl *ast.FuncDecl) map[string]*asmFunc {
 			// names is the list of names with this type.
 			names := fld.Names
 			if len(names) == 0 {
-				// Anonymous args will be called arg, arg1, arg2, ...
-				// Similarly so for return values: ret, ret1, ret2, ...
+				// Anonymous args will be called arg, arg1, arg2, ... Similarly so for return values: ret, ret1, ret2, ...
 				name := "arg"
 				if isret {
 					name = "ret"
@@ -657,8 +641,7 @@ func asmCheckVar(badf func(string, ...any), fn *asmFunc, line, expr string, off 
 
 	addr := strings.HasPrefix(expr, "$")
 
-	// Determine operand sizes from instruction.
-	// Typically the suffix suffices, but there are exceptions.
+	// Determine operand sizes from instruction. Typically the suffix suffices, but there are exceptions.
 	var src, dst, kind asmKind
 	op := m[1]
 	switch fn.arch.name + "." + op {
@@ -672,8 +655,7 @@ func asmCheckVar(badf func(string, ...any), fn *asmFunc, line, expr string, off 
 		src = 2
 	case "arm.MOVB", "arm.MOVBU":
 		src = 1
-	// LEA* opcodes don't really read the second arg.
-	// They just take the address of it.
+	// LEA* opcodes don't read the second arg. They take the address of it.
 	case "386.LEAL":
 		dst = 4
 		addr = true
@@ -770,8 +752,7 @@ func asmCheckVar(badf func(string, ...any), fn *asmFunc, line, expr string, off 
 		dst = src
 	}
 
-	// Determine whether the match we're holding
-	// is the first or second argument.
+	// Determine whether the match we're holding is the first or second argument.
 	if strings.Index(line, expr) > strings.Index(line, ",") {
 		kind = dst
 	} else {
